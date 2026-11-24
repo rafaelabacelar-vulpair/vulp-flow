@@ -1990,7 +1990,7 @@
   </div>
 
   <!-- ==========================================================================
-       MODAL: NOVA PÁGINA DE DOCUMENTAÇÃO (ESTILO CONFLUENCE)
+       MODAL: NOVA PÁGINA DE DOCUMENTAÇÃO (PROJETO OBRIGATÓRIO)
        ========================================================================== -->
   <div class="modal-backdrop modal-backdrop--top" id="new-doc-modal">
     <div class="modal-panel" style="max-width:460px">
@@ -1999,16 +1999,37 @@
         <button class="icon-btn" onclick="closeModal('new-doc-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
       </div>
       <div class="field">
-        <label class="field__label">Título da página</label>
-        <input type="text" id="new-doc-title-input" class="field__input" placeholder="Ex: Playbook de Atendimento PMOC 24x7" onkeydown="if(event.key==='Enter') confirmCreateNewDoc()" />
+        <label class="field__label">Projeto vinculado (obrigatório)</label>
+        <select id="new-doc-project-select" class="field__input"></select>
       </div>
       <div class="field">
-        <label class="field__label">Projeto vinculado</label>
-        <select id="new-doc-project-select" class="field__input"></select>
+        <label class="field__label">Título da página</label>
+        <input type="text" id="new-doc-title-input" class="field__input" placeholder="Ex: Playbook de Atendimento PMOC 24x7" onkeydown="if(event.key==='Enter') confirmCreateNewDoc()" />
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('new-doc-modal')">Cancelar</button>
         <button type="button" class="btn btn--sm btn--primary" onclick="confirmCreateNewDoc()">Criar página</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: IMPORTAR ARQUIVO MARKDOWN VINCULADO A PROJETO
+       ========================================================================== -->
+  <div class="modal-backdrop modal-backdrop--top" id="import-doc-modal">
+    <div class="modal-panel" style="max-width:460px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 class="t-h2">Vincular arquivo importado a um projeto</h3>
+        <button class="icon-btn" onclick="closeModal('import-doc-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <p class="t-cap" id="import-doc-files-summary" style="margin:0"></p>
+      <div class="field">
+        <label class="field__label">Projeto vinculado (obrigatório)</label>
+        <select id="import-doc-project-select" class="field__input"></select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--secondary" onclick="cancelImportDocFiles()">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="confirmImportDocFiles()">Importar no projeto</button>
       </div>
     </div>
   </div>
@@ -2248,7 +2269,7 @@ alter table public.vulp_tasks drop constraint if exists vulp_tasks_epic_id_fkey;
 
 create table if not exists public.vulp_docs (
   id text primary key,
-  project_id text,
+  project_id text not null,
   title text not null,
   content text not null default '',
   author_id text,
@@ -2540,8 +2561,12 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           t.area = p ? p.category : (st.categories[0] || 'Operações e PMOC');
         }
       });
+      const fallbackProjId = st.projects[0]?.id || '';
       st.docs.forEach(d => {
         if (!d.authorId || FICTITIOUS_USER_IDS.has(d.authorId)) d.authorId = 'u_rafaela';
+        if ((!d.projectId || !st.projects.some(p => p.id === d.projectId)) && fallbackProjId) {
+          d.projectId = fallbackProjId;
+        }
         if (typeof convertLegacyMarkdownToHtml === 'function' && d.content) {
           d.content = convertLegacyMarkdownToHtml(d.content, d.title);
         }
@@ -2725,16 +2750,13 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       );
     }
 
-    // Filtra os documentos visíveis para o usuário logado
+    // Filtra os documentos visíveis para o usuário logado (sempre vinculados a um projeto)
     function getVisibleDocsForCurrentUser() {
       const u = getCurrentUserObj();
       if (!u) return [];
       if (u.accessLevel === 'admin' || u.accessLevel === 'viewer') return state.docs;
       const visibleProjIds = new Set(getVisibleProjectsForCurrentUser().map(p => p.id));
-      if (u.accessLevel === 'project_guest') {
-        return state.docs.filter(d => d.projectId && visibleProjIds.has(d.projectId));
-      }
-      return state.docs.filter(d => !d.projectId || visibleProjIds.has(d.projectId) || d.authorId === u.id);
+      return state.docs.filter(d => d.projectId && visibleProjIds.has(d.projectId));
     }
 
     function guardEditorAction() {
@@ -3772,6 +3794,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
                 </div>
                 ${editable ? `
                   <button class="btn btn--xs btn--secondary non-guest-only" onclick="openProjectModal('${proj.id}')">Editar</button>
+                  <button class="btn btn--xs btn--secondary" onclick="openNewDocModal('${proj.id}')">+ Doc</button>
                   <button class="btn btn--xs btn--soft" onclick="openEpicModal(null, '${proj.id}')">+ Épico</button>
                   <button class="btn btn--xs btn--primary" onclick="openTaskModal(null, '${proj.id}')">+ Tarefa</button>
                 ` : ''}
@@ -3836,6 +3859,21 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
                 </div>
               ` : ''}
 
+              ${(() => {
+                const pDocs = state.docs.filter(d => d.projectId === proj.id);
+                if (!pDocs.length) return '';
+                return `
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;background:var(--mint-page);border:1px solid var(--line);border-radius:8px">
+                    <span class="t-micro" style="font-weight:700;color:var(--navy)">Documentos (${pDocs.length}):</span>
+                    ${pDocs.map(d => `
+                      <button type="button" class="btn btn--xs btn--secondary" onclick="openProjectDoc('${proj.id}', '${d.id}')" title="Abrir documento">
+                        ${escapeHtmlText(d.title.replace(/\.(md|markdown|txt)$/i, ''))}
+                      </button>
+                    `).join('')}
+                  </div>
+                `;
+              })()}
+
               ${(!pEpics.length && !orphanTasks.length) ? `
                 <div class="t-micro" style="text-align:center;padding:12px">Este projeto ainda não possui épicos ou tarefas.</div>
               ` : ''}
@@ -3843,6 +3881,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           </div>
         `;
       }).join('');
+    }
+
+    function openProjectDoc(projectId, docId) {
+      activeGlobalDocId = docId;
+      switchView('docs');
+      const filterEl = document.getElementById('wiki-project-filter');
+      if (filterEl) filterEl.value = projectId;
+      renderGlobalWiki();
     }
 
     function renderCascadeTaskLineHTML(t) {
@@ -4918,8 +4964,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
               const cleanTitle = d.title.replace(/\.(md|markdown|txt)$/i, '');
               return `
                 <button class="conf-page-item ${doc && doc.id === d.id ? 'is-active' : ''}" onclick="activeGlobalDocId='${d.id}'; renderGlobalWiki()">
-                  <span style="font-size:12px;line-height:16px">${cleanTitle}</span>
-                  <span class="t-micro">${proj ? proj.code + ' • ' + proj.name : 'Base Geral'} • ${d.updatedAt}</span>
+                  <span style="font-size:12px;line-height:16px">${escapeHtmlText(cleanTitle)}</span>
+                  <span class="t-micro">${proj ? proj.code + ' • ' + proj.name : 'Sem projeto'} • ${d.updatedAt}</span>
                 </button>
               `;
             }).join('') : `<div class="t-micro" style="padding:10px 6px">Nenhuma página encontrada.</div>`}
@@ -4967,12 +5013,12 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
 
               <div class="conf-page-header">
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <span class="tag tag--navy" style="font-size:10px">PROJETO</span>
                   ${editable ? `
-                    <select class="filter-select" style="height:26px;font-size:11px" onchange="updateDocProject('${doc.id}', this.value)">
-                      ${!isProjectGuest() ? `<option value="" ${!doc.projectId ? 'selected' : ''}>Base Geral (sem projeto)</option>` : ''}
+                    <select class="filter-select is-filtered" style="height:28px;font-size:12px" onchange="updateDocProject('${doc.id}', this.value)" title="Projeto ao qual este documento está vinculado">
                       ${visProjects.map(p => `<option value="${p.id}" ${doc.projectId === p.id ? 'selected' : ''}>${p.code} • ${p.name}</option>`).join('')}
                     </select>
-                  ` : `<span class="tag tag--mint">${getProject(doc.projectId)?.name || 'Base Geral'}</span>`}
+                  ` : `<span class="tag tag--mint">${getProject(doc.projectId) ? getProject(doc.projectId).code + ' • ' + getProject(doc.projectId).name : 'Sem projeto'}</span>`}
                   <span class="t-micro">Autor: <strong>${authorName}</strong> • Atualizado em ${doc.updatedAt}</span>
                 </div>
 
@@ -5162,25 +5208,35 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       renderGlobalWiki();
     }
 
+    let pendingImportDocFiles = [];
+
     async function updateDocProject(docId, newProjId) {
       if (!guardEditorAction()) return;
+      if (!newProjId) {
+        showToast('Todo documento precisa estar vinculado a um projeto.');
+        renderGlobalWiki();
+        return;
+      }
       const doc = state.docs.find(d => d.id === docId);
       if (!doc) return;
-      doc.projectId = newProjId || '';
+      doc.projectId = newProjId;
       doc.updatedAt = new Date().toISOString().split('T')[0];
-      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
+      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
       renderGlobalWiki();
-      showToast('Vínculo da página atualizado.');
+      showToast('Projeto do documento atualizado.');
     }
 
-    function openNewDocModal() {
+    function openNewDocModal(preselectedProjId = null) {
       if (!guardEditorAction()) return;
       const visProjects = getVisibleProjectsForCurrentUser();
+      if (!visProjects.length) {
+        showToast('Crie um projeto antes de criar um documento.');
+        return;
+      }
       const sel = document.getElementById('new-doc-project-select');
-      sel.innerHTML = (!isProjectGuest() ? '<option value="">Base Geral (sem projeto)</option>' : '') +
-        visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
+      sel.innerHTML = visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
       const filterProj = document.getElementById('wiki-project-filter')?.value;
-      sel.value = (filterProj && filterProj !== 'ALL') ? filterProj : (visProjects[0]?.id || '');
+      sel.value = preselectedProjId || ((filterProj && filterProj !== 'ALL') ? filterProj : visProjects[0].id);
       document.getElementById('new-doc-title-input').value = '';
       document.getElementById('new-doc-modal').classList.add('is-open');
     }
@@ -5188,8 +5244,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
     async function confirmCreateNewDoc() {
       if (!guardEditorAction()) return;
       const rawName = document.getElementById('new-doc-title-input').value.trim();
-      if (!rawName) { showToast('Informe o título da página.'); return; }
       const targetProj = document.getElementById('new-doc-project-select').value;
+      if (!targetProj) {
+        showToast('Selecione o projeto vinculado ao documento.');
+        return;
+      }
+      if (!rawName) {
+        showToast('Informe o título da página.');
+        return;
+      }
       const newDoc = {
         id: 'd_' + Date.now(),
         projectId: targetProj,
@@ -5200,14 +5263,26 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       };
       state.docs.unshift(newDoc);
       activeGlobalDocId = newDoc.id;
-      await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId || null, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId, updated_at: newDoc.updatedAt });
+      await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId, updated_at: newDoc.updatedAt });
       closeModal('new-doc-modal');
+      if (currentView !== 'docs') {
+        switchView('docs');
+      }
+      const filterEl = document.getElementById('wiki-project-filter');
+      if (filterEl && filterEl.value !== 'ALL' && filterEl.value !== targetProj) {
+        filterEl.value = targetProj;
+      }
       renderGlobalWiki();
-      showToast('Página criada.');
+      showToast('Página criada e vinculada ao projeto.');
     }
 
     function triggerDocFileUpload() {
       if (!guardEditorAction()) return;
+      const visProjects = getVisibleProjectsForCurrentUser();
+      if (!visProjects.length) {
+        showToast('Crie um projeto antes de importar um documento.');
+        return;
+      }
       const inp = document.getElementById('md-file-upload-input');
       if (inp) inp.click();
     }
@@ -5218,10 +5293,40 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       event.target.value = '';
       if (!files.length) return;
       const visProjects = getVisibleProjectsForCurrentUser();
+      if (!visProjects.length) {
+        showToast('Crie um projeto antes de importar um documento.');
+        return;
+      }
+      pendingImportDocFiles = files;
+      const sel = document.getElementById('import-doc-project-select');
+      sel.innerHTML = visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
       const filterProj = document.getElementById('wiki-project-filter')?.value;
-      const targetProj = (filterProj && filterProj !== 'ALL') ? filterProj : (visProjects[0]?.id || '');
-      const today = new Date().toISOString().split('T')[0];
+      sel.value = (filterProj && filterProj !== 'ALL') ? filterProj : visProjects[0].id;
+      document.getElementById('import-doc-files-summary').textContent =
+        files.length === 1
+          ? `Arquivo selecionado: "${files[0].name}". Escolha abaixo a qual projeto ele será vinculado:`
+          : `${files.length} arquivos selecionados. Escolha abaixo a qual projeto eles serão vinculados:`;
+      document.getElementById('import-doc-modal').classList.add('is-open');
+    }
 
+    function cancelImportDocFiles() {
+      pendingImportDocFiles = [];
+      closeModal('import-doc-modal');
+    }
+
+    async function confirmImportDocFiles() {
+      if (!guardEditorAction()) return;
+      const targetProj = document.getElementById('import-doc-project-select').value;
+      if (!targetProj) {
+        showToast('Selecione o projeto vinculado.');
+        return;
+      }
+      const files = [...pendingImportDocFiles];
+      pendingImportDocFiles = [];
+      closeModal('import-doc-modal');
+      if (!files.length) return;
+
+      const today = new Date().toISOString().split('T')[0];
       for (const file of files) {
         const text = await readFileAsText(file);
         const cleanTitle = file.name.replace(/\.(md|markdown|txt|html)$/i, '');
@@ -5236,10 +5341,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         };
         state.docs.unshift(newDoc);
         activeGlobalDocId = newDoc.id;
-        await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId || null, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId || null, updated_at: newDoc.updatedAt });
+        await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId || null, updated_at: newDoc.updatedAt });
+      }
+      const filterEl = document.getElementById('wiki-project-filter');
+      if (filterEl && filterEl.value !== 'ALL' && filterEl.value !== targetProj) {
+        filterEl.value = targetProj;
       }
       renderGlobalWiki();
-      showToast('Arquivo(s) importado(s) como página.');
+      const projObj = getProject(targetProj);
+      showToast(`Documento(s) importado(s) no projeto ${projObj ? projObj.code : ''}.`);
     }
 
     function readFileAsText(file) {
