@@ -669,6 +669,10 @@
       box-shadow: var(--shadow-sm);
       transform: translateY(-1px);
     }
+    .task-card.is-dragging {
+      opacity: 0.5;
+      border: 2px dashed var(--navy);
+    }
     .task-card__top {
       display: flex;
       align-items: flex-start;
@@ -1478,6 +1482,7 @@
         <div class="topbar-right">
           <input type="search" id="global-search" class="field__input" style="height:32px;width:230px" placeholder="Buscar por título ou ID..." oninput="refreshCurrentView()" />
           <div class="editor-only" style="display:flex;gap:8px">
+            <button class="btn btn--sm btn--secondary non-guest-only" onclick="openStatusesModal()">Fases do Kanban</button>
             <button class="btn btn--sm btn--secondary non-guest-only" onclick="openProjectModal()">+ Projeto</button>
             <button class="btn btn--sm btn--secondary" onclick="openEpicModal()">+ Épico</button>
             <button class="btn btn--sm btn--primary" onclick="openTaskModal(null)">+ Nova tarefa</button>
@@ -1769,12 +1774,7 @@
 
       <div class="field" id="task-status-wrap">
         <label class="field__label">Status</label>
-        <select id="task-status" class="field__input" style="font-weight:700">
-          <option value="todo">A fazer</option>
-          <option value="doing">Em andamento</option>
-          <option value="review">Em revisão</option>
-          <option value="done">Concluído</option>
-        </select>
+        <select id="task-status" class="field__input" style="font-weight:700"></select>
       </div>
 
       <!-- Quando? (Pontual vs Recorrente com Frequência: Diária, Semanal, Quinzenal, Mensal, Trimestral) -->
@@ -2162,7 +2162,35 @@
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  
+  <!-- ==========================================================================
+       MODAL: GERENCIAR FASES (STATUSES)
+       ========================================================================== -->
+  <div class="modal-backdrop modal-backdrop--top" id="statuses-modal">
+    <div class="modal-panel" style="max-width:560px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 class="t-h2">Fases do Kanban</h3>
+        <button class="icon-btn" onclick="closeModal('statuses-modal'); refreshCurrentView();"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <p class="t-cap" style="margin:0">Crie, edite ou altere a ordem das fases (colunas) que aparecem no Kanban.</p>
+
+      <div style="display:flex;gap:8px; align-items:flex-end">
+        <div class="field" style="flex:1">
+          <label class="field__label">Nova Fase</label>
+          <input type="text" id="new-status-label" class="field__input" placeholder="Ex: Em testes..." onkeydown="if(event.key==='Enter') addStatus()" />
+        </div>
+        <button type="button" class="btn btn--primary" onclick="addStatus()">Adicionar</button>
+      </div>
+
+      <div id="statuses-list-box" style="display:flex;flex-direction:column;gap:6px;max-height:350px;overflow-y:auto;padding:4px"></div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--primary" onclick="closeModal('statuses-modal'); refreshCurrentView();">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+<div class="toast" id="toast"></div>
 
   <script>
     /* ==========================================================================
@@ -2326,6 +2354,20 @@ do $$ begin alter publication supabase_realtime add table public.vulp_categories
 do $$ begin alter publication supabase_realtime add table public.vulp_projects; exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.vulp_epics; exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.vulp_tasks; exception when duplicate_object then null; end $$;
+create table if not exists public.vulp_statuses (
+  id text primary key,
+  label text not null,
+  color text not null default '#07384D',
+  position integer not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table public.vulp_tasks add column if not exists position integer not null default 0;
+
+grant all on table public.vulp_statuses to anon, authenticated;
+alter table public.vulp_statuses enable row level security;
+drop policy if exists "vulp_statuses_all" on public.vulp_statuses;
+create policy "vulp_statuses_all" on public.vulp_statuses for all using (true) with check (true);
+do $$ begin alter publication supabase_realtime add table public.vulp_statuses; exception when duplicate_object then null; end $$;`;
 do $$ begin alter publication supabase_realtime add table public.vulp_docs; exception when duplicate_object then null; end $$;`;
 
     /* ==========================================================================
@@ -2353,12 +2395,16 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       quarterly: 'Trimestral'
     };
 
-    const STATUS_META = {
-      todo: { label: 'A fazer', color: '#3C6776' },
-      doing: { label: 'Em andamento', color: '#07384D' },
-      review: { label: 'Em revisão', color: '#5ADCE8' },
-      done: { label: 'Concluído', color: '#DCEB15' }
-    };
+    const DEFAULT_STATUSES = [
+      { id: 'todo', label: 'A fazer', color: '#3C6776', position: 0 },
+      { id: 'doing', label: 'Em andamento', color: '#07384D', position: 1 },
+      { id: 'review', label: 'Em revisão', color: '#5ADCE8', position: 2 },
+      { id: 'done', label: 'Concluído', color: '#DCEB15', position: 3 }
+    ];
+    
+    function getStatusMeta(statusId) {
+      return state.statuses.find(s => s.id === statusId) || { id: statusId, label: statusId, color: '#3C6776', position: 99 };
+    }
 
     const DEFAULT_CATEGORIES = [
       'Engenharia e Automação',
@@ -2382,6 +2428,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
 
     const DEFAULT_STATE = {
       categories: [...DEFAULT_CATEGORIES],
+      statuses: JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
       team: [
         { ...RAFAELA_ADMIN_USER }
       ],
@@ -2536,6 +2583,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       if (!Array.isArray(st.categories) || !st.categories.length) {
         st.categories = [...DEFAULT_CATEGORIES];
       }
+      if (!Array.isArray(st.statuses) || !st.statuses.length) {
+        st.statuses = JSON.parse(JSON.stringify(DEFAULT_STATUSES));
+      }
       if (!Array.isArray(st.epics)) st.epics = [];
       if (!Array.isArray(st.projects)) st.projects = [];
       if (!Array.isArray(st.tasks)) st.tasks = [];
@@ -2574,6 +2624,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           const p = st.projects.find(x => x.id === t.projectId);
           t.area = p ? p.category : (st.categories[0] || 'Operações e PMOC');
         }
+        if (typeof t.position !== 'number') t.position = 0;
       });
       const fallbackProjId = st.projects[0]?.id || '';
       st.docs.forEach(d => {
@@ -3002,7 +3053,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       if (!url || !key) return;
       try {
         sbClient = window.supabase.createClient(url, key);
-        const [teamRes, projRes, epicRes, taskRes, docRes, catRes] = await Promise.all([
+        const [teamRes, projRes, epicRes, taskRes, docRes, catRes, statRes] = await Promise.all([
+          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true }),
           sbClient.from('vulp_team').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_projects').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_epics').select('*').order('created_at', { ascending: true }),
@@ -3015,6 +3067,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         if (epicRes.error) throw epicRes.error;
         if (taskRes.error) throw taskRes.error;
         if (docRes.error) throw docRes.error;
+        if (statRes && statRes.error) throw statRes.error;
 
         localStorage.setItem(SB_CREDS_KEY, JSON.stringify({ url, key }));
         sbConnected = true;
@@ -3026,7 +3079,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         if (teamRes.data.length === 0 && projRes.data.length === 0 && taskRes.data.length === 0) {
           await pushLocalDataToSupabase(true);
         } else {
-          hydrateStateFromSupabase(teamRes.data, projRes.data, epicRes.data, taskRes.data, docRes.data, catRows);
+          const statRows = (!statRes.error && Array.isArray(statRes.data)) ? statRes.data : null;
+          hydrateStateFromSupabase(teamRes.data, projRes.data, epicRes.data, taskRes.data, docRes.data, catRows, statRows);
           if (hasFictitious || !hasRafa) {
             await syncRafaelaAndPurgeFictitiousInDb();
           }
@@ -3042,7 +3096,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       }
     }
 
-    function hydrateStateFromSupabase(teamRows, projRows, epicRows, taskRows, docRows, catRows) {
+    function hydrateStateFromSupabase(teamRows, projRows, epicRows, taskRows, docRows, catRows, statRows) {
+      if (statRows && statRows.length) {
+        state.statuses = statRows.map(r => ({ id: r.id, label: r.label, color: r.color, position: r.position }));
+      }
       if (catRows && catRows.length) {
         state.categories = catRows.map(c => c.name);
       }
@@ -3109,7 +3166,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
     async function refreshFromSupabaseSilent() {
       if (!sbConnected || !sbClient) return;
       try {
-        const [teamRes, projRes, epicRes, taskRes, docRes, catRes] = await Promise.all([
+        const [teamRes, projRes, epicRes, taskRes, docRes, catRes, statRes] = await Promise.all([
+          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true }),
           sbClient.from('vulp_team').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_projects').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_epics').select('*').order('created_at', { ascending: true }),
@@ -3119,7 +3177,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         ]);
         if (!teamRes.error && !projRes.error && !epicRes.error && !taskRes.error && !docRes.error) {
           const catRows = (!catRes.error && Array.isArray(catRes.data)) ? catRes.data : null;
-          hydrateStateFromSupabase(teamRes.data, projRes.data, epicRes.data, taskRes.data, docRes.data, catRows);
+          const statRows = (!statRes.error && Array.isArray(statRes.data)) ? statRes.data : null;
+          hydrateStateFromSupabase(teamRes.data, projRes.data, epicRes.data, taskRes.data, docRes.data, catRows, statRows);
         }
       } catch (e) {}
     }
@@ -3135,6 +3194,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_epics' }, () => refreshFromSupabaseSilent())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_tasks' }, () => refreshFromSupabaseSilent())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_docs' }, () => refreshFromSupabaseSilent())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_statuses' }, () => refreshFromSupabaseSilent())
         .subscribe();
     }
 
@@ -3197,6 +3257,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         }
         for (let i = 0; i < state.categories.length; i++) {
           await sbClient.from('vulp_categories').upsert({ id: 'cat_' + i, name: state.categories[i] });
+        }
+        for (const s of state.statuses) {
+          await safeDbUpsert('vulp_statuses', { id: s.id, label: s.label, color: s.color, position: s.position });
         }
         for (const p of state.projects) {
           await safeDbUpsert('vulp_projects', { id: p.id, code: p.code, name: p.name, owner_id: p.ownerId || null, category: p.category, status: p.status, color: p.color || '#07384D', deadline: p.deadline || null, description: p.description || '' });
@@ -3644,11 +3707,11 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         return;
       }
 
-      const cols = ['todo', 'doing', 'review', 'done'];
-      container.innerHTML = `<div class="kanban-grid">
-        ${cols.map(status => {
-          const colTasks = tasks.filter(t => t.status === status);
-          const meta = STATUS_META[status];
+      const cols = [...state.statuses].sort((a,b) => (a.position||0) - (b.position||0));
+      container.innerHTML = `<div class="kanban-grid" style="grid-template-columns: repeat(${cols.length}, minmax(280px, 1fr)); overflow-x: auto;">
+        ${cols.map(meta => {
+          const status = meta.id;
+          const colTasks = tasks.filter(t => t.status === status).sort((a,b) => (a.position||0) - (b.position||0));
           return `
             <div class="kanban-col"
                  ondragover="if(canEdit()){event.preventDefault(); this.classList.add('drag-over');}"
@@ -3661,9 +3724,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
                 </div>
                 <span class="tag tag--mint">${colTasks.length}</span>
               </div>
-              <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="kanban-tasks-container" style="display:flex;flex-direction:column;gap:8px;min-height:100px;">
                 ${colTasks.length ? colTasks.map(t => renderKanbanCardHTML(t)).join('') :
-                  `<div class="t-micro" style="text-align:center;padding:28px 8px;border:1px dashed var(--line);border-radius:8px">${isViewer() ? 'Vazio' : 'Arraste tarefas aqui'}</div>`}
+                  `<div class="t-micro kanban-empty-slot" style="text-align:center;padding:28px 8px;border:1px dashed var(--line);border-radius:8px;pointer-events:none;">${isViewer() ? 'Vazio' : 'Arraste tarefas aqui'}</div>`}
               </div>
             </div>
           `;
@@ -3679,9 +3742,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       const editable = canEdit();
 
       return `
-        <article class="task-card"
+        <article class="task-card" data-id="${t.id}"
                  draggable="${editable}"
-                 ondragstart="if(canEdit()) event.dataTransfer.setData('text/plain', '${t.id}')"
+                 ondragstart="if(canEdit()){ this.classList.add('is-dragging'); event.dataTransfer.setData('text/plain', '${t.id}'); }"
+                 ondragend="this.classList.remove('is-dragging')"
                  onclick="openTaskModal('${t.id}')">
           <!-- Topo: Projeto + Épico OU Rotina / Operacional + ID T-X -->
           <div class="task-card__top">
@@ -3771,7 +3835,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
                       <div>${t.due ? t.due.split('-').reverse().join('/') : '—'}</div>
                       ${recBadge ? `<div class="t-micro">${recBadge}</div>` : ''}
                     </td>
-                    <td><span class="tag tag--mint">${STATUS_META[t.status].label}</span></td>
+                    <td><span class="tag tag--mint" style="background:${getStatusMeta(t.status).color}22;color:var(--navy);border:1px solid ${getStatusMeta(t.status).color}">${getStatusMeta(t.status).label}</span></td>
                   </tr>
                 `;
               }).join('')}
@@ -3958,7 +4022,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       return `
         <div class="jira-task-row" onclick="openTaskModal('${t.id}')">
           <div class="jira-task-row__left">
-            <span style="width:8px;height:8px;border-radius:50%;background:${STATUS_META[t.status].color};border:1px solid var(--navy);flex-shrink:0"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:${getStatusMeta(t.status).color};border:1px solid var(--navy);flex-shrink:0"></span>
             <span class="code-badge code-badge--subtle">${t.code || 'T-?'}</span>
             <span style="font-weight:700;color:var(--navy)">${t.title}</span>
             ${t.priority === 'Alta' ? `<span class="tag tag--amber" style="font-size:10px;padding:1px 6px">Alta</span>` : ''}
@@ -3968,9 +4032,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           <div class="jira-task-row__right" onclick="event.stopPropagation()">
             ${t.due ? `<span class="t-micro">${t.due.slice(5).split('-').reverse().join('/')}</span>` : ''}
             <span class="avatar-sm" title="${member.name}">${getInitials(member.name)}</span>
-            ${!editable ? `<span class="tag tag--mint">${STATUS_META[t.status].label}</span>` : `
+            ${!editable ? `<span class="tag tag--mint">${getStatusMeta(t.status).label}</span>` : `
               <select class="filter-select" style="height:26px;font-size:11px;padding:0 8px" onchange="changeTaskStatus('${t.id}', this.value)">
-                ${Object.entries(STATUS_META).map(([k, v]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+                ${state.statuses.map(s => `<option value="${s.id}" ${t.status === s.id ? 'selected' : ''}>${s.label}</option>`).join('')}
               </select>
             `}
           </div>
@@ -4205,6 +4269,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       } else {
         document.getElementById('task-modal-code').textContent = getNextCode(state.tasks, 'T');
         document.getElementById('task-modal-heading').textContent = 'Nova tarefa';
+        document.getElementById('task-status').innerHTML = state.statuses.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
         document.getElementById('task-modal-id').value = '';
         document.getElementById('task-title').value = '';
 
@@ -4224,7 +4289,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         }
 
         assSel.value = u ? u.id : 'u_rafaela';
-        document.getElementById('task-status').value = 'todo';
+        document.getElementById('task-status').value = state.statuses[0]?.id || 'todo';
         document.getElementById('task-priority').value = 'Média';
         document.getElementById('task-desc').value = '';
         document.getElementById('task-status-wrap').style.display = 'none';
@@ -4261,6 +4326,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         due: t.due || null,
         recurrence: t.recurrence || 'none',
         cycle_count: t.cycleCount || 1,
+        position: t.position || 0,
         description: t.description || ''
       };
     }
@@ -4383,15 +4449,75 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       showToast('Tarefa excluída.');
     }
 
-    function handleDrop(e, newStatus) {
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.task-card:not(.is-dragging)')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    async function handleDrop(e, newStatus) {
       e.preventDefault();
       e.currentTarget.classList.remove('drag-over');
       if (!guardEditorAction()) return;
       const taskId = e.dataTransfer.getData('text/plain');
-      if (taskId) changeTaskStatus(taskId, newStatus);
+      if (!taskId) return;
+      
+      const container = e.currentTarget.querySelector('.kanban-tasks-container');
+      const afterElement = getDragAfterElement(container, e.clientY);
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      const oldStatus = task.status;
+      task.status = newStatus;
+      
+      let colTasks = state.tasks.filter(t => t.status === newStatus).sort((a,b) => (a.position||0) - (b.position||0));
+      colTasks = colTasks.filter(t => t.id !== taskId);
+      
+      if (afterElement == null) {
+          colTasks.push(task);
+      } else {
+          const afterId = afterElement.getAttribute('data-id');
+          const afterIndex = colTasks.findIndex(t => t.id === afterId);
+          if(afterIndex > -1) colTasks.splice(afterIndex, 0, task);
+          else colTasks.push(task);
+      }
+      
+      colTasks.forEach((t, idx) => {
+          t.position = idx;
+      });
+      
+      for(const t of colTasks) {
+          await safeDbUpsert('vulp_tasks', toDbTask(t));
+      }
+      
+      processTaskStatusChange(task, oldStatus, newStatus);
+      refreshCurrentView();
     }
 
     async function changeTaskStatus(taskId, newStatus) {
+      if (!guardEditorAction()) return;
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      if (task.status === newStatus) return;
+      const oldStatus = task.status;
+      task.status = newStatus;
+      
+      let colTasks = state.tasks.filter(t => t.status === newStatus).sort((a,b) => (a.position||0) - (b.position||0));
+      task.position = colTasks.length ? Math.max(...colTasks.map(t=>t.position||0)) + 1 : 0;
+      await safeDbUpsert('vulp_tasks', toDbTask(task));
+      
+      processTaskStatusChange(task, oldStatus, newStatus);
+      refreshCurrentView();
+    }
+    
+    async function processTaskStatusChange(task, oldStatus, newStatus) {
       if (!guardEditorAction()) return;
       const task = state.tasks.find(t => t.id === taskId);
       if (!task) return;
@@ -4399,6 +4525,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       task.status = newStatus;
       await safeDbUpsert('vulp_tasks', toDbTask(task));
 
+      } else {
+        showToast(`Movida para "${getStatusMeta(newStatus).label}".`);
+      }
+      // This function replaces the old inline block in changeTaskStatus
       const spec = parseRecurrenceSpec(task.recurrence, task.due);
       if (newStatus === 'done' && oldStatus !== 'done' && spec.mode === 'period') {
         const nextDue = findNextOccurrenceDate(task.due, spec.end, spec.freq, spec.days);
@@ -4419,15 +4549,92 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         } else {
           showToast(`Concluída! Período encerrado — não aparecerá mais.`);
         }
-      } else {
-        showToast(`Movida para "${STATUS_META[newStatus].label}".`);
       }
-      refreshCurrentView();
-    }
 
     /* ==========================================================================
        GERENCIADOR DE ÁREAS / FRENTES
        ========================================================================== */
+        /* ==========================================================================
+       GERENCIAR FASES (STATUSES)
+       ========================================================================== */
+    function openStatusesModal() {
+      if (!guardAdminAction()) return;
+      renderStatusesList();
+      document.getElementById('statuses-modal').classList.add('is-open');
+    }
+
+    function renderStatusesList() {
+      const container = document.getElementById('statuses-list-box');
+      // Sort by position
+      state.statuses.sort((a,b) => (a.position||0) - (b.position||0));
+      container.innerHTML = state.statuses.map((s, index) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface-subtle);border:1px solid var(--line);border-radius:8px;padding:8px 12px">
+          <div style="display:flex;align-items:center;gap:12px;flex:1">
+            <input type="color" value="${s.color}" style="width:24px;height:24px;border:none;padding:0;cursor:pointer;border-radius:4px;background:transparent;" onchange="updateStatusColor('${s.id}', this.value)" />
+            <input type="text" value="${s.label}" class="field__input" style="height:28px;font-size:12px;font-weight:700" onchange="updateStatusLabel('${s.id}', this.value)" />
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;margin-left:12px">
+            <button class="icon-btn" onclick="moveStatus('${s.id}', -1)" ${index === 0 ? 'disabled style="opacity:0.3"' : ''} title="Subir">▲</button>
+            <button class="icon-btn" onclick="moveStatus('${s.id}', 1)" ${index === state.statuses.length - 1 ? 'disabled style="opacity:0.3"' : ''} title="Descer">▼</button>
+            <button class="icon-btn icon-btn--danger" onclick="deleteStatus('${s.id}')" title="Excluir">
+              <svg class="va-icon" width="14" height="14"><use href="#va-close"/></svg>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function addStatus() {
+      const input = document.getElementById('new-status-label');
+      const label = input.value.trim();
+      if (!label) return;
+      const id = 's_' + Date.now();
+      const pos = state.statuses.length ? Math.max(...state.statuses.map(s => s.position||0)) + 1 : 0;
+      const newStatus = { id, label, color: '#07384D', position: pos };
+      state.statuses.push(newStatus);
+      input.value = '';
+      await safeDbUpsert('vulp_statuses', newStatus);
+      renderStatusesList();
+    }
+
+    async function updateStatusLabel(id, label) {
+      if(!label.trim()) return;
+      const s = state.statuses.find(x => x.id === id);
+      if(s) { s.label = label.trim(); await safeDbUpsert('vulp_statuses', s); }
+    }
+
+    async function updateStatusColor(id, color) {
+      const s = state.statuses.find(x => x.id === id);
+      if(s) { s.color = color; await safeDbUpsert('vulp_statuses', s); }
+    }
+
+    async function moveStatus(id, dir) {
+      const idx = state.statuses.findIndex(x => x.id === id);
+      if (idx < 0) return;
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= state.statuses.length) return;
+      
+      // Swap positions
+      const temp = state.statuses[idx].position;
+      state.statuses[idx].position = state.statuses[targetIdx].position;
+      state.statuses[targetIdx].position = temp;
+      
+      await safeDbUpsert('vulp_statuses', state.statuses[idx]);
+      await safeDbUpsert('vulp_statuses', state.statuses[targetIdx]);
+      renderStatusesList();
+    }
+
+    async function deleteStatus(id) {
+      if (state.tasks.some(t => t.status === id)) {
+        showToast('Não é possível excluir: existem tarefas nesta fase.');
+        return;
+      }
+      if (!confirm('Excluir esta fase?')) return;
+      state.statuses = state.statuses.filter(x => x.id !== id);
+      await safeDbDelete('vulp_statuses', id);
+      renderStatusesList();
+    }
+    
     function populateProjectCategorySelect(selectedCat = null) {
       const sel = document.getElementById('project-category');
       if (!sel) return;
