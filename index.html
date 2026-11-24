@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* ==========================================================================
-       IDENTIDADE VISUAL VULP AIR (SKILL v2 — OUT/2026) + UX JIRA-STYLE CLEAN
+       IDENTIDADE VISUAL VULP AIR (SKILL v2 — OUT/2026) + UX JIRA/CONFLUENCE
        Posicionamento: institucional sóbrio, consultoria estratégica
        Tipografia: Arial | Paleta: Navy #07384D, Teal #5ADCE8, Mint #E6F8FA/#D9F5F9, Lime #DCEB15
        ========================================================================== */
@@ -54,10 +54,10 @@
     }
 
     /* Controle de visibilidade por perfil de acesso */
-    body.role-viewer .editor-only { display: none !important; }
-    body.role-viewer .admin-only { display: none !important; }
-    body.role-member .admin-only { display: none !important; }
-    body.role-viewer .task-card { cursor: pointer; }
+    body.is-readonly .editor-only { display: none !important; }
+    body.not-admin .admin-only { display: none !important; }
+    body.is-project-guest .non-guest-only { display: none !important; }
+    body.is-readonly .task-card { cursor: pointer; }
 
     /* Tipografia Oficial — Arial */
     .t-h1 { font-size: 20px; line-height: 26px; font-weight: 700; color: var(--navy); margin: 0; }
@@ -305,6 +305,12 @@
       background: var(--mint-card);
       color: var(--navy);
     }
+    .jira-label--routine {
+      background: var(--mint-page);
+      color: var(--navy);
+      border: 1px dashed var(--muted);
+      font-weight: 700;
+    }
     .jira-dot {
       width: 7px;
       height: 7px;
@@ -549,7 +555,7 @@
       flex-wrap: wrap;
     }
 
-    .viewer-banner {
+    .context-banner {
       background: var(--navy);
       color: var(--white);
       padding: 8px 28px;
@@ -557,6 +563,8 @@
       display: none;
       align-items: center;
       justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .workspace {
@@ -604,7 +612,7 @@
     }
 
     /* ==========================================================================
-       ABA 1: KANBAN LIMPO COM ETIQUETAS DE PROJETO, ÉPICO E ID
+       ABA 1: KANBAN LIMPO COM ETIQUETAS DE PROJETO, ÉPICO, ROTINA E ID
        ========================================================================== */
     .kanban-grid {
       display: grid;
@@ -862,7 +870,7 @@
     .vulp-table tbody tr:hover { background: var(--surface-subtle); }
 
     /* ==========================================================================
-       MODAIS / POP-UPS CENTRALIZADOS (TAREFA, PROJETO, ÉPICO, FRENTES, DOCS)
+       MODAIS / POP-UPS CENTRALIZADOS
        ========================================================================== */
     .modal-backdrop {
       position: fixed;
@@ -882,7 +890,7 @@
       background: var(--white);
       border-radius: var(--radius-xl);
       width: 100%;
-      max-width: 560px;
+      max-width: 580px;
       max-height: 92vh;
       overflow-y: auto;
       padding: 24px;
@@ -940,21 +948,16 @@
     .swatch-btn.is-selected .swatch-btn__dot { display: block; }
 
     /* ==========================================================================
-       DOCUMENTAÇÃO MARKDOWN + DRAG AND DROP UPLOAD
+       DOCUMENTAÇÃO ESTILO CONFLUENCE (WYSIWYG RICH PAGE EDITOR + IMAGENS)
        ========================================================================== */
-    .md-workspace {
+    .conf-workspace {
       display: grid;
-      grid-template-columns: 240px 1fr;
-      gap: 16px;
-      min-height: 500px;
-      border-radius: var(--radius-lg);
-      transition: outline .15s;
+      grid-template-columns: 260px 1fr;
+      gap: 18px;
+      min-height: 600px;
+      align-items: start;
     }
-    .md-workspace.is-dragover {
-      outline: 2px dashed var(--navy);
-      background: var(--mint-page);
-    }
-    .md-sidebar {
+    .conf-sidebar {
       background: var(--surface-subtle);
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
@@ -962,11 +965,15 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
+      position: sticky;
+      top: 76px;
+      max-height: calc(100vh - 110px);
+      overflow-y: auto;
     }
-    .md-doc-btn {
+    .conf-page-item {
       padding: 9px 11px;
       border-radius: var(--radius-md);
-      border: none;
+      border: 1px solid transparent;
       background: transparent;
       text-align: left;
       cursor: pointer;
@@ -974,79 +981,234 @@
       font-family: var(--font-main);
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
+      transition: all .12s;
     }
-    .md-doc-btn:hover { background: var(--mint-page); }
-    .md-doc-btn.is-active {
+    .conf-page-item:hover { background: var(--mint-page); }
+    .conf-page-item.is-active {
       background: var(--navy);
       color: var(--white);
       font-weight: 700;
     }
-    .md-doc-btn.is-active .t-micro { color: var(--teal); }
+    .conf-page-item.is-active .t-micro { color: var(--teal); }
 
-    .md-editor-box {
+    .conf-page-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: var(--white);
+      box-shadow: var(--shadow-xs);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .conf-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 16px;
+      background: var(--surface-subtle);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 64px;
+      z-index: 10;
+    }
+    .conf-tool-btn {
+      font-family: var(--font-main);
+      font-size: 12px;
+      font-weight: 700;
+      height: 28px;
+      min-width: 28px;
+      padding: 0 8px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--navy);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .conf-tool-btn:hover {
+      background: var(--mint-card);
+      border-color: var(--line);
+    }
+    .conf-tool-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--line);
+      margin: 0 4px;
+    }
+
+    .conf-page-header {
+      padding: 24px 36px 14px;
+      border-bottom: 1px solid #EEF6F8;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .conf-title-input {
+      font-family: var(--font-main);
+      font-size: 24px;
+      line-height: 32px;
+      font-weight: 700;
+      color: var(--navy);
+      border: none;
+      background: transparent;
+      width: 100%;
+      padding: 2px 0;
+      outline: none;
+    }
+    .conf-title-input:focus {
+      background: var(--surface-subtle);
+      border-radius: 6px;
+      padding: 2px 8px;
+    }
+
+    .conf-editor-surface {
+      padding: 22px 36px 48px;
+      min-height: 460px;
+      font-family: var(--font-main);
+      font-size: 14px;
+      line-height: 22px;
+      color: var(--navy);
+      outline: none;
+    }
+    .conf-editor-surface:empty::before {
+      content: attr(data-placeholder);
+      color: #82A7B5;
+      pointer-events: none;
+    }
+    .conf-editor-surface h1 { font-size: 21px; line-height: 28px; color: var(--navy); margin: 18px 0 8px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+    .conf-editor-surface h2 { font-size: 17px; line-height: 24px; color: var(--navy); margin: 16px 0 6px; }
+    .conf-editor-surface h3 { font-size: 15px; line-height: 21px; color: var(--muted); margin: 14px 0 4px; }
+    .conf-editor-surface p { margin: 8px 0; }
+    .conf-editor-surface ul, .conf-editor-surface ol { margin: 8px 0; padding-left: 22px; }
+    .conf-editor-surface li { margin: 4px 0; }
+    .conf-editor-surface blockquote {
+      border-left: 4px solid var(--teal);
+      background: var(--mint-page);
+      margin: 12px 0;
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      color: var(--navy);
+    }
+    .conf-callout {
+      background: var(--mint-page);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--lime);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+    }
+    .conf-editor-surface pre {
+      background: var(--navy);
+      color: var(--white);
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      overflow-x: auto;
+    }
+    .conf-editor-surface table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 13px;
+    }
+    .conf-editor-surface th {
+      background: var(--navy);
+      color: var(--white);
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 12px;
+      border: 1px solid var(--navy);
+    }
+    .conf-editor-surface td {
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      min-width: 80px;
+    }
+    .conf-editor-surface img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      margin: 12px 0;
+      display: block;
+      box-shadow: var(--shadow-xs);
+    }
+    .conf-editor-surface hr {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 18px 0;
+    }
+
+    /* ==========================================================================
+       ESTRUTURA ORGANIZACIONAL (ÁREA -> GESTOR -> LIDERADOS)
+       ========================================================================== */
+    .org-area-block {
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
-      padding: 16px;
       background: var(--white);
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+    }
+    .org-area-head {
+      background: var(--mint-card);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .org-area-body {
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
-    .md-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--line);
-      align-items: center;
-      justify-content: space-between;
-    }
-    .md-split {
+    .org-subordinates-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      min-height: 400px;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 10px;
+      padding-left: 18px;
+      border-left: 2px solid var(--teal);
     }
-    .md-split--single { grid-template-columns: 1fr; }
-    .md-textarea {
-      width: 100%;
-      min-height: 400px;
-      font-family: var(--font-mono);
-      font-size: 13px;
-      line-height: 20px;
-      padding: 14px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--line);
+    .team-card {
       background: var(--surface-subtle);
-      color: var(--navy);
-      resize: vertical;
-    }
-    .md-preview {
-      padding: 16px;
-      border-radius: var(--radius-md);
       border: 1px solid var(--line);
-      background: var(--white);
-      overflow-y: auto;
-      max-height: 520px;
-      font-size: 13px;
-      line-height: 21px;
-    }
-    .md-preview h1, .md-preview h2, .md-preview h3 { color: var(--navy); margin: 12px 0 6px; }
-    .md-preview blockquote {
-      border-left: 3px solid var(--lime);
-      background: var(--mint-page);
-      margin: 10px 0;
-      padding: 8px 12px;
-    }
-    .md-preview pre {
-      background: var(--navy);
-      color: var(--white);
-      padding: 12px;
       border-radius: var(--radius-md);
-      overflow-x: auto;
-      font-family: var(--font-mono);
+      padding: 13px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .team-card--manager {
+      background: var(--mint-page);
+      border-color: var(--navy);
+    }
+
+    .project-check-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 6px;
+      max-height: 150px;
+      overflow-y: auto;
+      padding: 8px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .project-check-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
       font-size: 12px;
+      color: var(--navy);
+      cursor: pointer;
     }
 
     /* Login Gate */
@@ -1071,21 +1233,6 @@
       flex-direction: column;
       gap: 16px;
       box-shadow: var(--shadow-md);
-    }
-
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 14px;
-    }
-    .team-card {
-      background: var(--surface-subtle);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
     }
 
     .sql-box {
@@ -1133,10 +1280,12 @@
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { position: static; height: auto; }
       .kanban-grid { grid-template-columns: 1fr 1fr; }
-      .md-workspace { grid-template-columns: 1fr; }
+      .conf-workspace { grid-template-columns: 1fr; }
+      .conf-sidebar { position: static; max-height: none; }
     }
     @media (max-width: 680px) {
-      .kanban-grid, .modal-grid-2, .md-split { grid-template-columns: 1fr; }
+      .kanban-grid, .modal-grid-2 { grid-template-columns: 1fr; }
+      .conf-page-header, .conf-editor-surface { padding-left: 18px; padding-right: 18px; }
     }
   </style>
 </head>
@@ -1201,7 +1350,7 @@
       </div>
 
       <div id="login-default-hint" class="t-micro" style="background:var(--mint-page);padding:8px 10px;border-radius:6px;border:1px solid var(--line)">
-        Senha inicial: <strong>vulp2026</strong> (você pode alterar na aba Equipe e acessos)
+        Senha inicial: <strong>vulp2026</strong> (alterável na aba Equipe e acessos)
       </div>
 
       <button class="btn btn--lg btn--primary" style="width:100%" onclick="submitLoginGate()">
@@ -1242,14 +1391,14 @@
         <button class="nav-btn" id="nav-docs" onclick="switchView('docs')">
           <span class="nav-btn__left">
             <svg class="va-icon" width="16" height="16"><use href="#va-description"/></svg>
-            <span>Documentação</span>
+            <span>Documentos</span>
           </span>
           <span class="nav-badge" id="badge-docs">0</span>
         </button>
-        <button class="nav-btn" id="nav-team" onclick="switchView('team')">
+        <button class="nav-btn non-guest-only" id="nav-team" onclick="switchView('team')">
           <span class="nav-btn__left">
             <svg class="va-icon" width="16" height="16"><use href="#va-person"/></svg>
-            <span>Equipe e acessos</span>
+            <span>Equipe e Estrutura</span>
           </span>
           <span class="nav-badge" id="badge-team">0</span>
         </button>
@@ -1285,16 +1434,16 @@
         </div>
 
         <button class="btn btn--xs btn--ghost-dark admin-only" style="width:100%" onclick="openShareAccessModal()">
-          Compartilhar links de acesso
+          Compartilhar acesso / projetos
         </button>
       </div>
     </aside>
 
     <!-- MAIN CONTENT -->
     <div class="main-wrap">
-      <div class="viewer-banner" id="viewer-alert">
-        <span><strong>Modo Visualizador:</strong> Acompanhamento em tempo real (somente leitura).</span>
-        <span class="tag tag--lime-pill" style="font-size:10px">SOMENTE LEITURA</span>
+      <div class="context-banner" id="context-alert">
+        <span id="context-alert-text"></span>
+        <span class="tag tag--lime-pill" id="context-alert-badge" style="font-size:10px">ESCOPO</span>
       </div>
 
       <!-- TOPBAR ENXUTA -->
@@ -1307,7 +1456,7 @@
         <div class="topbar-right">
           <input type="search" id="global-search" class="field__input" style="height:32px;width:230px" placeholder="Buscar título ou ID (T-1, P-1)..." oninput="refreshCurrentView()" />
           <div class="editor-only" style="display:flex;gap:8px">
-            <button class="btn btn--sm btn--secondary" onclick="openProjectModal()">+ Projeto</button>
+            <button class="btn btn--sm btn--secondary non-guest-only" onclick="openProjectModal()">+ Projeto</button>
             <button class="btn btn--sm btn--secondary" onclick="openEpicModal()">+ Épico</button>
             <button class="btn btn--sm btn--primary" onclick="openTaskModal(null)">+ Nova tarefa</button>
           </div>
@@ -1316,22 +1465,25 @@
 
       <main class="workspace">
         <!-- ====================================================================
-             ABA 1: TAREFAS
+             ABA 1: TAREFAS (COM PROJETOS E ROTINAS OPERACIONAIS SEM PROJETO)
              ==================================================================== -->
         <section id="view-tasks" style="display:flex;flex-direction:column;gap:14px">
           <div class="filter-bar">
             <div class="filter-bar__left">
               <select id="filter-project" class="filter-select" onchange="onFilterProjectChange()">
-                <option value="ALL">Projeto: Todos</option>
+                <option value="ALL">Projeto / Rotina: Todos</option>
               </select>
               <select id="filter-epic" class="filter-select" onchange="renderTasks()">
                 <option value="ALL">Épico: Todos</option>
+              </select>
+              <select id="filter-area" class="filter-select" onchange="renderTasks()">
+                <option value="ALL">Área: Todas</option>
               </select>
               <select id="filter-assignee" class="filter-select" onchange="renderTasks()">
                 <option value="ALL">Responsável: Todos</option>
               </select>
               <select id="filter-recurrence" class="filter-select" onchange="renderTasks()">
-                <option value="ALL">Tipo: Todos</option>
+                <option value="ALL">Frequência: Todas</option>
                 <option value="ONCE">Pontuais (1 dia)</option>
                 <option value="RECURRING">Recorrentes (todas)</option>
                 <option value="INFINITE">Recorrentes sem fim</option>
@@ -1354,13 +1506,13 @@
           <div class="filter-bar">
             <div class="filter-bar__left">
               <select id="cascade-project-filter" class="filter-select" onchange="renderCascadeView()">
-                <option value="ALL">Todos os projetos</option>
+                <option value="ALL">Todos os projetos visíveis</option>
               </select>
               <button class="btn btn--xs btn--ghost" onclick="toggleAllCascade(true)">Expandir tudo</button>
               <button class="btn btn--xs btn--ghost" onclick="toggleAllCascade(false)">Recolher tudo</button>
             </div>
-            <div class="editor-only" style="display:flex;gap:8px">
-              <button type="button" class="btn btn--sm btn--secondary" onclick="openCategoriesModal()">Frentes de projeto</button>
+            <div class="editor-only non-guest-only" style="display:flex;gap:8px">
+              <button type="button" class="btn btn--sm btn--secondary" onclick="openCategoriesModal()">Áreas / Frentes</button>
             </div>
           </div>
 
@@ -1368,72 +1520,96 @@
         </section>
 
         <!-- ====================================================================
-             ABA 3: DOCUMENTAÇÃO MARKDOWN
+             ABA 3: DOCUMENTOS (ESTILO CONFLUENCE — EDIÇÃO RICA + IMAGENS)
              ==================================================================== -->
         <section id="view-docs" style="display:none;flex-direction:column;gap:14px">
           <div class="filter-bar">
             <div class="filter-bar__left">
               <select id="wiki-project-filter" class="filter-select" onchange="renderGlobalWiki()">
-                <option value="ALL">Todos os projetos</option>
+                <option value="ALL">Todos os documentos</option>
               </select>
             </div>
             <div class="editor-only" style="display:flex;gap:8px;align-items:center">
-              <input type="file" id="md-file-upload-input" multiple style="position:fixed;left:-9999px;opacity:0" onchange="handleMarkdownFileUpload(event)" />
-              <button type="button" class="btn btn--sm btn--soft" onclick="triggerDocFileUpload()">
-                <svg class="va-icon" width="14" height="14" style="transform:rotate(180deg)"><use href="#va-download"/></svg>
-                <span>Subir arquivo (.md / .txt)</span>
-              </button>
-              <button type="button" class="btn btn--sm btn--primary" onclick="openNewDocModal()">+ Novo documento .md</button>
+              <input type="file" id="conf-image-upload-input" accept="image/*" style="position:fixed;left:-9999px;opacity:0" onchange="handleConfluenceImageUpload(event)" />
+              <input type="file" id="md-file-upload-input" accept=".md,.markdown,.txt,.html" multiple style="position:fixed;left:-9999px;opacity:0" onchange="handleMarkdownFileUpload(event)" />
+              <button type="button" class="btn btn--sm btn--secondary" onclick="triggerDocFileUpload()">Importar arquivo</button>
+              <button type="button" class="btn btn--sm btn--primary" onclick="openNewDocModal()">+ Nova página</button>
             </div>
           </div>
-          <div id="global-wiki-container"
-               ondragover="handleMarkdownDragOver(event)"
-               ondragleave="handleMarkdownDragLeave(event)"
-               ondrop="handleMarkdownDrop(event)"></div>
+          <div id="global-wiki-container"></div>
         </section>
 
         <!-- ====================================================================
-             ABA 4: EQUIPE E ACESSOS
+             ABA 4: EQUIPE & ESTRUTURA ORGANIZACIONAL (ÁREA -> GESTOR -> LIDERADOS)
              ==================================================================== -->
         <section id="view-team" style="display:none;flex-direction:column;gap:16px">
-          <div class="admin-only" style="background:var(--surface-subtle);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div class="admin-only" style="background:var(--surface-subtle);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:14px">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
               <div>
-                <h3 class="t-h3">Cadastrar usuário e definir perfil de acesso</h3>
-                <p class="t-micro" style="margin:2px 0 0"><strong>Admin Master:</strong> controle total • <strong>Padrão:</strong> cria/edita tarefas, projetos e docs • <strong>Visualizador:</strong> somente leitura.</p>
+                <h3 class="t-h3">Cadastrar usuário e estrutura (Área, Gestor, Liderados e Acesso por Projeto)</h3>
+                <p class="t-micro" style="margin:2px 0 0"><strong>Admin Master:</strong> acesso total • <strong>Gestor:</strong> vê tudo da sua área/liderados e delega para outros times • <strong>Liderado:</strong> atua na sua área/equipe • <strong>Acesso por Projeto:</strong> vê apenas projetos escolhidos.</p>
               </div>
-              <button class="btn btn--xs btn--secondary" onclick="openShareAccessModal()">Links de acesso</button>
+              <div style="display:flex;gap:8px">
+                <button type="button" class="btn btn--xs btn--secondary" onclick="openCategoriesModal()">Gerenciar Áreas</button>
+                <button type="button" class="btn btn--xs btn--secondary" onclick="openShareAccessModal()">Links de acesso</button>
+              </div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(155px, 1fr));gap:10px;align-items:end">
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:10px;align-items:end">
               <div class="field">
                 <label class="field__label">Nome</label>
-                <input type="text" id="new-member-name" class="field__input" placeholder="Ex: Ana Paula" />
+                <input type="text" id="new-member-name" class="field__input" placeholder="Ex: Carlos Silva" />
               </div>
               <div class="field">
                 <label class="field__label">E-mail</label>
-                <input type="email" id="new-member-email" class="field__input" placeholder="ana@vulpair.com.br" />
+                <input type="email" id="new-member-email" class="field__input" placeholder="carlos@vulpair.com.br" />
               </div>
               <div class="field">
-                <label class="field__label">Área / Cargo</label>
-                <input type="text" id="new-member-role" class="field__input" placeholder="Ex: Engenharia" />
+                <label class="field__label">Cargo / Função</label>
+                <input type="text" id="new-member-role" class="field__input" placeholder="Ex: Coordenador Técnico" />
+              </div>
+              <div class="field">
+                <label class="field__label">Área</label>
+                <select id="new-member-area" class="field__input"></select>
               </div>
               <div class="field">
                 <label class="field__label">Perfil de acesso</label>
-                <select id="new-member-access" class="field__input">
-                  <option value="member">Padrão (edição operacional)</option>
-                  <option value="admin">Admin Master (acesso total)</option>
-                  <option value="viewer">Visualizador (somente leitura)</option>
+                <select id="new-member-access" class="field__input" onchange="onNewMemberAccessChange()">
+                  <option value="manager">Gestor (Líder de Área)</option>
+                  <option value="member" selected>Liderado (Padrão)</option>
+                  <option value="project_guest">Acesso por Projeto(s)</option>
+                  <option value="admin">Admin Master</option>
+                  <option value="viewer">Visualizador Geral</option>
                 </select>
+              </div>
+              <div class="field" id="new-member-manager-wrap">
+                <label class="field__label">Gestor direto</label>
+                <select id="new-member-manager" class="field__input"></select>
               </div>
               <div class="field">
                 <label class="field__label">Senha (obrigatória)</label>
                 <input type="password" id="new-member-pin" class="field__input" placeholder="Crie uma senha" />
               </div>
-              <button class="btn btn--primary" onclick="addTeamMember()">Adicionar usuário</button>
+            </div>
+
+            <!-- Seletor de Projetos Específicos (visível quando Perfil = Acesso por Projeto) -->
+            <div id="new-member-projects-box" style="display:none;background:var(--mint-page);border:1px solid var(--line);border-radius:8px;padding:12px;flex-direction:column;gap:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <span class="field__label" style="color:var(--navy);margin:0">Selecione os projetos que este usuário poderá acessar:</span>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="checkbox" id="new-member-guest-edit" checked />
+                  <span>Permitir criar/editar tarefas e documentos nestes projetos</span>
+                </label>
+              </div>
+              <div class="project-check-grid" id="new-member-projects-list"></div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end">
+              <button type="button" class="btn btn--primary" onclick="addTeamMember()">Adicionar usuário</button>
             </div>
           </div>
 
-          <div class="cards-grid" id="team-grid"></div>
+          <div id="org-structure-container" style="display:flex;flex-direction:column;gap:16px"></div>
         </section>
 
         <!-- ====================================================================
@@ -1476,7 +1652,7 @@
 
           <div style="border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:10px">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <h3 class="t-h3">Script SQL v4 (Tabelas, IDs, Frentes & Permissões)</h3>
+              <h3 class="t-h3">Script SQL v5 (Estrutura Área/Gestor/Liderados, Projetos Específicos & Rotinas)</h3>
               <button class="btn btn--xs btn--secondary" onclick="copySupabaseSQL()">Copiar SQL</button>
             </div>
             <pre class="sql-box" id="sql-preview-box"></pre>
@@ -1492,10 +1668,10 @@
   </div>
 
   <!-- ==========================================================================
-       POP-UP MODAL: CRIAR / EDITAR TAREFA
+       POP-UP MODAL: CRIAR / EDITAR TAREFA (COM PROJETO OU ROTINA OPERACIONAL + FREQUÊNCIA)
        ========================================================================== -->
   <div class="modal-backdrop" id="task-modal">
-    <div class="modal-panel" style="max-width:580px">
+    <div class="modal-panel" style="max-width:600px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="code-badge" id="task-modal-code">T-1</span>
@@ -1509,19 +1685,38 @@
       <input type="hidden" id="task-modal-id" />
 
       <div class="field">
-        <label class="field__label">Título da tarefa</label>
-        <input type="text" id="task-title" class="field__input" style="font-weight:700" placeholder="Ex: Configurar webhook de triagem no Jira" />
+        <label class="field__label">Título da atividade</label>
+        <input type="text" id="task-title" class="field__input" style="font-weight:700" placeholder="Ex: Checklist preventivo PMOC ou Configurar webhook" />
       </div>
 
-      <!-- Vínculo Projeto & Épico -->
-      <div class="modal-grid-2">
-        <div class="field">
-          <label class="field__label">Projeto</label>
-          <select id="task-project" class="field__input" onchange="onTaskProjectChange()"></select>
+      <!-- Tipo de Vínculo: Projeto vs Operacional / Rotina sem projeto -->
+      <div class="modal-section-box">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span class="field__label" style="margin:0;color:var(--navy)">Vínculo da atividade</span>
+          <div class="segmented-group" id="task-scope-group">
+            <button type="button" class="segmented-btn is-active" id="btn-scope-project" onclick="setTaskScopeMode('project')">Com Projeto</button>
+            <button type="button" class="segmented-btn non-guest-only" id="btn-scope-routine" onclick="setTaskScopeMode('routine')">Operacional / Rotina (sem projeto)</button>
+          </div>
         </div>
-        <div class="field">
-          <label class="field__label">Épico</label>
-          <select id="task-epic" class="field__input"></select>
+
+        <!-- Se Com Projeto -->
+        <div id="scope-project-fields" class="modal-grid-2">
+          <div class="field">
+            <label class="field__label">Projeto</label>
+            <select id="task-project" class="field__input" onchange="onTaskProjectChange()"></select>
+          </div>
+          <div class="field">
+            <label class="field__label">Épico</label>
+            <select id="task-epic" class="field__input"></select>
+          </div>
+        </div>
+
+        <!-- Se Operacional / Rotina sem projeto -->
+        <div id="scope-routine-fields" style="display:none">
+          <div class="field">
+            <label class="field__label">Área responsável pela rotina</label>
+            <select id="task-routine-area" class="field__input"></select>
+          </div>
         </div>
       </div>
 
@@ -1551,7 +1746,7 @@
         </select>
       </div>
 
-      <!-- Quando? (Tarefa pontual num dia só vs Tarefa recorrente sem fim ou com data final) -->
+      <!-- Quando? (Pontual vs Recorrente com Frequência: Diária, Semanal, Quinzenal, Mensal, Trimestral) -->
       <div class="modal-section-box">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <span class="field__label" style="margin:0;color:var(--navy)">Quando?</span>
@@ -1561,7 +1756,7 @@
           </div>
         </div>
 
-        <!-- Modo 1: Tarefa pontual (Num dia só) -->
+        <!-- Modo 1: Tarefa pontual -->
         <div id="when-single-box">
           <div class="field">
             <label class="field__label">Num dia só</label>
@@ -1569,20 +1764,32 @@
           </div>
         </div>
 
-        <!-- Modo 2: Tarefa recorrente (Sem fim ou com data final) -->
+        <!-- Modo 2: Tarefa recorrente -->
         <div id="when-period-box" style="display:none;flex-direction:column;gap:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <span class="field__label" style="margin:0">Duração da repetição</span>
-            <div class="segmented-group">
-              <button type="button" class="segmented-btn is-active" id="btn-end-infinite" onclick="setTaskEndMode('infinite')">Sem fim</button>
-              <button type="button" class="segmented-btn" id="btn-end-date" onclick="setTaskEndMode('date')">Definir data final</button>
+          <div class="modal-grid-2">
+            <div class="field">
+              <label class="field__label">Frequência</label>
+              <select id="task-repeat-freq" class="field__input" onchange="onRepeatFreqChange()">
+                <option value="daily">Diária</option>
+                <option value="weekly" selected>Semanal</option>
+                <option value="biweekly">Quinzenal (a cada 15 dias)</option>
+                <option value="monthly">Mensal (todo mês)</option>
+                <option value="quarterly">Trimestral (a cada 3 meses)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">Duração</label>
+              <select id="task-end-mode-select" class="field__input" onchange="setTaskEndMode(this.value)">
+                <option value="infinite">Sem fim</option>
+                <option value="date">Definir data final</option>
+              </select>
             </div>
           </div>
 
           <div class="modal-grid-2" id="repeat-dates-grid" style="grid-template-columns:1fr">
             <div class="field">
               <label class="field__label">A partir de</label>
-              <input type="date" id="task-repeat-start" class="field__input" onchange="onRepeatStartDateChange()" />
+              <input type="date" id="task-repeat-start" class="field__input" onchange="updateRecurrencePreview()" />
             </div>
             <div class="field" id="repeat-end-field" style="display:none">
               <label class="field__label">Até (último dia)</label>
@@ -1590,20 +1797,22 @@
             </div>
           </div>
 
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('oneday')">Num dia só (1x/sem)</button>
-            <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('weekdays')">Dias úteis</button>
-            <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('all')">Todos os dias</button>
-          </div>
+          <div id="repeat-weekdays-block" style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('oneday')">Num dia só (1x)</button>
+              <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('weekdays')">Dias úteis</button>
+              <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('all')">Todos os dias</button>
+            </div>
 
-          <div class="weekday-row" id="task-weekdays-row">
-            <button type="button" class="weekday-pill is-selected" data-day="1" onclick="toggleWeekdayPill(this)">Seg</button>
-            <button type="button" class="weekday-pill is-selected" data-day="2" onclick="toggleWeekdayPill(this)">Ter</button>
-            <button type="button" class="weekday-pill is-selected" data-day="3" onclick="toggleWeekdayPill(this)">Qua</button>
-            <button type="button" class="weekday-pill is-selected" data-day="4" onclick="toggleWeekdayPill(this)">Qui</button>
-            <button type="button" class="weekday-pill is-selected" data-day="5" onclick="toggleWeekdayPill(this)">Sex</button>
-            <button type="button" class="weekday-pill is-selected" data-day="6" onclick="toggleWeekdayPill(this)">Sáb</button>
-            <button type="button" class="weekday-pill is-selected" data-day="0" onclick="toggleWeekdayPill(this)">Dom</button>
+            <div class="weekday-row" id="task-weekdays-row">
+              <button type="button" class="weekday-pill is-selected" data-day="1" onclick="toggleWeekdayPill(this)">Seg</button>
+              <button type="button" class="weekday-pill is-selected" data-day="2" onclick="toggleWeekdayPill(this)">Ter</button>
+              <button type="button" class="weekday-pill is-selected" data-day="3" onclick="toggleWeekdayPill(this)">Qua</button>
+              <button type="button" class="weekday-pill is-selected" data-day="4" onclick="toggleWeekdayPill(this)">Qui</button>
+              <button type="button" class="weekday-pill is-selected" data-day="5" onclick="toggleWeekdayPill(this)">Sex</button>
+              <button type="button" class="weekday-pill is-selected" data-day="6" onclick="toggleWeekdayPill(this)">Sáb</button>
+              <button type="button" class="weekday-pill is-selected" data-day="0" onclick="toggleWeekdayPill(this)">Dom</button>
+            </div>
           </div>
 
           <div class="recurrence-summary-box" id="recurrence-preview-text">
@@ -1626,7 +1835,7 @@
   </div>
 
   <!-- ==========================================================================
-       MODAL: PROJETO (COM CONTROLE DE FRENTES & EXCLUIR)
+       MODAL: PROJETO
        ========================================================================== -->
   <div class="modal-backdrop" id="project-modal">
     <div class="modal-panel">
@@ -1649,8 +1858,8 @@
         </div>
         <div class="field">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <label class="field__label">Frente (Área)</label>
-            <button type="button" class="editor-only" style="background:none;border:none;color:var(--navy);font-size:11px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline" onclick="openCategoriesModal()">+ Nova frente</button>
+            <label class="field__label">Área / Frente</label>
+            <button type="button" class="editor-only non-guest-only" style="background:none;border:none;color:var(--navy);font-size:11px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline" onclick="openCategoriesModal()">+ Nova área</button>
           </div>
           <select id="project-category" class="field__input"></select>
         </div>
@@ -1687,18 +1896,18 @@
   </div>
 
   <!-- ==========================================================================
-       MODAL: GERENCIAR FRENTES (Z-INDEX SUPERIOR AO MODAL DE PROJETO)
+       MODAL: GERENCIAR ÁREAS / FRENTES
        ========================================================================== -->
   <div class="modal-backdrop modal-backdrop--top" id="categories-modal">
     <div class="modal-panel" style="max-width:460px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 class="t-h2">Frentes de Projeto (Categorias)</h3>
+        <h3 class="t-h2">Áreas e Frentes da Vulp Air</h3>
         <button class="icon-btn" onclick="closeModal('categories-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
       </div>
-      <p class="t-cap" style="margin:0">Frentes são as áreas de atuação usadas para agrupar seus projetos (ex: Engenharia, Operações, Comercial).</p>
+      <p class="t-cap" style="margin:0">Cadastre e controle as áreas organizacionais usadas nos times, rotinas e projetos.</p>
 
       <div style="display:flex;gap:8px">
-        <input type="text" id="new-category-input" class="field__input" placeholder="Nome da nova frente..." onkeydown="if(event.key==='Enter') addProjectCategory()" />
+        <input type="text" id="new-category-input" class="field__input" placeholder="Nome da nova área..." onkeydown="if(event.key==='Enter') addProjectCategory()" />
         <button type="button" class="btn btn--primary" onclick="addProjectCategory()">Cadastrar</button>
       </div>
 
@@ -1759,17 +1968,17 @@
   </div>
 
   <!-- ==========================================================================
-       MODAL: NOVO DOCUMENTO MARKDOWN
+       MODAL: NOVA PÁGINA DE DOCUMENTAÇÃO (ESTILO CONFLUENCE)
        ========================================================================== -->
   <div class="modal-backdrop modal-backdrop--top" id="new-doc-modal">
-    <div class="modal-panel" style="max-width:440px">
+    <div class="modal-panel" style="max-width:460px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 class="t-h2">Novo documento Markdown</h3>
+        <h3 class="t-h2">Nova página de documentação</h3>
         <button class="icon-btn" onclick="closeModal('new-doc-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
       </div>
       <div class="field">
-        <label class="field__label">Nome do arquivo (.md)</label>
-        <input type="text" id="new-doc-title-input" class="field__input" placeholder="Ex: Playbook_Operacoes_VulpAir.md" onkeydown="if(event.key==='Enter') confirmCreateNewDoc()" />
+        <label class="field__label">Título da página</label>
+        <input type="text" id="new-doc-title-input" class="field__input" placeholder="Ex: Playbook de Atendimento PMOC 24x7" onkeydown="if(event.key==='Enter') confirmCreateNewDoc()" />
       </div>
       <div class="field">
         <label class="field__label">Projeto vinculado</label>
@@ -1777,7 +1986,72 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('new-doc-modal')">Cancelar</button>
-        <button type="button" class="btn btn--sm btn--primary" onclick="confirmCreateNewDoc()">Criar documento</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="confirmCreateNewDoc()">Criar página</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: EDITAR USUÁRIO (ÁREA, GESTOR, PERFIL, PROJETOS PERMITIDOS)
+       ========================================================================== -->
+  <div class="modal-backdrop modal-backdrop--top" id="edit-user-modal">
+    <div class="modal-panel" style="max-width:520px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 class="t-h2" id="edit-user-modal-title">Editar usuário e acessos</h3>
+        <button class="icon-btn" onclick="closeModal('edit-user-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <input type="hidden" id="edit-user-id" />
+      <div class="modal-grid-2">
+        <div class="field">
+          <label class="field__label">Nome</label>
+          <input type="text" id="edit-user-name" class="field__input" />
+        </div>
+        <div class="field">
+          <label class="field__label">E-mail</label>
+          <input type="email" id="edit-user-email" class="field__input" />
+        </div>
+      </div>
+      <div class="modal-grid-2">
+        <div class="field">
+          <label class="field__label">Cargo / Função</label>
+          <input type="text" id="edit-user-role" class="field__input" />
+        </div>
+        <div class="field">
+          <label class="field__label">Área</label>
+          <select id="edit-user-area" class="field__input"></select>
+        </div>
+      </div>
+      <div class="modal-grid-2">
+        <div class="field">
+          <label class="field__label">Perfil de acesso</label>
+          <select id="edit-user-access" class="field__input" onchange="onEditUserAccessChange()">
+            <option value="manager">Gestor (Líder de Área)</option>
+            <option value="member">Liderado (Padrão)</option>
+            <option value="project_guest">Acesso por Projeto(s)</option>
+            <option value="admin">Admin Master</option>
+            <option value="viewer">Visualizador Geral</option>
+          </select>
+        </div>
+        <div class="field" id="edit-user-manager-wrap">
+          <label class="field__label">Gestor direto</label>
+          <select id="edit-user-manager" class="field__input"></select>
+        </div>
+      </div>
+
+      <div id="edit-user-projects-box" style="display:none;background:var(--mint-page);border:1px solid var(--line);border-radius:8px;padding:12px;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <span class="field__label" style="color:var(--navy);margin:0">Projetos permitidos para este usuário:</span>
+          <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="edit-user-guest-edit" />
+            <span>Pode editar tarefas/docs nestes projetos</span>
+          </label>
+        </div>
+        <div class="project-check-grid" id="edit-user-projects-list"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('edit-user-modal')">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="saveEditedUser()">Salvar alterações</button>
       </div>
     </div>
   </div>
@@ -1804,20 +2078,28 @@
   </div>
 
   <!-- ==========================================================================
-       MODAL: COMPARTILHAR ACESSO
+       MODAL: COMPARTILHAR ACESSO / PROJETO ESPECÍFICO
        ========================================================================== -->
   <div class="modal-backdrop modal-backdrop--top" id="share-modal">
-    <div class="modal-panel" style="max-width:480px">
+    <div class="modal-panel" style="max-width:500px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 class="t-h2">Links de acesso</h3>
+        <h3 class="t-h2">Compartilhar acesso e projetos</h3>
         <button class="icon-btn" onclick="closeModal('share-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
       </div>
-      <p class="t-cap" style="margin:0">Todos os perfis exigem seleção do usuário e senha na tela de entrada.</p>
+      <p class="t-cap" style="margin:0">Para compartilhar <strong>apenas um ou alguns projetos</strong>, crie um usuário com perfil <strong>Acesso por Projeto(s)</strong> em <em>Equipe e Estrutura</em> e envie o link abaixo.</p>
       <div style="background:var(--surface-subtle);padding:12px;border-radius:8px;border:1px solid var(--line);display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;justify-content:space-between"><span class="tag tag--navy">URL DO SISTEMA</span><span class="t-micro">Login com senha</span></div>
+        <div style="display:flex;justify-content:space-between"><span class="tag tag--navy">LINK GERAL DO VULP FLOW</span><span class="t-micro">Login com usuário e senha</span></div>
         <div style="display:flex;gap:6px">
           <input type="text" id="share-link-app" class="field__input" readonly style="font-family:var(--font-mono);font-size:11px;height:32px" />
           <button class="btn btn--sm btn--primary" onclick="copyShareLink('share-link-app')">Copiar</button>
+        </div>
+      </div>
+      <div style="background:var(--surface-subtle);padding:12px;border-radius:8px;border:1px solid var(--line);display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between"><span class="tag tag--teal">LINK DIRETO DE UM PROJETO</span><span class="t-micro">Abre focado no projeto</span></div>
+        <select id="share-project-select" class="field__input" style="height:32px;font-size:12px" onchange="updateProjectShareLink()"></select>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="share-link-project" class="field__input" readonly style="font-family:var(--font-mono);font-size:11px;height:32px" />
+          <button class="btn btn--sm btn--teal" onclick="copyShareLink('share-link-project')">Copiar</button>
         </div>
       </div>
     </div>
@@ -1855,20 +2137,28 @@
     }
 
     /* ==========================================================================
-       SCHEMA SQL SUPABASE v4 (IDEMPOTENTE)
+       SCHEMA SQL SUPABASE v5 (IDEMPOTENTE)
        ========================================================================== */
-    const SUPABASE_SCHEMA_SQL = `-- VULP FLOW (VULP AIR) — SCHEMA SUPABASE v4 (Idempotente)
+    const SUPABASE_SCHEMA_SQL = `-- VULP FLOW (VULP AIR) — SCHEMA SUPABASE v5 (Idempotente)
 create table if not exists public.vulp_team (
   id text primary key,
   name text not null,
   email text not null default '',
   role text not null default 'Especialista Vulp Air',
+  area text not null default 'Operações e PMOC',
+  manager_id text,
   access_level text not null default 'member',
+  allowed_projects text not null default '[]',
+  guest_can_edit boolean not null default true,
   access_pin text not null default 'vulp2026',
   created_at timestamptz not null default now()
 );
 alter table public.vulp_team add column if not exists email text not null default '';
+alter table public.vulp_team add column if not exists area text not null default 'Operações e PMOC';
+alter table public.vulp_team add column if not exists manager_id text;
 alter table public.vulp_team add column if not exists access_level text not null default 'member';
+alter table public.vulp_team add column if not exists allowed_projects text not null default '[]';
+alter table public.vulp_team add column if not exists guest_can_edit boolean not null default true;
 alter table public.vulp_team add column if not exists access_pin text not null default 'vulp2026';
 
 create table if not exists public.vulp_categories (
@@ -1910,9 +2200,11 @@ create table if not exists public.vulp_tasks (
   id text primary key,
   code text,
   title text not null,
-  project_id text references public.vulp_projects(id) on delete cascade,
-  epic_id text references public.vulp_epics(id) on delete set null,
+  project_id text,
+  epic_id text,
   assignee_id text,
+  created_by text,
+  area text not null default '',
   tool text not null default '',
   priority text not null default 'Média',
   status text not null default 'todo',
@@ -1924,9 +2216,13 @@ create table if not exists public.vulp_tasks (
   created_at timestamptz not null default now()
 );
 alter table public.vulp_tasks add column if not exists code text;
-alter table public.vulp_tasks add column if not exists epic_id text references public.vulp_epics(id) on delete set null;
+alter table public.vulp_tasks add column if not exists created_by text;
+alter table public.vulp_tasks add column if not exists area text not null default '';
+alter table public.vulp_tasks add column if not exists epic_id text;
 alter table public.vulp_tasks add column if not exists color text not null default '#07384D';
 alter table public.vulp_tasks drop constraint if exists vulp_tasks_assignee_id_fkey;
+alter table public.vulp_tasks drop constraint if exists vulp_tasks_project_id_fkey;
+alter table public.vulp_tasks drop constraint if exists vulp_tasks_epic_id_fkey;
 
 create table if not exists public.vulp_docs (
   id text primary key,
@@ -1978,9 +2274,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
     /* ==========================================================================
        ESTADO, CREDENCIAIS EMBUTIDAS & PERSISTÊNCIA
        ========================================================================== */
-    const STORAGE_KEY = 'vulp_flow_state_v8';
+    const STORAGE_KEY = 'vulp_flow_state_v9';
     const SB_CREDS_KEY = 'vulp_flow_supabase_creds_v1';
-    const SESSION_KEY = 'vulp_flow_session_v3';
+    const SESSION_KEY = 'vulp_flow_session_v4';
     const FICTITIOUS_USER_IDS = new Set(['u1', 'u2', 'u3', 'u4', 'u5']);
     const DEFAULT_SB_URL = 'https://kqatzgclcxrkibvywigo.supabase.co';
     const DEFAULT_SB_KEY = 'sb_publishable_xmdMl6UhilK9K8azlVqzwg_HxI_voAY';
@@ -1988,9 +2284,17 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
     let sbClient = null;
     let sbConnected = false;
     let sbRealtimeChannel = null;
-    let mdDebounceTimer = null;
+    let confSaveTimer = null;
 
     const WEEKDAY_NAMES_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    const FREQ_LABELS = {
+      daily: 'Diária',
+      weekly: 'Semanal',
+      biweekly: 'Quinzenal',
+      monthly: 'Mensal',
+      quarterly: 'Trimestral'
+    };
 
     const STATUS_META = {
       todo: { label: 'A fazer', color: '#3C6776' },
@@ -2011,7 +2315,11 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       name: 'Rafaela Bacelar',
       email: 'rafaela.bacelar@vulpair.com.br',
       role: 'Admin Master',
+      area: 'Operações e PMOC',
+      managerId: '',
       accessLevel: 'admin',
+      allowedProjects: [],
+      guestCanEdit: true,
       accessPin: 'vulp2026'
     };
 
@@ -2087,6 +2395,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           projectId: 'p1',
           epicId: 'e1',
           assigneeId: 'u_rafaela',
+          createdBy: 'u_rafaela',
+          area: 'IA e Conhecimento',
           priority: 'Alta',
           status: 'doing',
           color: '#5ADCE8',
@@ -2098,50 +2408,55 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         {
           id: 't2',
           code: 'T-2',
-          title: 'Revisão semanal de backlog e SLAs 24x7',
+          title: 'Revisão quinzenal de backlog e SLAs 24x7',
           projectId: 'p1',
           epicId: 'e2',
           assigneeId: 'u_rafaela',
+          createdBy: 'u_rafaela',
+          area: 'IA e Conhecimento',
           priority: 'Alta',
           status: 'todo',
           color: '#DCEB15',
           due: '2026-11-24',
-          recurrence: 'period||1,3,5',
+          recurrence: 'period|biweekly||2',
           cycleCount: 1,
-          description: 'Auditar chamados abertos e atualizar prioridades da sprint.'
+          description: 'Auditar chamados abertos e atualizar prioridades.'
         },
         {
           id: 't3',
           code: 'T-3',
-          title: 'Auditoria de conformidade PMOC / ART',
-          projectId: 'p2',
-          epicId: 'e3',
+          title: 'Auditoria mensal de conformidade PMOC / ART (Rotina Operacional)',
+          projectId: '',
+          epicId: '',
           assigneeId: 'u_rafaela',
+          createdBy: 'u_rafaela',
+          area: 'Operações e PMOC',
           priority: 'Alta',
           status: 'todo',
           color: '#07384D',
           due: '2026-12-01',
-          recurrence: 'none',
+          recurrence: 'period|monthly||1',
           cycleCount: 1,
-          description: 'Validar laudos de qualidade do ar interno e assinaturas técnicas.'
+          description: 'Rotina operacional mensal para validar laudos de qualidade do ar interno e assinaturas técnicas.'
         }
       ],
       docs: [
         {
           id: 'd1',
           projectId: 'p1',
-          title: 'Arquitetura_Integracao_Claude_Jira.md',
+          title: 'Arquitetura de Integração — Operações, Claude AI e App AUVO',
           updatedAt: '2026-11-24',
           authorId: 'u_rafaela',
-          content: `# Arquitetura de integração: Operações, Claude AI e App AUVO
-
-## Objetivo
-Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
-
-> **Diretriz Vulp Air:** Instalou, funcionou. E se parar, trocou.
-
-- [x] Mapear campos customizados de atendimento
-- [ ] Validar tempo de resposta em homologação`
+          content: `<h1>Arquitetura de integração: Operações, Claude AI e App AUVO</h1>
+<h2>Objetivo</h2>
+<p>Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air, estruturando o fluxo entre chamados, triagem inteligente e atendimento em campo.</p>
+<div class="conf-callout"><strong>Diretriz Vulp Air:</strong> Instalou, funcionou. E se parar, trocou.</div>
+<h2>Checklist de implantação</h2>
+<ul>
+  <li>Mapear campos customizados de atendimento técnico</li>
+  <li>Validar tempo de resposta em homologação</li>
+  <li>Publicar guia de bolso para equipe de campo</li>
+</ul>`
         }
       ]
     };
@@ -2153,9 +2468,22 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     let collapsedProjects = new Set();
     let collapsedEpics = new Set();
     let activeGlobalDocId = null;
-    let mdViewMode = 'split';
+    let currentTaskScope = 'project';
     let currentRepeatMode = 'single';
     let currentRepeatEndMode = 'infinite';
+
+    function parseAllowedProjects(raw) {
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === 'string' && raw.trim()) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {
+          return raw.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      }
+      return [];
+    }
 
     function ensureCodesAndDefaults(st) {
       if (!Array.isArray(st.categories) || !st.categories.length) {
@@ -2167,10 +2495,8 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (!Array.isArray(st.docs)) st.docs = [];
       if (!Array.isArray(st.team)) st.team = [];
 
-      // Remover usuários fictícios antigos (u1..u5)
       st.team = st.team.filter(m => !FICTITIOUS_USER_IDS.has(m.id));
 
-      // Garantir que Rafaela Bacelar exista como Admin Master
       let rafa = st.team.find(m => m.id === 'u_rafaela' || (m.email && m.email.toLowerCase() === 'rafaela.bacelar@vulpair.com.br'));
       if (!rafa) {
         rafa = { ...RAFAELA_ADMIN_USER };
@@ -2180,19 +2506,29 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         rafa.name = 'Rafaela Bacelar';
         rafa.email = 'rafaela.bacelar@vulpair.com.br';
         rafa.accessLevel = 'admin';
+        rafa.area = rafa.area || st.categories[0] || 'Operações e PMOC';
         if (!rafa.accessPin || !rafa.accessPin.trim()) rafa.accessPin = 'vulp2026';
       }
 
-      // Reatribuir itens que apontavam para usuários fictícios para Rafaela
-      st.projects.forEach(p => { if (!p.ownerId || FICTITIOUS_USER_IDS.has(p.ownerId)) p.ownerId = 'u_rafaela'; });
-      st.epics.forEach(e => { if (!e.ownerId || FICTITIOUS_USER_IDS.has(e.ownerId)) e.ownerId = 'u_rafaela'; });
-      st.tasks.forEach(t => { if (!t.assigneeId || FICTITIOUS_USER_IDS.has(t.assigneeId)) t.assigneeId = 'u_rafaela'; });
-      st.docs.forEach(d => { if (!d.authorId || FICTITIOUS_USER_IDS.has(d.authorId)) d.authorId = 'u_rafaela'; });
-
       st.team.forEach(m => {
         if (!m.accessPin || !m.accessPin.trim()) m.accessPin = 'vulp2026';
-        if (!['admin', 'member', 'viewer'].includes(m.accessLevel)) m.accessLevel = 'member';
+        if (!['admin', 'manager', 'member', 'project_guest', 'viewer'].includes(m.accessLevel)) m.accessLevel = 'member';
+        if (!m.area) m.area = st.categories[0] || 'Operações e PMOC';
+        m.allowedProjects = parseAllowedProjects(m.allowedProjects);
+        if (typeof m.guestCanEdit !== 'boolean') m.guestCanEdit = true;
       });
+
+      st.projects.forEach(p => { if (!p.ownerId || FICTITIOUS_USER_IDS.has(p.ownerId)) p.ownerId = 'u_rafaela'; });
+      st.epics.forEach(e => { if (!e.ownerId || FICTITIOUS_USER_IDS.has(e.ownerId)) e.ownerId = 'u_rafaela'; });
+      st.tasks.forEach(t => {
+        if (!t.assigneeId || FICTITIOUS_USER_IDS.has(t.assigneeId)) t.assigneeId = 'u_rafaela';
+        if (!t.createdBy) t.createdBy = t.assigneeId || 'u_rafaela';
+        if (!t.area) {
+          const p = st.projects.find(x => x.id === t.projectId);
+          t.area = p ? p.category : (st.categories[0] || 'Operações e PMOC');
+        }
+      });
+      st.docs.forEach(d => { if (!d.authorId || FICTITIOUS_USER_IDS.has(d.authorId)) d.authorId = 'u_rafaela'; });
 
       assignMissingCodes(st.projects, 'P');
       assignMissingCodes(st.epics, 'E');
@@ -2235,7 +2571,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
     function loadLocalState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('vulp_flow_state_v7') || localStorage.getItem('vulp_flow_state_v6');
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('vulp_flow_state_v8') || localStorage.getItem('vulp_flow_state_v7');
         if (raw) {
           return ensureCodesAndDefaults(JSON.parse(raw));
         }
@@ -2249,24 +2585,144 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       PERFIS DE ACESSO & LOGIN COM SENHA OBRIGATÓRIA
-       - Admin Master ('admin'): mexe em tudo
-       - Padrão ('member'): cria/edita tarefas, projetos, épicos e docs
-       - Visualizador ('viewer'): somente leitura
+       CONTROLE DE PERMISSÕES, GESTOR / LIDERADOS E PROJETOS ESPECÍFICOS
        ========================================================================== */
-    function isAdmin() { return currentSession && currentSession.mode === 'admin'; }
-    function isViewer() { return !currentSession || currentSession.mode === 'viewer'; }
-    function canEdit() { return currentSession && (currentSession.mode === 'admin' || currentSession.mode === 'member'); }
+    function getCurrentUserObj() {
+      if (!currentSession) return null;
+      return state.team.find(m => m.id === currentSession.userId) || null;
+    }
+
+    function isAdmin() {
+      const u = getCurrentUserObj();
+      return u && u.accessLevel === 'admin';
+    }
+
+    function isManager() {
+      const u = getCurrentUserObj();
+      return u && u.accessLevel === 'manager';
+    }
+
+    function isProjectGuest() {
+      const u = getCurrentUserObj();
+      return u && u.accessLevel === 'project_guest';
+    }
+
+    function isViewer() {
+      const u = getCurrentUserObj();
+      if (!u) return true;
+      if (u.accessLevel === 'viewer') return true;
+      if (u.accessLevel === 'project_guest' && !u.guestCanEdit) return true;
+      return false;
+    }
+
+    function canEdit() {
+      return !isViewer();
+    }
 
     function getRoleLabel(level) {
-      if (level === 'admin') return 'Admin Master';
-      if (level === 'viewer') return 'Visualizador';
-      return 'Padrão';
+      const map = {
+        admin: 'Admin Master',
+        manager: 'Gestor',
+        member: 'Liderado',
+        project_guest: 'Acesso por Projeto',
+        viewer: 'Visualizador'
+      };
+      return map[level] || 'Liderado';
+    }
+
+    // Retorna IDs de todos os liderados (diretos e indiretos) de um gestor
+    function getSubordinateIds(managerId) {
+      const result = new Set();
+      const queue = [managerId];
+      while (queue.length) {
+        const cur = queue.shift();
+        state.team.forEach(m => {
+          if (m.managerId === cur && !result.has(m.id)) {
+            result.add(m.id);
+            queue.push(m.id);
+          }
+        });
+      }
+      return result;
+    }
+
+    // Filtra os projetos visíveis para o usuário logado
+    function getVisibleProjectsForCurrentUser() {
+      const u = getCurrentUserObj();
+      if (!u) return [];
+      if (u.accessLevel === 'admin' || u.accessLevel === 'viewer') return state.projects;
+      if (u.accessLevel === 'project_guest') {
+        const allowed = new Set(parseAllowedProjects(u.allowedProjects));
+        return state.projects.filter(p => allowed.has(p.id));
+      }
+      if (u.accessLevel === 'manager') {
+        const subs = getSubordinateIds(u.id);
+        return state.projects.filter(p =>
+          p.category === u.area ||
+          p.ownerId === u.id ||
+          subs.has(p.ownerId) ||
+          state.tasks.some(t => t.projectId === p.id && (t.assigneeId === u.id || subs.has(t.assigneeId) || t.createdBy === u.id))
+        );
+      }
+      // member (Liderado)
+      return state.projects.filter(p =>
+        p.category === u.area ||
+        p.ownerId === u.id ||
+        state.tasks.some(t => t.projectId === p.id && (t.assigneeId === u.id || t.assigneeId === 'team_all'))
+      );
+    }
+
+    // Filtra as tarefas visíveis para o usuário logado
+    function getVisibleTasksForCurrentUser() {
+      const u = getCurrentUserObj();
+      if (!u) return [];
+      if (u.accessLevel === 'admin' || u.accessLevel === 'viewer') return state.tasks;
+
+      if (u.accessLevel === 'project_guest') {
+        const allowed = new Set(parseAllowedProjects(u.allowedProjects));
+        return state.tasks.filter(t => t.projectId && allowed.has(t.projectId));
+      }
+
+      const visibleProjIds = new Set(getVisibleProjectsForCurrentUser().map(p => p.id));
+
+      if (u.accessLevel === 'manager') {
+        // Gestor vê TUDO dos seus liderados, tudo da sua área, tarefas dos seus projetos e tarefas que ele delegou para outros times
+        const subs = getSubordinateIds(u.id);
+        return state.tasks.filter(t =>
+          t.assigneeId === u.id ||
+          subs.has(t.assigneeId) ||
+          t.createdBy === u.id ||
+          t.area === u.area ||
+          t.assigneeId === 'team_all' ||
+          (t.projectId && visibleProjIds.has(t.projectId))
+        );
+      }
+
+      // member (Liderado): vê tarefas da sua área, tarefas atribuídas a ele (inclusive delegadas por gestores de outras áreas), equipe ou dos seus projetos
+      return state.tasks.filter(t =>
+        t.assigneeId === u.id ||
+        t.createdBy === u.id ||
+        t.assigneeId === 'team_all' ||
+        t.area === u.area ||
+        (t.projectId && visibleProjIds.has(t.projectId))
+      );
+    }
+
+    // Filtra os documentos visíveis para o usuário logado
+    function getVisibleDocsForCurrentUser() {
+      const u = getCurrentUserObj();
+      if (!u) return [];
+      if (u.accessLevel === 'admin' || u.accessLevel === 'viewer') return state.docs;
+      const visibleProjIds = new Set(getVisibleProjectsForCurrentUser().map(p => p.id));
+      if (u.accessLevel === 'project_guest') {
+        return state.docs.filter(d => d.projectId && visibleProjIds.has(d.projectId));
+      }
+      return state.docs.filter(d => !d.projectId || visibleProjIds.has(d.projectId) || d.authorId === u.id);
     }
 
     function guardEditorAction() {
       if (!canEdit()) {
-        showToast('Seu perfil é Visualizador (somente leitura).');
+        showToast('Seu perfil tem acesso somente leitura.');
         return false;
       }
       return true;
@@ -2294,6 +2750,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
             };
             localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
             applySessionPermissions();
+            applyUrlQueryFilters();
             return;
           }
         }
@@ -2302,12 +2759,25 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       openLoginGate();
     }
 
+    function applyUrlQueryFilters() {
+      const params = new URLSearchParams(window.location.search);
+      const projParam = params.get('projeto');
+      if (projParam && state.projects.some(p => p.id === projParam)) {
+        const f1 = document.getElementById('filter-project');
+        const f2 = document.getElementById('cascade-project-filter');
+        const f3 = document.getElementById('wiki-project-filter');
+        if (f1) f1.value = projParam;
+        if (f2) f2.value = projParam;
+        if (f3) f3.value = projParam;
+      }
+    }
+
     function openLoginGate() {
       const sel = document.getElementById('login-user-select');
       const params = new URLSearchParams(window.location.search);
       const preUid = params.get('uid');
       sel.innerHTML = state.team.map(m =>
-        `<option value="${m.id}" ${preUid === m.id ? 'selected' : ''}>${m.name} (${m.email || getRoleLabel(m.accessLevel)}) — ${getRoleLabel(m.accessLevel)}</option>`
+        `<option value="${m.id}" ${preUid === m.id ? 'selected' : ''}>${m.name} — ${getRoleLabel(m.accessLevel)}${m.area ? ' (' + m.area + ')' : ''}</option>`
       ).join('');
       document.getElementById('login-password-input').value = '';
       const hasDefaultPwd = state.team.some(m => m.accessPin === 'vulp2026');
@@ -2336,48 +2806,75 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
       document.getElementById('login-gate').classList.remove('is-open');
       applySessionPermissions();
+      populateSelectOptions();
+      applyUrlQueryFilters();
       refreshCurrentView();
-      showToast(`Bem-vinda, ${member.name} (${getRoleLabel(currentSession.mode)}).`);
+      showToast(`Olá, ${member.name} (${getRoleLabel(member.accessLevel)}).`);
     }
 
     function logoutSession() {
       localStorage.removeItem(SESSION_KEY);
       currentSession = null;
-      if (window.history.replaceState) window.history.replaceState(null, '', window.location.pathname);
       openLoginGate();
     }
 
     function applySessionPermissions() {
-      if (!currentSession) return;
-      const mode = currentSession.mode;
-      document.body.classList.remove('role-admin', 'role-member', 'role-viewer');
-      document.body.classList.add('role-' + mode);
+      const u = getCurrentUserObj();
+      if (!u) return;
 
-      document.getElementById('session-avatar').textContent = getInitials(currentSession.name);
-      document.getElementById('session-user-name').textContent = currentSession.name;
-      document.getElementById('session-user-role').textContent = currentSession.role || '';
+      document.body.classList.toggle('is-readonly', isViewer());
+      document.body.classList.toggle('not-admin', !isAdmin());
+      document.body.classList.toggle('is-project-guest', isProjectGuest());
+
+      document.getElementById('session-avatar').textContent = getInitials(u.name);
+      document.getElementById('session-user-name').textContent = u.name;
+      document.getElementById('session-user-role').textContent = `${getRoleLabel(u.accessLevel)} • ${u.area || ''}`;
 
       const badge = document.getElementById('session-role-badge');
-      if (mode === 'admin') {
-        badge.textContent = 'ADMIN MASTER';
-        badge.className = 'tag tag--lime-pill';
-      } else if (mode === 'viewer') {
-        badge.textContent = 'VISUALIZADOR';
-        badge.className = 'tag tag--muted';
+      badge.textContent = getRoleLabel(u.accessLevel).toUpperCase();
+      badge.className = (u.accessLevel === 'admin' || u.accessLevel === 'manager') ? 'tag tag--lime-pill' : (isViewer() ? 'tag tag--muted' : 'tag tag--teal');
+
+      const banner = document.getElementById('context-alert');
+      const bannerText = document.getElementById('context-alert-text');
+      const bannerBadge = document.getElementById('context-alert-badge');
+
+      if (u.accessLevel === 'project_guest') {
+        const projs = getVisibleProjectsForCurrentUser();
+        const names = projs.length ? projs.map(p => `${p.code} (${p.name})`).join(', ') : 'Nenhum projeto vinculado';
+        banner.style.display = 'flex';
+        bannerText.innerHTML = `<strong>Acesso Compartilhado por Projeto:</strong> Visualizando apenas <strong>${names}</strong>.`;
+        bannerBadge.textContent = u.guestCanEdit ? 'EDIÇÃO NO PROJETO' : 'SOMENTE LEITURA';
+      } else if (u.accessLevel === 'viewer') {
+        banner.style.display = 'flex';
+        bannerText.innerHTML = `<strong>Modo Visualizador:</strong> Acompanhamento em tempo real (somente leitura).`;
+        bannerBadge.textContent = 'SOMENTE LEITURA';
+      } else if (u.accessLevel === 'manager') {
+        const subsCount = getSubordinateIds(u.id).size;
+        banner.style.display = 'flex';
+        bannerText.innerHTML = `<strong>Visão de Gestor (${u.area}):</strong> Acompanhando sua área, ${subsCount} liderado(s) e demandas delegadas.`;
+        bannerBadge.textContent = 'GESTOR DE ÁREA';
       } else {
-        badge.textContent = 'PADRÃO';
-        badge.className = 'tag tag--teal';
+        banner.style.display = 'none';
       }
 
-      document.getElementById('viewer-alert').style.display = (mode === 'viewer') ? 'flex' : 'none';
       if (!isAdmin() && currentView === 'supabase') switchView('tasks');
+      if (isProjectGuest() && currentView === 'team') switchView('tasks');
     }
 
     function openShareAccessModal() {
       if (!guardAdminAction()) return;
       const baseUrl = window.location.origin + window.location.pathname;
       document.getElementById('share-link-app').value = baseUrl;
+      const sel = document.getElementById('share-project-select');
+      sel.innerHTML = state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
+      updateProjectShareLink();
       document.getElementById('share-modal').classList.add('is-open');
+    }
+
+    function updateProjectShareLink() {
+      const baseUrl = window.location.origin + window.location.pathname;
+      const pid = document.getElementById('share-project-select').value;
+      document.getElementById('share-link-project').value = pid ? `${baseUrl}?projeto=${pid}` : baseUrl;
     }
 
     function copyShareLink(inputId) {
@@ -2386,7 +2883,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       INTEGRAÇÃO SUPABASE
+       INTEGRAÇÃO SUPABASE (COM FALLBACK AUTOMÁTICO DE COLUNAS)
        ========================================================================== */
     function updateDbStatusUI(status, detail) {
       const dot = document.getElementById('db-pulse-dot');
@@ -2405,7 +2902,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         if (diag) {
           diag.style.display = 'block';
           diag.innerHTML = `<strong>Detalhe técnico:</strong> ${detail || 'Falha ao conectar'}<br/>` +
-            '<strong>Como resolver:</strong> Copie o <em>Script SQL v4</em> abaixo, cole no <strong>SQL Editor</strong> do seu Supabase, clique em <strong>Run</strong> e depois clique em <strong>Reconectar</strong>.';
+            '<strong>Como resolver:</strong> Copie o <em>Script SQL v5</em> abaixo, cole no <strong>SQL Editor</strong> do seu Supabase, clique em <strong>Run</strong> e depois clique em <strong>Reconectar</strong>.';
         }
       } else {
         dot.className = 'dot-indicator dot-indicator--local';
@@ -2439,14 +2936,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (!sbConnected || !sbClient) return;
       try {
         const rafa = state.team.find(m => m.id === 'u_rafaela') || RAFAELA_ADMIN_USER;
-        await sbClient.from('vulp_team').upsert({
-          id: 'u_rafaela',
-          name: rafa.name,
-          email: rafa.email,
-          role: rafa.role,
-          access_level: 'admin',
-          access_pin: rafa.accessPin || 'vulp2026'
-        });
+        await safeDbUpsert('vulp_team', toDbTeamMember(rafa));
         for (const fid of FICTITIOUS_USER_IDS) {
           await sbClient.from('vulp_team').delete().eq('id', fid);
         }
@@ -2503,10 +2993,21 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (catRows && catRows.length) {
         state.categories = catRows.map(c => c.name);
       }
-      state.team = teamRows.map(r => ({
-        id: r.id, name: r.name, email: r.email || '', role: r.role,
-        accessLevel: r.access_level || 'member', accessPin: (r.access_pin && r.access_pin.trim()) ? r.access_pin : 'vulp2026'
-      }));
+      state.team = teamRows.map(r => {
+        const localExisting = state.team.find(x => x.id === r.id);
+        return {
+          id: r.id,
+          name: r.name,
+          email: r.email || '',
+          role: r.role,
+          area: r.area || localExisting?.area || 'Operações e PMOC',
+          managerId: r.manager_id !== undefined ? (r.manager_id || '') : (localExisting?.managerId || ''),
+          accessLevel: r.access_level || 'member',
+          allowedProjects: r.allowed_projects !== undefined ? parseAllowedProjects(r.allowed_projects) : (localExisting?.allowedProjects || []),
+          guestCanEdit: r.guest_can_edit !== undefined ? Boolean(r.guest_can_edit) : (localExisting?.guestCanEdit !== undefined ? localExisting.guestCanEdit : true),
+          accessPin: (r.access_pin && r.access_pin.trim()) ? r.access_pin : 'vulp2026'
+        };
+      });
       state.projects = projRows.map(r => ({
         id: r.id, code: r.code || '', name: r.name, ownerId: r.owner_id, category: r.category,
         status: r.status, color: r.color || '#07384D', deadline: r.deadline || '', description: r.description || ''
@@ -2515,12 +3016,26 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         id: r.id, code: r.code || '', projectId: r.project_id, title: r.title, ownerId: r.owner_id,
         status: r.status, color: r.color || '#5ADCE8', deadline: r.deadline || '', description: r.description || ''
       }));
-      state.tasks = taskRows.map(r => ({
-        id: r.id, code: r.code || '', title: r.title, projectId: r.project_id || '', epicId: r.epic_id || '',
-        assigneeId: r.assignee_id || '', priority: r.priority, status: r.status,
-        color: r.color || '#07384D', due: r.due || '', recurrence: r.recurrence || 'none',
-        cycleCount: r.cycle_count || 1, description: r.description || ''
-      }));
+      state.tasks = taskRows.map(r => {
+        const localT = state.tasks.find(x => x.id === r.id);
+        return {
+          id: r.id,
+          code: r.code || '',
+          title: r.title,
+          projectId: r.project_id || '',
+          epicId: r.epic_id || '',
+          assigneeId: r.assignee_id || '',
+          createdBy: r.created_by || localT?.createdBy || r.assignee_id || 'u_rafaela',
+          area: r.area || localT?.area || '',
+          priority: r.priority,
+          status: r.status,
+          color: r.color || '#07384D',
+          due: r.due || '',
+          recurrence: r.recurrence || 'none',
+          cycleCount: r.cycle_count || 1,
+          description: r.description || ''
+        };
+      });
       state.docs = docRows.map(r => ({
         id: r.id, projectId: r.project_id || '', title: r.title, content: r.content || '',
         authorId: r.author_id || '', updatedAt: r.updated_at || ''
@@ -2532,13 +3047,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         openLoginGate();
       }
       if (currentSession) {
-        const refreshedUser = state.team.find(m => m.id === currentSession.userId);
-        if (refreshedUser) {
-          currentSession.mode = refreshedUser.accessLevel;
-          currentSession.name = refreshedUser.name;
-          currentSession.role = refreshedUser.role;
-          applySessionPermissions();
-        }
+        applySessionPermissions();
       }
       populateSelectOptions();
       refreshCurrentView();
@@ -2566,7 +3075,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (!sbClient) return;
       if (sbRealtimeChannel) sbClient.removeChannel(sbRealtimeChannel);
       sbRealtimeChannel = sbClient
-        .channel('vulp-flow-realtime-v8')
+        .channel('vulp-flow-realtime-v9')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_team' }, () => refreshFromSupabaseSilent())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_categories' }, () => refreshFromSupabaseSilent())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_projects' }, () => refreshFromSupabaseSilent())
@@ -2576,26 +3085,31 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         .subscribe();
     }
 
+    // Upsert resiliente: se alguma coluna nova (ex: area, manager_id, allowed_projects, code) ainda não existir no DB antes do SQL v5, remove automaticamente a coluna ausente e grava sem erro
     async function safeDbUpsert(table, row) {
       saveLocalCache();
       if (!sbConnected || !sbClient) return { ok: true, localOnly: true };
       let payload = { ...row };
-      let res = await sbClient.from(table).upsert(payload);
-      if (res.error && res.error.message && res.error.message.includes('code')) {
-        delete payload.code;
-        res = await sbClient.from(table).upsert(payload);
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const res = await sbClient.from(table).upsert(payload);
+        if (!res.error) return { ok: true };
+        const msg = res.error.message || '';
+        const colMatch = msg.match(/Could not find the '([^']+)' column/);
+        if (colMatch && colMatch[1] in payload) {
+          delete payload[colMatch[1]];
+          continue;
+        }
+        if (msg.includes('foreign key') || msg.includes('fkey')) {
+          if ('project_id' in payload) payload.project_id = null;
+          if ('epic_id' in payload) payload.epic_id = null;
+          if ('author_id' in payload) payload.author_id = null;
+          if ('assignee_id' in payload) payload.assignee_id = null;
+          continue;
+        }
+        console.warn('Supabase upsert warning on', table, msg);
+        return { ok: false, error: msg };
       }
-      if (res.error && res.error.message && (res.error.message.includes('foreign key') || res.error.message.includes('fkey'))) {
-        if ('project_id' in payload) payload.project_id = null;
-        if ('author_id' in payload) payload.author_id = null;
-        if ('assignee_id' in payload) payload.assignee_id = null;
-        res = await sbClient.from(table).upsert(payload);
-      }
-      if (res.error) {
-        console.warn('Supabase upsert warning on', table, res.error.message);
-        return { ok: false, error: res.error.message };
-      }
-      return { ok: true };
+      return { ok: false };
     }
 
     async function safeDbDelete(table, id) {
@@ -2606,12 +3120,27 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       return { ok: true };
     }
 
+    function toDbTeamMember(m) {
+      return {
+        id: m.id,
+        name: m.name,
+        email: m.email || '',
+        role: m.role,
+        area: m.area || 'Operações e PMOC',
+        manager_id: m.managerId || null,
+        access_level: m.accessLevel || 'member',
+        allowed_projects: JSON.stringify(parseAllowedProjects(m.allowedProjects)),
+        guest_can_edit: m.guestCanEdit !== undefined ? Boolean(m.guestCanEdit) : true,
+        access_pin: m.accessPin || 'vulp2026'
+      };
+    }
+
     async function pushLocalDataToSupabase(silent = false) {
       if (!sbConnected || !sbClient) return;
       try {
         await syncRafaelaAndPurgeFictitiousInDb();
         for (const m of state.team) {
-          await safeDbUpsert('vulp_team', { id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel || 'member', access_pin: m.accessPin || 'vulp2026' });
+          await safeDbUpsert('vulp_team', toDbTeamMember(m));
         }
         for (let i = 0; i < state.categories.length; i++) {
           await sbClient.from('vulp_categories').upsert({ id: 'cat_' + i, name: state.categories[i] });
@@ -2636,7 +3165,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
     function copySupabaseSQL() {
       navigator.clipboard.writeText(SUPABASE_SCHEMA_SQL);
-      showToast('SQL v4 copiado.');
+      showToast('SQL v5 copiado.');
     }
 
     /* ==========================================================================
@@ -2651,8 +3180,8 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     function getMember(id) {
-      if (id === 'team_all') return { id: 'team_all', name: 'Juntos (Equipe)', role: 'Colaborativo', accessLevel: 'member' };
-      return state.team.find(m => m.id === id) || { name: 'Rafaela Bacelar', role: 'Admin Master', accessLevel: 'admin' };
+      if (id === 'team_all') return { id: 'team_all', name: 'Juntos (Equipe)', role: 'Colaborativo', area: 'Geral', accessLevel: 'member' };
+      return state.team.find(m => m.id === id) || { name: 'Rafaela Bacelar', role: 'Admin Master', area: 'Operações e PMOC', accessLevel: 'admin' };
     }
     function getInitials(name) {
       if (name === 'Juntos (Equipe)') return 'EQ';
@@ -2676,17 +3205,27 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     function updateCounters() {
-      const activeTasks = state.tasks.filter(t => t.status !== 'done').length;
+      const visTasks = getVisibleTasksForCurrentUser();
+      const visProjects = getVisibleProjectsForCurrentUser();
+      const visDocs = getVisibleDocsForCurrentUser();
+      const visProjIds = new Set(visProjects.map(p => p.id));
+      const visEpicsCount = state.epics.filter(e => visProjIds.has(e.projectId)).length;
+      const activeTasks = visTasks.filter(t => t.status !== 'done').length;
+
       document.getElementById('badge-tasks').textContent = activeTasks;
-      document.getElementById('badge-projects').textContent = state.projects.length;
-      document.getElementById('badge-docs').textContent = state.docs.length;
+      document.getElementById('badge-projects').textContent = visProjects.length;
+      document.getElementById('badge-docs').textContent = visDocs.length;
       document.getElementById('badge-team').textContent = state.team.length;
-      document.getElementById('topbar-metrics').textContent = `${activeTasks} tarefas ativas • ${state.epics.length} épicos • ${state.projects.length} projetos`;
+      document.getElementById('topbar-metrics').textContent = `${activeTasks} tarefas ativas • ${visEpicsCount} épicos • ${visProjects.length} projetos`;
     }
 
     function switchView(view) {
       if (view === 'supabase' && !isAdmin()) {
         showToast('Acesso restrito ao Admin Master.');
+        return;
+      }
+      if (view === 'team' && isProjectGuest()) {
+        showToast('Acesso restrito aos projetos compartilhados.');
         return;
       }
       currentView = view;
@@ -2699,8 +3238,8 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const titles = {
         tasks: 'Tarefas',
         projects: 'Projetos',
-        docs: 'Documentação',
-        team: 'Equipe e Acessos',
+        docs: 'Documentos',
+        team: 'Equipe e Estrutura',
         supabase: 'Banco Supabase'
       };
       document.getElementById('topbar-title').textContent = titles[view];
@@ -2709,6 +3248,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     function refreshCurrentView() {
+      updateCounters();
       if (currentView === 'tasks') renderTasks();
       if (currentView === 'projects') renderCascadeView();
       if (currentView === 'docs') renderGlobalWiki();
@@ -2716,14 +3256,23 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     function populateSelectOptions() {
+      const visProjects = getVisibleProjectsForCurrentUser();
       const projFilter = document.getElementById('filter-project');
       const curProj = projFilter.value;
-      projFilter.innerHTML = '<option value="ALL">Projeto: Todos</option>' +
-        state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
+      projFilter.innerHTML = '<option value="ALL">Projeto / Rotina: Todos</option>' +
+        (!isProjectGuest() ? '<option value="NONE">Sem projeto (Rotina / Operacional)</option>' : '') +
+        visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
       projFilter.value = curProj || 'ALL';
       projFilter.classList.toggle('is-filtered', projFilter.value !== 'ALL');
 
       updateTaskEpicFilterOptions();
+
+      const areaFilter = document.getElementById('filter-area');
+      const curArea = areaFilter.value;
+      areaFilter.innerHTML = '<option value="ALL">Área: Todas</option>' +
+        state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      areaFilter.value = curArea || 'ALL';
+      areaFilter.classList.toggle('is-filtered', areaFilter.value !== 'ALL');
 
       const assFilter = document.getElementById('filter-assignee');
       const curAss = assFilter.value;
@@ -2736,10 +3285,33 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         const el = document.getElementById(id);
         if (!el) return;
         const prev = el.value;
-        el.innerHTML = '<option value="ALL">Todos os projetos</option>' +
-          state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
+        el.innerHTML = '<option value="ALL">Todos os projetos visíveis</option>' +
+          visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
         el.value = prev || 'ALL';
       });
+
+      // Popular selects do formulário de cadastro de usuário na aba Equipe
+      const newAreaSel = document.getElementById('new-member-area');
+      if (newAreaSel) {
+        const prevA = newAreaSel.value;
+        newAreaSel.innerHTML = state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        if (prevA && state.categories.includes(prevA)) newAreaSel.value = prevA;
+      }
+      const newMgrSel = document.getElementById('new-member-manager');
+      if (newMgrSel) {
+        const managers = state.team.filter(m => m.accessLevel === 'admin' || m.accessLevel === 'manager');
+        newMgrSel.innerHTML = '<option value="">Sem gestor (reporta à diretoria)</option>' +
+          managers.map(m => `<option value="${m.id}">${m.name} (${m.area})</option>`).join('');
+      }
+      const newProjList = document.getElementById('new-member-projects-list');
+      if (newProjList) {
+        newProjList.innerHTML = state.projects.map(p => `
+          <label class="project-check-item">
+            <input type="checkbox" class="new-member-proj-cb" value="${p.id}" />
+            <span><strong>${p.code}</strong> • ${p.name}</span>
+          </label>
+        `).join('');
+      }
     }
 
     function onFilterProjectChange() {
@@ -2752,7 +3324,11 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const projVal = document.getElementById('filter-project').value;
       const epicFilter = document.getElementById('filter-epic');
       const prevEpic = epicFilter.value;
-      const visibleEpics = projVal === 'ALL' ? state.epics : state.epics.filter(e => e.projectId === projVal);
+      const visProjIds = new Set(getVisibleProjectsForCurrentUser().map(p => p.id));
+      let visibleEpics = state.epics.filter(e => visProjIds.has(e.projectId));
+      if (projVal === 'NONE') visibleEpics = [];
+      else if (projVal !== 'ALL') visibleEpics = visibleEpics.filter(e => e.projectId === projVal);
+
       epicFilter.innerHTML = '<option value="ALL">Épico: Todos</option>' +
         visibleEpics.map(e => `<option value="${e.id}">${e.code} • ${e.title}</option>`).join('');
       epicFilter.value = visibleEpics.some(e => e.id === prevEpic) ? prevEpic : 'ALL';
@@ -2760,32 +3336,46 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       LÓGICA DE RECORRÊNCIA (PONTUAL NUM DIA SÓ vs RECORRENTE SEM FIM / COM DATA)
+       LÓGICA DE RECORRÊNCIA (DIÁRIA, SEMANAL, QUINZENAL, MENSAL, TRIMESTRAL)
        Formato salvo no campo `recurrence`:
        - 'none' -> Tarefa pontual (num dia só)
-       - 'period||1,2,3' -> Tarefa recorrente SEM FIM nos dias marcados
-       - 'period|YYYY-MM-DD|1,2,3' -> Tarefa recorrente ATÉ uma data final
+       - 'period|<freq>|<endIso>|<daysCsv>'
        ========================================================================== */
     function parseRecurrenceSpec(recStr, startDateStr) {
+      const fallbackDay = startDateStr ? new Date(startDateStr + 'T12:00:00').getDay() : 1;
       if (!recStr || recStr === 'none') {
-        return { mode: 'single', endMode: 'infinite', start: startDateStr || '', end: '', days: [1, 2, 3, 4, 5, 6, 0] };
+        return { mode: 'single', freq: 'weekly', endMode: 'infinite', start: startDateStr || '', end: '', days: [fallbackDay] };
       }
       if (recStr.startsWith('period|')) {
         const parts = recStr.split('|');
+        // Novo formato de 4 partes: period|freq|end|days
+        if (parts.length >= 4) {
+          const freq = FREQ_LABELS[parts[1]] ? parts[1] : 'weekly';
+          const end = parts[2] || '';
+          const days = (parts[3] || '').split(',').filter(x => x !== '').map(Number);
+          return {
+            mode: 'period',
+            freq,
+            endMode: end ? 'date' : 'infinite',
+            start: startDateStr || '',
+            end,
+            days: days.length ? days : [fallbackDay]
+          };
+        }
+        // Formato legado de 3 partes: period|end|days
         const end = parts[1] || '';
         const days = (parts[2] || '').split(',').filter(x => x !== '').map(Number);
         return {
           mode: 'period',
+          freq: 'weekly',
           endMode: end ? 'date' : 'infinite',
           start: startDateStr || '',
           end,
-          days: days.length ? days : [1, 2, 3, 4, 5, 6, 0]
+          days: days.length ? days : [fallbackDay]
         };
       }
-      const legacyDays = recStr === 'daily'
-        ? [1, 2, 3, 4, 5, 6, 0]
-        : [new Date((startDateStr || new Date().toISOString().split('T')[0]) + 'T12:00:00').getDay()];
-      return { mode: 'period', endMode: 'infinite', start: startDateStr || '', end: '', days: legacyDays };
+      const legacyFreq = FREQ_LABELS[recStr] ? recStr : 'weekly';
+      return { mode: 'period', freq: legacyFreq, endMode: 'infinite', start: startDateStr || '', end: '', days: [fallbackDay] };
     }
 
     function formatShortDateBR(isoDate) {
@@ -2796,17 +3386,47 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       return `${wd} ${day}/${m}`;
     }
 
-    function computeMatchingDates(startIso, endIso, daysArray) {
-      if (!startIso || !endIso || !daysArray.length) return [];
+    function addMonthsKeepingDay(dateObj, monthsToAdd, targetDayOfMonth) {
+      const y = dateObj.getFullYear();
+      const m = dateObj.getMonth() + monthsToAdd;
+      const lastDayInTargetMonth = new Date(y, m + 1, 0).getDate();
+      const clampedDay = Math.min(targetDayOfMonth, lastDayInTargetMonth);
+      return new Date(y, m, clampedDay, 12, 0, 0);
+    }
+
+    function computeMatchingDates(startIso, endIso, freq, daysArray) {
+      if (!startIso || !endIso) return [];
       const start = new Date(startIso + 'T12:00:00');
       const end = new Date(endIso + 'T12:00:00');
       if (end < start) return [];
+
       const matches = [];
+      if (freq === 'monthly' || freq === 'quarterly') {
+        const step = freq === 'quarterly' ? 3 : 1;
+        const targetDay = start.getDate();
+        let idx = 0;
+        while (idx < 120) {
+          const cur = addMonthsKeepingDay(start, idx * step, targetDay);
+          if (cur > end) break;
+          matches.push(cur.toISOString().split('T')[0]);
+          idx++;
+        }
+        return matches;
+      }
+
+      if (!daysArray || !daysArray.length) return [];
       const cursor = new Date(start);
       let safety = 0;
+      const startMondayEpoch = getMondayIndex(start);
+
       while (cursor <= end && safety < 730) {
         if (daysArray.includes(cursor.getDay())) {
-          matches.push(cursor.toISOString().split('T')[0]);
+          if (freq === 'biweekly') {
+            const weekDiff = Math.floor((getMondayIndex(cursor) - startMondayEpoch) / 7);
+            if (weekDiff % 2 === 0) matches.push(cursor.toISOString().split('T')[0]);
+          } else {
+            matches.push(cursor.toISOString().split('T')[0]);
+          }
         }
         cursor.setDate(cursor.getDate() + 1);
         safety++;
@@ -2814,15 +3434,37 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       return matches;
     }
 
-    function findNextOccurrenceDate(afterIso, endIso, daysArray) {
-      if (!daysArray || !daysArray.length) return null;
+    function getMondayIndex(dateObj) {
+      const d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12, 0, 0);
+      const day = d.getDay();
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diffToMonday);
+      return Math.floor(d.getTime() / 86400000);
+    }
+
+    function findNextOccurrenceDate(afterIso, endIso, freq, daysArray) {
       const base = afterIso ? new Date(afterIso + 'T12:00:00') : new Date();
       const limit = endIso ? new Date(endIso + 'T12:00:00') : null;
+
+      if (freq === 'monthly' || freq === 'quarterly') {
+        const step = freq === 'quarterly' ? 3 : 1;
+        const nextDate = addMonthsKeepingDay(base, step, base.getDate());
+        if (limit && nextDate > limit) return null;
+        return nextDate.toISOString().split('T')[0];
+      }
+
+      if (!daysArray || !daysArray.length) return null;
+      const startMondayEpoch = getMondayIndex(base);
       const cursor = new Date(base);
+
       for (let i = 1; i <= 366; i++) {
         cursor.setDate(cursor.getDate() + 1);
         if (limit && cursor > limit) return null;
         if (daysArray.includes(cursor.getDay())) {
+          if (freq === 'biweekly') {
+            const weekDiff = Math.floor((getMondayIndex(cursor) - startMondayEpoch) / 7);
+            if (weekDiff % 2 !== 0) continue;
+          }
           return cursor.toISOString().split('T')[0];
         }
       }
@@ -2833,20 +3475,24 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const sorted = [...daysArray].sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b));
       if (sorted.length === 7) return 'Todos os dias';
       if (sorted.length === 5 && !sorted.includes(0) && !sorted.includes(6)) return 'Dias úteis';
-      if (sorted.length === 1) return `Toda ${WEEKDAY_NAMES_SHORT[sorted[0]]}`;
+      if (sorted.length === 1) return WEEKDAY_NAMES_SHORT[sorted[0]];
       return sorted.map(d => WEEKDAY_NAMES_SHORT[d]).join(', ');
     }
 
     function formatRecurrenceBadge(t) {
       const spec = parseRecurrenceSpec(t.recurrence, t.due);
       if (spec.mode === 'single') return '';
-      const daysLabel = formatDaysShortLabel(spec.days);
+      const freqText = FREQ_LABELS[spec.freq] || 'Semanal';
+      const detail = (spec.freq === 'monthly' || spec.freq === 'quarterly')
+        ? (t.due ? `dia ${t.due.split('-')[2]}` : '')
+        : formatDaysShortLabel(spec.days);
+
       if (spec.end && t.due) {
-        const count = computeMatchingDates(t.due, spec.end, spec.days).length;
+        const count = computeMatchingDates(t.due, spec.end, spec.freq, spec.days).length;
         const [, m, d] = spec.end.split('-');
-        return `${daysLabel} • ${count}x (até ${d}/${m})`;
+        return `${freqText}${detail ? ' (' + detail + ')' : ''} • ${count}x até ${d}/${m}`;
       }
-      return `${daysLabel} • Sem fim`;
+      return `${freqText}${detail ? ' (' + detail + ')' : ''} • Sem fim`;
     }
 
     /* ==========================================================================
@@ -2863,23 +3509,28 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const q = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
       const proj = document.getElementById('filter-project')?.value || 'ALL';
       const epic = document.getElementById('filter-epic')?.value || 'ALL';
+      const area = document.getElementById('filter-area')?.value || 'ALL';
       const ass = document.getElementById('filter-assignee')?.value || 'ALL';
       const rec = document.getElementById('filter-recurrence')?.value || 'ALL';
 
       document.getElementById('filter-epic')?.classList.toggle('is-filtered', epic !== 'ALL');
+      document.getElementById('filter-area')?.classList.toggle('is-filtered', area !== 'ALL');
       document.getElementById('filter-assignee')?.classList.toggle('is-filtered', ass !== 'ALL');
       document.getElementById('filter-recurrence')?.classList.toggle('is-filtered', rec !== 'ALL');
 
-      return state.tasks.filter(t => {
-        if (proj !== 'ALL' && t.projectId !== proj) return false;
+      return getVisibleTasksForCurrentUser().filter(t => {
+        if (proj === 'NONE' && t.projectId) return false;
+        if (proj !== 'ALL' && proj !== 'NONE' && t.projectId !== proj) return false;
         if (epic !== 'ALL' && t.epicId !== epic) return false;
+        const taskArea = t.area || getProject(t.projectId)?.category || '';
+        if (area !== 'ALL' && taskArea !== area) return false;
         if (ass !== 'ALL' && t.assigneeId !== ass) return false;
         const spec = parseRecurrenceSpec(t.recurrence, t.due);
         if (rec === 'RECURRING' && spec.mode !== 'period') return false;
         if (rec === 'INFINITE' && (spec.mode !== 'period' || Boolean(spec.end))) return false;
         if (rec === 'ONCE' && spec.mode !== 'single') return false;
         if (q) {
-          const hay = `${t.code || ''} ${t.title} ${t.description || ''}`.toLowerCase();
+          const hay = `${t.code || ''} ${t.title} ${t.description || ''} ${taskArea}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
         return true;
@@ -2934,7 +3585,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                  draggable="${editable}"
                  ondragstart="if(canEdit()) event.dataTransfer.setData('text/plain', '${t.id}')"
                  onclick="openTaskModal('${t.id}')">
-          <!-- Topo: Etiquetas Projeto + Épico e ID T-X -->
+          <!-- Topo: Projeto + Épico OU Rotina / Operacional + ID T-X -->
           <div class="task-card__top">
             <div class="task-card__labels">
               ${proj ? `
@@ -2942,7 +3593,11 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                   <span class="jira-dot" style="background:${proj.color || '#07384D'}"></span>
                   <span>${proj.code} • ${proj.name}</span>
                 </span>
-              ` : ''}
+              ` : `
+                <span class="jira-label jira-label--routine" title="Atividade operacional / rotina sem projeto">
+                  <span>ROTINA${t.area ? ' • ' + t.area : ''}</span>
+                </span>
+              `}
               ${epic ? `
                 <span class="jira-label jira-label--epic" title="${epic.code} • ${epic.title}">
                   <span class="jira-dot" style="background:${epic.color || '#5ADCE8'}"></span>
@@ -2980,8 +3635,8 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
             <thead>
               <tr>
                 <th style="width:72px">ID</th>
-                <th>Tarefa</th>
-                <th>Projeto / Épico</th>
+                <th>Atividade</th>
+                <th>Projeto / Rotina</th>
                 <th>De quem é?</th>
                 <th>Quando</th>
                 <th>Status</th>
@@ -3002,7 +3657,9 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                     </td>
                     <td>
                       <div style="display:flex;gap:5px;flex-wrap:wrap">
-                        ${proj ? `<span class="jira-label jira-label--project"><span class="jira-dot" style="background:${proj.color || '#07384D'}"></span>${proj.code} • ${proj.name}</span>` : ''}
+                        ${proj
+                          ? `<span class="jira-label jira-label--project"><span class="jira-dot" style="background:${proj.color || '#07384D'}"></span>${proj.code} • ${proj.name}</span>`
+                          : `<span class="jira-label jira-label--routine">ROTINA${t.area ? ' • ' + t.area : ''}</span>`}
                         ${epic ? `<span class="jira-label jira-label--epic"><span class="jira-dot" style="background:${epic.color || '#5ADCE8'}"></span>${epic.code} • ${epic.title}</span>` : ''}
                       </div>
                     </td>
@@ -3027,7 +3684,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       ABA 2: PROJETOS (IDs P-1 / E-1 / T-1 + EXCLUIR PROJETO E ÉPICO)
+       ABA 2: PROJETOS (CASCATA POR ESCOPO DE ACESSO)
        ========================================================================== */
     function toggleProjectCollapse(projId) {
       if (collapsedProjects.has(projId)) collapsedProjects.delete(projId);
@@ -3047,7 +3704,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         collapsedProjects.clear();
         collapsedEpics.clear();
       } else {
-        state.projects.forEach(p => collapsedProjects.add(p.id));
+        getVisibleProjectsForCurrentUser().forEach(p => collapsedProjects.add(p.id));
         state.epics.forEach(e => collapsedEpics.add(e.id));
       }
       renderCascadeView();
@@ -3056,13 +3713,14 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     function renderCascadeView() {
       const filterProj = document.getElementById('cascade-project-filter')?.value || 'ALL';
       const q = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
-      const projectsList = filterProj === 'ALL' ? state.projects : state.projects.filter(p => p.id === filterProj);
+      const visibleProjs = getVisibleProjectsForCurrentUser();
+      const projectsList = filterProj === 'ALL' ? visibleProjs : visibleProjs.filter(p => p.id === filterProj);
       const container = document.getElementById('cascade-tree-container');
       const editable = canEdit();
       const admin = isAdmin();
 
       if (!projectsList.length) {
-        container.innerHTML = `<div class="t-cap" style="text-align:center;padding:36px;background:var(--surface-subtle);border-radius:12px">Nenhum projeto cadastrado. Use <strong>+ Projeto</strong> no cabeçalho para criar.</div>`;
+        container.innerHTML = `<div class="t-cap" style="text-align:center;padding:36px;background:var(--surface-subtle);border-radius:12px">Nenhum projeto disponível no seu escopo atual.</div>`;
         return;
       }
 
@@ -3076,7 +3734,6 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
         return `
           <div class="cascade-project ${isProjCollapsed ? 'is-collapsed' : ''}" style="border-left:5px solid ${pColor}">
-            <!-- NÍVEL 1: PROJETO -->
             <div class="cascade-project__header" onclick="toggleProjectCollapse('${proj.id}')">
               <div class="cascade-project__left">
                 <span class="chevron-icon">▼</span>
@@ -3097,7 +3754,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                   <span class="t-micro" style="font-weight:700">${st.pct}% (${st.done}/${st.total})</span>
                 </div>
                 ${editable ? `
-                  <button class="btn btn--xs btn--secondary" onclick="openProjectModal('${proj.id}')">Editar</button>
+                  <button class="btn btn--xs btn--secondary non-guest-only" onclick="openProjectModal('${proj.id}')">Editar</button>
                   <button class="btn btn--xs btn--soft" onclick="openEpicModal(null, '${proj.id}')">+ Épico</button>
                   <button class="btn btn--xs btn--primary" onclick="openTaskModal(null, '${proj.id}')">+ Tarefa</button>
                 ` : ''}
@@ -3109,7 +3766,6 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
               </div>
             </div>
 
-            <!-- CORPO EXPANDIDO DO PROJETO: ÉPICOS + TAREFAS -->
             <div class="cascade-project__body">
               ${pEpics.map(epic => {
                 const eColor = epic.color || '#5ADCE8';
@@ -3119,7 +3775,6 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                 const eTasks = state.tasks.filter(t => t.epicId === epic.id && (!q || `${t.code} ${t.title}`.toLowerCase().includes(q)));
 
                 return `
-                  <!-- NÍVEL 2: ÉPICO -->
                   <div class="cascade-epic ${isEpicCollapsed ? 'is-collapsed' : ''}" style="border-left:4px solid ${eColor}">
                     <div class="cascade-epic__header" onclick="toggleEpicCollapse('${epic.id}', event)">
                       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -3145,7 +3800,6 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                       </div>
                     </div>
 
-                    <!-- NÍVEL 3: TAREFAS DO ÉPICO -->
                     <div class="cascade-epic__body">
                       ${eTasks.length ? eTasks.map(t => renderCascadeTaskLineHTML(t)).join('') :
                         `<div class="t-micro" style="padding:10px 14px 10px 32px">Nenhuma tarefa neste épico.</div>`}
@@ -3203,8 +3857,17 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       POP-UP MODAL DE TAREFA (CRIAR & EDITAR)
+       POP-UP MODAL DE TAREFA (COM PROJETO OU ROTINA SEM PROJETO + FREQUÊNCIAS)
        ========================================================================== */
+    function setTaskScopeMode(scope) {
+      if (isProjectGuest() && scope === 'routine') scope = 'project';
+      currentTaskScope = scope;
+      document.getElementById('btn-scope-project').classList.toggle('is-active', scope === 'project');
+      document.getElementById('btn-scope-routine').classList.toggle('is-active', scope === 'routine');
+      document.getElementById('scope-project-fields').style.display = (scope === 'project') ? 'grid' : 'none';
+      document.getElementById('scope-routine-fields').style.display = (scope === 'routine') ? 'block' : 'none';
+    }
+
     function setTaskRepeatMode(mode) {
       currentRepeatMode = mode;
       document.getElementById('btn-when-single').classList.toggle('is-active', mode === 'single');
@@ -3216,14 +3879,22 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         const singleVal = document.getElementById('task-due-single').value || new Date().toISOString().split('T')[0];
         const startEl = document.getElementById('task-repeat-start');
         if (!startEl.value) startEl.value = singleVal;
+        onRepeatFreqChange();
         setTaskEndMode(currentRepeatEndMode);
       }
     }
 
+    function onRepeatFreqChange() {
+      const freq = document.getElementById('task-repeat-freq').value;
+      const wdBlock = document.getElementById('repeat-weekdays-block');
+      // Para Mensal e Trimestral repete no mesmo dia do mês da data inicial; para Diária/Semanal/Quinzenal mostra dias da semana
+      wdBlock.style.display = (freq === 'monthly' || freq === 'quarterly') ? 'none' : 'flex';
+      updateRecurrencePreview();
+    }
+
     function setTaskEndMode(endMode) {
       currentRepeatEndMode = endMode;
-      document.getElementById('btn-end-infinite').classList.toggle('is-active', endMode === 'infinite');
-      document.getElementById('btn-end-date').classList.toggle('is-active', endMode === 'date');
+      document.getElementById('task-end-mode-select').value = endMode;
       const endField = document.getElementById('repeat-end-field');
       const grid = document.getElementById('repeat-dates-grid');
 
@@ -3234,17 +3905,13 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         const endEl = document.getElementById('task-repeat-end');
         if (!endEl.value || endEl.value < startVal) {
           const d = new Date(startVal + 'T12:00:00');
-          d.setDate(d.getDate() + 7);
+          d.setDate(d.getDate() + 30);
           endEl.value = d.toISOString().split('T')[0];
         }
       } else {
         endField.style.display = 'none';
         grid.style.gridTemplateColumns = '1fr';
       }
-      updateRecurrencePreview();
-    }
-
-    function onRepeatStartDateChange() {
       updateRecurrencePreview();
     }
 
@@ -3283,40 +3950,47 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     function updateRecurrencePreview() {
       const startIso = document.getElementById('task-repeat-start').value;
       const endIso = currentRepeatEndMode === 'date' ? document.getElementById('task-repeat-end').value : '';
+      const freq = document.getElementById('task-repeat-freq').value;
+      const freqName = FREQ_LABELS[freq] || 'Semanal';
       const days = getSelectedWeekdays();
       const box = document.getElementById('recurrence-preview-text');
 
-      if (!days.length) {
-        box.textContent = 'Selecione pelo menos um dia da semana acima.';
-        return;
-      }
       if (!startIso) {
         box.textContent = 'Escolha a data inicial (A partir de).';
         return;
       }
-      const daysLabel = formatDaysShortLabel(days);
-      if (currentRepeatEndMode === 'infinite' || !endIso) {
-        box.textContent = `Tarefa recorrente sem fim (${daysLabel}), começando em ${formatShortDateBR(startIso)}. Ao concluir, a próxima é criada automaticamente.`;
+      if (freq !== 'monthly' && freq !== 'quarterly' && !days.length) {
+        box.textContent = 'Selecione pelo menos um dia da semana acima.';
         return;
       }
-      const matches = computeMatchingDates(startIso, endIso, days);
+
+      const detail = (freq === 'monthly' || freq === 'quarterly')
+        ? `todo dia ${startIso.split('-')[2]}`
+        : formatDaysShortLabel(days);
+
+      if (currentRepeatEndMode === 'infinite' || !endIso) {
+        box.textContent = `Recorrência ${freqName} (${detail}), sem fim, começando em ${formatShortDateBR(startIso)}. Ao concluir, a próxima é criada automaticamente.`;
+        return;
+      }
+
+      const matches = computeMatchingDates(startIso, endIso, freq, days);
       if (!matches.length) {
-        box.textContent = 'Nenhum dia selecionado cai entre as datas escolhidas.';
+        box.textContent = 'Nenhuma ocorrência cai entre as datas escolhidas.';
         return;
       }
       const firstStr = formatShortDateBR(matches[0]);
       const lastStr = formatShortDateBR(matches[matches.length - 1]);
       if (matches.length === 1) {
-        box.textContent = `Vai aparecer 1 vez, em ${firstStr}. Depois disso some sozinha.`;
+        box.textContent = `Vai aparecer 1 vez (${freqName}), em ${firstStr}. Depois disso some sozinha.`;
       } else {
-        box.textContent = `Vai aparecer ${matches.length} vezes, de ${firstStr} a ${lastStr}. Depois disso some sozinha.`;
+        box.textContent = `Vai aparecer ${matches.length} vezes (${freqName}), de ${firstStr} a ${lastStr}. Depois disso some sozinha.`;
       }
     }
 
     function onTaskProjectChange(preselectedEpicId = null) {
       const projId = document.getElementById('task-project').value;
       const epicSel = document.getElementById('task-epic');
-      const availableEpics = projId ? state.epics.filter(e => e.projectId === projId) : state.epics;
+      const availableEpics = projId ? state.epics.filter(e => e.projectId === projId) : [];
 
       epicSel.innerHTML = '<option value="">Sem épico</option>' +
         availableEpics.map(e => `<option value="${e.id}">${e.code} • ${e.title}</option>`).join('');
@@ -3331,14 +4005,25 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     function openTaskModal(taskId = null, preselectedProjectId = null, preselectedEpicId = null) {
       if (!taskId && !guardEditorAction()) return;
 
+      const visProjects = getVisibleProjectsForCurrentUser();
       const projSel = document.getElementById('task-project');
+      const areaSel = document.getElementById('task-routine-area');
       const assSel = document.getElementById('task-assignee');
-      const teamMembers = state.team.filter(m => m.accessLevel !== 'viewer');
+      const u = getCurrentUserObj();
 
-      projSel.innerHTML = '<option value="">Sem projeto</option>' +
-        state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
+      projSel.innerHTML = visProjects.length
+        ? visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('')
+        : '<option value="">Nenhum projeto disponível</option>';
+
+      areaSel.innerHTML = state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      // Lista de responsáveis: permite que gestores/admin deleguem para qualquer membro da empresa (cross-team!)
+      const assignableUsers = isProjectGuest()
+        ? state.team.filter(m => m.accessLevel !== 'viewer' && (m.accessLevel !== 'project_guest' || parseAllowedProjects(m.allowedProjects).some(pid => visProjects.some(vp => vp.id === pid))))
+        : state.team.filter(m => m.accessLevel !== 'viewer' && m.accessLevel !== 'project_guest');
+
       assSel.innerHTML = '<option value="team_all">Juntos (Toda a equipe)</option>' +
-        (teamMembers.length ? teamMembers : state.team).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        assignableUsers.map(m => `<option value="${m.id}">${m.name} — ${m.area || getRoleLabel(m.accessLevel)}</option>`).join('');
 
       const todayIso = new Date().toISOString().split('T')[0];
 
@@ -3349,8 +4034,16 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('task-modal-heading').textContent = isViewer() ? 'Detalhes da tarefa' : 'Editar tarefa';
         document.getElementById('task-modal-id').value = t.id;
         document.getElementById('task-title').value = t.title;
-        projSel.value = t.projectId || '';
-        onTaskProjectChange(t.epicId || '');
+
+        if (t.projectId) {
+          setTaskScopeMode('project');
+          projSel.value = t.projectId;
+          onTaskProjectChange(t.epicId || '');
+        } else {
+          setTaskScopeMode('routine');
+          areaSel.value = t.area || state.categories[0];
+        }
+
         assSel.value = t.assigneeId || 'u_rafaela';
         document.getElementById('task-status').value = t.status || 'todo';
         document.getElementById('task-priority').value = t.priority || 'Média';
@@ -3363,6 +4056,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('task-due-single').value = t.due || todayIso;
         document.getElementById('task-repeat-start').value = t.due || todayIso;
         document.getElementById('task-repeat-end').value = spec.end || '';
+        document.getElementById('task-repeat-freq').value = spec.freq || 'weekly';
         setSelectedWeekdays(spec.days);
         currentRepeatEndMode = spec.endMode;
         setTaskRepeatMode(spec.mode);
@@ -3371,11 +4065,23 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('task-modal-heading').textContent = 'Nova tarefa';
         document.getElementById('task-modal-id').value = '';
         document.getElementById('task-title').value = '';
-        const defaultProj = preselectedProjectId || (document.getElementById('filter-project')?.value !== 'ALL' ? document.getElementById('filter-project').value : (state.projects[0]?.id || ''));
-        projSel.value = defaultProj;
-        const defaultEpic = preselectedEpicId || (document.getElementById('filter-epic')?.value !== 'ALL' ? document.getElementById('filter-epic').value : '');
-        onTaskProjectChange(defaultEpic);
-        assSel.value = currentSession?.userId && teamMembers.some(m => m.id === currentSession.userId) ? currentSession.userId : 'u_rafaela';
+
+        const filterProjVal = document.getElementById('filter-project')?.value;
+        if (!preselectedProjectId && filterProjVal === 'NONE' && !isProjectGuest()) {
+          setTaskScopeMode('routine');
+          areaSel.value = u?.area || state.categories[0];
+        } else if (visProjects.length) {
+          setTaskScopeMode('project');
+          const defaultProj = preselectedProjectId || (filterProjVal && filterProjVal !== 'ALL' && filterProjVal !== 'NONE' ? filterProjVal : visProjects[0].id);
+          projSel.value = defaultProj;
+          const defaultEpic = preselectedEpicId || (document.getElementById('filter-epic')?.value !== 'ALL' ? document.getElementById('filter-epic').value : '');
+          onTaskProjectChange(defaultEpic);
+        } else {
+          setTaskScopeMode('routine');
+          areaSel.value = u?.area || state.categories[0];
+        }
+
+        assSel.value = u ? u.id : 'u_rafaela';
         document.getElementById('task-status').value = 'todo';
         document.getElementById('task-priority').value = 'Média';
         document.getElementById('task-desc').value = '';
@@ -3386,7 +4092,8 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('task-due-single').value = todayIso;
         document.getElementById('task-repeat-start').value = todayIso;
         document.getElementById('task-repeat-end').value = '';
-        setSelectedWeekdays([1, 2, 3, 4, 5, 6, 0]);
+        document.getElementById('task-repeat-freq').value = 'weekly';
+        setSelectedWeekdays([new Date(todayIso + 'T12:00:00').getDay()]);
         currentRepeatEndMode = 'infinite';
         setTaskRepeatMode('single');
       }
@@ -3402,6 +4109,8 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         project_id: t.projectId || null,
         epic_id: t.epicId || null,
         assignee_id: t.assigneeId || null,
+        created_by: t.createdBy || null,
+        area: t.area || '',
         tool: '',
         priority: t.priority,
         status: t.status,
@@ -3421,8 +4130,25 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         return;
       }
       const id = document.getElementById('task-modal-id').value;
-      const projectId = document.getElementById('task-project').value;
-      const epicId = document.getElementById('task-epic').value;
+
+      let projectId = '';
+      let epicId = '';
+      let area = '';
+
+      if (currentTaskScope === 'project') {
+        projectId = document.getElementById('task-project').value;
+        epicId = document.getElementById('task-epic').value;
+        if (!projectId) {
+          showToast('Selecione um projeto ou mude para "Operacional / Rotina (sem projeto)".');
+          return;
+        }
+        area = getProject(projectId)?.category || '';
+      } else {
+        projectId = '';
+        epicId = '';
+        area = document.getElementById('task-routine-area').value;
+      }
+
       const inheritedColor = getEpic(epicId)?.color || getProject(projectId)?.color || '#07384D';
 
       let due = '';
@@ -3433,9 +4159,11 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         recurrence = 'none';
       } else {
         due = document.getElementById('task-repeat-start').value;
+        const freq = document.getElementById('task-repeat-freq').value;
         const endIso = currentRepeatEndMode === 'date' ? document.getElementById('task-repeat-end').value : '';
         const days = getSelectedWeekdays();
-        if (!days.length) {
+
+        if (freq !== 'monthly' && freq !== 'quarterly' && !days.length) {
           showToast('Selecione ao menos um dia da semana.');
           return;
         }
@@ -3443,14 +4171,21 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
           showToast('A data final (Até) não pode ser anterior à data inicial.');
           return;
         }
-        recurrence = `period|${endIso}|${days.join(',')}`;
+        recurrence = `period|${freq}|${endIso}|${days.join(',')}`;
+      }
+
+      const assigneeId = document.getElementById('task-assignee').value;
+      const assigneeObj = getMember(assigneeId);
+      if (!area && assigneeObj && assigneeObj.area && assigneeObj.area !== 'Geral') {
+        area = assigneeObj.area;
       }
 
       const payload = {
         title,
         projectId,
         epicId,
-        assigneeId: document.getElementById('task-assignee').value,
+        area,
+        assigneeId,
         status: document.getElementById('task-status').value,
         priority: document.getElementById('task-priority').value,
         due,
@@ -3469,9 +4204,15 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         showToast(`${savedObj.code} atualizada.`);
       } else {
         const code = getNextCode(state.tasks, 'T');
-        savedObj = { id: 't_' + Date.now(), code, cycleCount: 1, ...payload };
+        savedObj = {
+          id: 't_' + Date.now(),
+          code,
+          createdBy: currentSession?.userId || 'u_rafaela',
+          cycleCount: 1,
+          ...payload
+        };
         state.tasks.unshift(savedObj);
-        showToast(`Tarefa ${code} criada.`);
+        showToast(projectId ? `Tarefa ${code} criada.` : `Rotina operacional ${code} criada.`);
       }
 
       await safeDbUpsert('vulp_tasks', toDbTask(savedObj));
@@ -3508,7 +4249,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
       const spec = parseRecurrenceSpec(task.recurrence, task.due);
       if (newStatus === 'done' && oldStatus !== 'done' && spec.mode === 'period') {
-        const nextDue = findNextOccurrenceDate(task.due, spec.end, spec.days);
+        const nextDue = findNextOccurrenceDate(task.due, spec.end, spec.freq, spec.days);
         if (nextDue) {
           const nextCycle = (task.cycleCount || 1) + 1;
           const nextCode = getNextCode(state.tasks, 'T');
@@ -3533,7 +4274,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       GERENCIADOR DE FRENTES DE PROJETO (CATEGORIAS)
+       GERENCIADOR DE ÁREAS / FRENTES
        ========================================================================== */
     function populateProjectCategorySelect(selectedCat = null) {
       const sel = document.getElementById('project-category');
@@ -3545,7 +4286,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     function openCategoriesModal() {
-      if (!guardEditorAction()) return;
+      if (!guardEditorAction() || isProjectGuest()) return;
       renderCategoriesList();
       document.getElementById('new-category-input').value = '';
       document.getElementById('categories-modal').classList.add('is-open');
@@ -3555,15 +4296,16 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const box = document.getElementById('categories-list-box');
       box.innerHTML = state.categories.map((cat, idx) => {
         const inUseCount = state.projects.filter(p => p.category === cat).length;
+        const peopleCount = state.team.filter(m => m.area === cat).length;
         return `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:var(--surface-subtle);border:1px solid var(--line);border-radius:8px">
             <div>
               <div style="font-weight:700;color:var(--navy)">${cat}</div>
-              <div class="t-micro">${inUseCount} projeto(s) vinculado(s)</div>
+              <div class="t-micro">${inUseCount} projeto(s) • ${peopleCount} pessoa(s)</div>
             </div>
             <div style="display:flex;gap:4px">
               <button type="button" class="btn btn--xs btn--secondary" onclick="renameProjectCategory(${idx})">Renomear</button>
-              <button type="button" class="icon-btn icon-btn--danger" onclick="deleteProjectCategory(${idx})" title="Excluir frente">
+              <button type="button" class="icon-btn icon-btn--danger" onclick="deleteProjectCategory(${idx})" title="Excluir área">
                 <svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg>
               </button>
             </div>
@@ -3576,46 +4318,50 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (!guardEditorAction()) return;
       const input = document.getElementById('new-category-input');
       const val = input.value.trim();
-      if (!val) { showToast('Digite o nome da frente.'); return; }
+      if (!val) { showToast('Digite o nome da área.'); return; }
       if (state.categories.some(c => c.toLowerCase() === val.toLowerCase())) {
-        showToast('Essa frente já existe.');
+        showToast('Essa área já existe.');
         return;
       }
       state.categories.push(val);
       input.value = '';
       saveLocalCache();
       populateProjectCategorySelect(val);
+      populateSelectOptions();
       renderCategoriesList();
       try {
         if (sbConnected && sbClient) {
           await sbClient.from('vulp_categories').upsert({ id: 'cat_' + Date.now(), name: val });
         }
       } catch (e) {}
-      showToast(`Frente "${val}" cadastrada.`);
+      showToast(`Área "${val}" cadastrada.`);
     }
 
     async function renameProjectCategory(idx) {
       if (!guardEditorAction()) return;
       const oldName = state.categories[idx];
-      const nextName = prompt('Novo nome da frente:', oldName);
+      const nextName = prompt('Novo nome da área:', oldName);
       if (!nextName || !nextName.trim() || nextName.trim() === oldName) return;
       const clean = nextName.trim();
       state.categories[idx] = clean;
       state.projects.forEach(p => { if (p.category === oldName) p.category = clean; });
+      state.team.forEach(m => { if (m.area === oldName) m.area = clean; });
+      state.tasks.forEach(t => { if (t.area === oldName) t.area = clean; });
       saveLocalCache();
       populateProjectCategorySelect(clean);
+      populateSelectOptions();
       renderCategoriesList();
       refreshCurrentView();
       try {
         if (sbConnected) await pushLocalDataToSupabase(true);
       } catch (e) {}
-      showToast('Frente renomeada.');
+      showToast('Área renomeada.');
     }
 
     async function deleteProjectCategory(idx) {
       if (!guardEditorAction()) return;
       if (state.categories.length <= 1) {
-        showToast('Mantenha pelo menos uma frente cadastrada.');
+        showToast('Mantenha pelo menos uma área cadastrada.');
         return;
       }
       const cat = state.categories[idx];
@@ -3627,22 +4373,23 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       state.categories.splice(idx, 1);
       saveLocalCache();
       populateProjectCategorySelect();
+      populateSelectOptions();
       renderCategoriesList();
       try {
         if (sbConnected && sbClient) {
           await sbClient.from('vulp_categories').delete().eq('name', cat);
         }
       } catch (e) {}
-      showToast('Frente excluída.');
+      showToast('Área excluída.');
     }
 
     /* ==========================================================================
-       MODAIS DE PROJETO E ÉPICO (COM EXCLUIR PROJETO E EXCLUIR ÉPICO)
+       MODAIS DE PROJETO E ÉPICO
        ========================================================================== */
     function openProjectModal(projectId = null) {
-      if (!guardEditorAction()) return;
+      if (!guardEditorAction() || isProjectGuest()) return;
       const ownerSel = document.getElementById('project-owner');
-      const teamMembers = state.team.filter(m => m.accessLevel !== 'viewer');
+      const teamMembers = state.team.filter(m => m.accessLevel !== 'viewer' && m.accessLevel !== 'project_guest');
       ownerSel.innerHTML = (teamMembers.length ? teamMembers : state.team).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
 
       if (projectId) {
@@ -3663,8 +4410,8 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('project-modal-title').textContent = 'Novo projeto';
         document.getElementById('project-id').value = '';
         document.getElementById('project-name').value = '';
-        ownerSel.value = teamMembers[0]?.id || 'u_rafaela';
-        populateProjectCategorySelect(state.categories[0]);
+        ownerSel.value = currentSession?.userId || 'u_rafaela';
+        populateProjectCategorySelect(getCurrentUserObj()?.area || state.categories[0]);
         document.getElementById('project-status').value = 'Em andamento';
         document.getElementById('project-deadline').value = '';
         document.getElementById('project-desc').value = '';
@@ -3732,12 +4479,13 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
     function openEpicModal(epicId = null, preselectedProjectId = null) {
       if (!guardEditorAction()) return;
-      if (!state.projects.length) { showToast('Crie um projeto primeiro.'); return; }
+      const visProjects = getVisibleProjectsForCurrentUser();
+      if (!visProjects.length) { showToast('Nenhum projeto disponível.'); return; }
       const projSel = document.getElementById('epic-project');
       const ownerSel = document.getElementById('epic-owner');
-      const teamMembers = state.team.filter(m => m.accessLevel !== 'viewer');
+      const teamMembers = state.team.filter(m => m.accessLevel !== 'viewer' && m.accessLevel !== 'project_guest');
 
-      projSel.innerHTML = state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
+      projSel.innerHTML = visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
       ownerSel.innerHTML = (teamMembers.length ? teamMembers : state.team).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
 
       if (epicId) {
@@ -3756,9 +4504,9 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('epic-modal-code').textContent = getNextCode(state.epics, 'E');
         document.getElementById('epic-modal-title').textContent = 'Novo épico';
         document.getElementById('epic-id').value = '';
-        projSel.value = preselectedProjectId || state.projects[0].id;
+        projSel.value = preselectedProjectId || visProjects[0].id;
         document.getElementById('epic-title').value = '';
-        ownerSel.value = teamMembers[0]?.id || 'u_rafaela';
+        ownerSel.value = currentSession?.userId || 'u_rafaela';
         document.getElementById('epic-deadline').value = '';
         document.getElementById('epic-desc').value = '';
         document.getElementById('epic-delete-btn').style.display = 'none';
@@ -3826,84 +4574,323 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     function closeModal(id) { document.getElementById(id).classList.remove('is-open'); }
 
     /* ==========================================================================
-       DOCUMENTAÇÃO MARKDOWN (UPLOAD DE ARQUIVOS + DRAG & DROP + NOVO DOC)
+       DOCUMENTOS ESTILO CONFLUENCE (WYSIWYG RICH PAGE EDITOR + IMAGENS)
        ========================================================================== */
-    function parseMarkdown(md) {
-      if (!md) return '<p class="t-cap">Documento vazio.</p>';
-      let html = md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+    function convertLegacyMarkdownToHtml(raw) {
+      if (!raw) return '<p></p>';
+      if (/<[a-z][\s\S]*>/i.test(raw)) return raw;
+      let html = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      html = html.replace(/```([\s\S]*?)```/g, '<pre>$1</pre>');
       html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
       html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
       html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
       html = html.replace(/^&gt; (.*$)/gim, '<blockquote>$1</blockquote>');
-      html = html.replace(/^- \[x\] (.*$)/gim, '<div>[x] <s>$1</s></div>');
-      html = html.replace(/^- \[ \] (.*$)/gim, '<div>[ ] $1</div>');
-      html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
-      html = html.replace(/(<li>.*<\/li>)/gims, '<ul>$1</ul>');
+      html = html.replace(/^- \[x\] (.*$)/gim, '<ul><li><s>$1</s></li></ul>');
+      html = html.replace(/^- \[ \] (.*$)/gim, '<ul><li>$1</li></ul>');
+      html = html.replace(/^- (.*$)/gim, '<ul><li>$1</li></ul>');
       html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
       html = html.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br/>');
       return `<p>${html}</p>`;
     }
 
     function renderGlobalWiki() {
       const filter = document.getElementById('wiki-project-filter')?.value || 'ALL';
-      const docsList = filter === 'ALL' ? state.docs : state.docs.filter(d => d.projectId === filter);
+      const visDocs = getVisibleDocsForCurrentUser();
+      const docsList = filter === 'ALL' ? visDocs : visDocs.filter(d => d.projectId === filter);
       const doc = docsList.find(d => d.id === activeGlobalDocId) || docsList[0] || null;
       if (doc) activeGlobalDocId = doc.id;
+
       const editable = canEdit();
       const admin = isAdmin();
-      const effectiveMode = !editable ? 'preview' : mdViewMode;
+      const visProjects = getVisibleProjectsForCurrentUser();
+      const bodyHtml = doc ? convertLegacyMarkdownToHtml(doc.content) : '';
+      const authorName = doc ? getMember(doc.authorId).name : '';
 
       document.getElementById('global-wiki-container').innerHTML = `
-        <div class="md-workspace">
-          <div class="md-sidebar">
+        <div class="conf-workspace">
+          <aside class="conf-sidebar">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:2px 6px 4px">
+              Páginas (${docsList.length})
+            </div>
             ${docsList.length ? docsList.map(d => {
               const proj = getProject(d.projectId);
+              const cleanTitle = d.title.replace(/\.md$/i, '');
               return `
-                <button class="md-doc-btn ${doc && doc.id === d.id ? 'is-active' : ''}" onclick="activeGlobalDocId='${d.id}'; renderGlobalWiki()">
-                  <span style="font-size:12px">${d.title}</span>
-                  <span class="t-micro">${proj ? proj.code + ' • ' + proj.name : 'Geral'} • ${d.updatedAt}</span>
+                <button class="conf-page-item ${doc && doc.id === d.id ? 'is-active' : ''}" onclick="activeGlobalDocId='${d.id}'; renderGlobalWiki()">
+                  <span style="font-size:12px;line-height:16px">${cleanTitle}</span>
+                  <span class="t-micro">${proj ? proj.code + ' • ' + proj.name : 'Base Geral'} • ${d.updatedAt}</span>
                 </button>
               `;
-            }).join('') : `<div class="t-micro" style="padding:12px">Nenhum documento nesta visão.</div>`}
-          </div>
+            }).join('') : `<div class="t-micro" style="padding:10px 6px">Nenhuma página encontrada.</div>`}
+          </aside>
 
-          <div class="md-editor-box">
+          <div class="conf-page-card">
             ${doc ? `
-              <div class="md-toolbar">
-                ${!editable ? `<span class="t-h3">${doc.title}</span>` : `
-                  <input type="text" class="field__input" style="font-weight:700;max-width:340px;height:32px" value="${doc.title}" onchange="updateDocTitle('${doc.id}', this.value)" />
-                `}
-                <div style="display:flex;gap:6px;align-items:center">
-                  ${editable ? `
-                    <div class="segmented-group">
-                      <button class="segmented-btn ${effectiveMode === 'split' ? 'is-active' : ''}" onclick="mdViewMode='split'; renderGlobalWiki()">Dividido</button>
-                      <button class="segmented-btn ${effectiveMode === 'preview' ? 'is-active' : ''}" onclick="mdViewMode='preview'; renderGlobalWiki()">Leitura</button>
-                    </div>
-                  ` : ''}
-                  <button class="btn btn--xs btn--secondary" onclick="downloadMarkdownFile('${doc.id}')">Baixar .md</button>
-                  ${admin ? `<button class="icon-btn icon-btn--danger" onclick="deleteMarkdownDoc('${doc.id}')" title="Excluir documento"><svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg></button>` : ''}
-                </div>
-              </div>
-              <div class="md-split ${effectiveMode !== 'split' ? 'md-split--single' : ''}">
-                ${effectiveMode !== 'preview' ? `<textarea class="md-textarea" oninput="liveUpdateMarkdown('${doc.id}', this.value)">${doc.content}</textarea>` : ''}
-                <div id="md-preview-box" class="md-preview">${parseMarkdown(doc.content)}</div>
-              </div>
-            ` : `
-              <div style="text-align:center;padding:48px 20px;display:flex;flex-direction:column;align-items:center;gap:12px">
-                <p class="t-cap" style="margin:0">Nenhum documento selecionado. Envie um arquivo do seu computador ou crie um novo Markdown.</p>
-                ${editable ? `
-                  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-                    <button type="button" class="btn btn--sm btn--soft" onclick="triggerDocFileUpload()">Subir arquivo (.md / .txt)</button>
-                    <button type="button" class="btn btn--sm btn--primary" onclick="openNewDocModal()">+ Novo documento .md</button>
+              ${editable ? `
+                <div class="conf-toolbar" onmousedown="if(event.target.tagName==='BUTTON') event.preventDefault()">
+                  <button type="button" class="conf-tool-btn" onclick="execConfBlock('H1')" title="Título 1">H1</button>
+                  <button type="button" class="conf-tool-btn" onclick="execConfBlock('H2')" title="Título 2">H2</button>
+                  <button type="button" class="conf-tool-btn" onclick="execConfBlock('H3')" title="Título 3">H3</button>
+                  <button type="button" class="conf-tool-btn" onclick="execConfBlock('P')" title="Parágrafo normal">Texto</button>
+                  <span class="conf-tool-sep"></span>
+                  <button type="button" class="conf-tool-btn" onclick="execConfCmd('bold')" title="Negrito"><strong>B</strong></button>
+                  <button type="button" class="conf-tool-btn" onclick="execConfCmd('italic')" title="Itálico"><em>I</em></button>
+                  <button type="button" class="conf-tool-btn" onclick="execConfCmd('underline')" title="Sublinhado"><u>U</u></button>
+                  <button type="button" class="conf-tool-btn" onclick="execConfCmd('strikeThrough')" title="Tachado"><s>S</s></button>
+                  <span class="conf-tool-sep"></span>
+                  <button type="button" class="conf-tool-btn" onclick="execConfCmd('insertUnorderedList')" title="Lista com marcadores">• Lista</button>
+                  <button type="button" class="conf-tool-btn" onclick="execConfCmd('insertOrderedList')" title="Lista numerada">1. Lista</button>
+                  <button type="button" class="conf-tool-btn" onclick="insertConfCallout()" title="Painel de destaque">Destaque</button>
+                  <button type="button" class="conf-tool-btn" onclick="insertConfTable()" title="Inserir tabela 3x3">Tabela</button>
+                  <button type="button" class="conf-tool-btn" onclick="execConfCmd('insertHorizontalRule')" title="Linha divisória">—</button>
+                  <button type="button" class="conf-tool-btn" onclick="insertConfLink()" title="Inserir link">Link</button>
+                  <span class="conf-tool-sep"></span>
+                  <button type="button" class="btn btn--xs btn--soft" onclick="triggerConfImageUpload()" title="Inserir imagem do computador">
+                    + Imagem
+                  </button>
+                  <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+                    <span class="t-micro" id="conf-save-status">Salvo</span>
+                    <button type="button" class="btn btn--xs btn--secondary" onclick="downloadDocHtml('${doc.id}')">Exportar</button>
+                    ${admin ? `<button type="button" class="icon-btn icon-btn--danger" onclick="deleteMarkdownDoc('${doc.id}')" title="Excluir página"><svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg></button>` : ''}
                   </div>
-                ` : ''}
+                </div>
+              ` : `
+                <div class="conf-toolbar" style="justify-content:space-between">
+                  <span class="tag tag--muted">Modo Leitura</span>
+                  <button type="button" class="btn btn--xs btn--secondary" onclick="downloadDocHtml('${doc.id}')">Exportar página</button>
+                </div>
+              `}
+
+              <div class="conf-page-header">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  ${editable ? `
+                    <select class="filter-select" style="height:26px;font-size:11px" onchange="updateDocProject('${doc.id}', this.value)">
+                      ${!isProjectGuest() ? `<option value="" ${!doc.projectId ? 'selected' : ''}>Base Geral (sem projeto)</option>` : ''}
+                      ${visProjects.map(p => `<option value="${p.id}" ${doc.projectId === p.id ? 'selected' : ''}>${p.code} • ${p.name}</option>`).join('')}
+                    </select>
+                  ` : `<span class="tag tag--mint">${getProject(doc.projectId)?.name || 'Base Geral'}</span>`}
+                  <span class="t-micro">Autor: <strong>${authorName}</strong> • Atualizado em ${doc.updatedAt}</span>
+                </div>
+
+                ${editable
+                  ? `<input type="text" class="conf-title-input" value="${doc.title.replace(/\.md$/i, '')}" onchange="updateDocTitle('${doc.id}', this.value)" />`
+                  : `<h1 class="t-h1" style="font-size:24px;line-height:32px">${doc.title.replace(/\.md$/i, '')}</h1>`}
+              </div>
+
+              <div id="conf-editor-body"
+                   class="conf-editor-surface"
+                   contenteditable="${editable}"
+                   data-placeholder="Comece a escrever sua página, insira tabelas, destaques ou cole/arraste imagens aqui..."
+                   oninput="onConfluenceBodyInput('${doc.id}')"
+                   onpaste="handleConfluencePaste(event, '${doc.id}')"
+                   ondragover="if(canEdit()) event.preventDefault()"
+                   ondrop="handleConfluenceDropImage(event, '${doc.id}')">${bodyHtml}</div>
+            ` : `
+              <div style="text-align:center;padding:64px 24px;display:flex;flex-direction:column;align-items:center;gap:12px">
+                <h3 class="t-h2">Nenhuma página selecionada</h3>
+                <p class="t-cap" style="margin:0;max-width:420px">Crie uma página rica estilo Confluence com textos formatados, tabelas, painéis de destaque e imagens.</p>
+                ${editable ? `<button type="button" class="btn btn--sm btn--primary" onclick="openNewDocModal()">+ Nova página</button>` : ''}
               </div>
             `}
           </div>
         </div>
       `;
+    }
+
+    function execConfCmd(cmd, value = null) {
+      if (!guardEditorAction()) return;
+      const editor = document.getElementById('conf-editor-body');
+      if (!editor) return;
+      editor.focus();
+      document.execCommand(cmd, false, value);
+      if (activeGlobalDocId) onConfluenceBodyInput(activeGlobalDocId);
+    }
+
+    function execConfBlock(tag) {
+      if (!guardEditorAction()) return;
+      const editor = document.getElementById('conf-editor-body');
+      if (!editor) return;
+      editor.focus();
+      document.execCommand('formatBlock', false, tag);
+      if (activeGlobalDocId) onConfluenceBodyInput(activeGlobalDocId);
+    }
+
+    function insertConfCallout() {
+      execConfCmd('insertHTML', `<div class="conf-callout"><strong>Nota Vulp Air:</strong> Escreva aqui uma diretriz importante...</div><p><br/></p>`);
+    }
+
+    function insertConfTable() {
+      execConfCmd('insertHTML', `
+        <table>
+          <thead><tr><th>Item / Etapa</th><th>Responsável</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Exemplo 1</td><td>Equipe Vulp Air</td><td>Em andamento</td></tr>
+            <tr><td>Exemplo 2</td><td>Operações</td><td>Pendente</td></tr>
+          </tbody>
+        </table><p><br/></p>
+      `);
+    }
+
+    function insertConfLink() {
+      const url = prompt('Cole a URL do link:', 'https://');
+      if (url && url.trim()) {
+        execConfCmd('createLink', url.trim());
+      }
+    }
+
+    function triggerConfImageUpload() {
+      if (!guardEditorAction()) return;
+      const inp = document.getElementById('conf-image-upload-input');
+      if (inp) inp.click();
+    }
+
+    async function handleConfluenceImageUpload(event) {
+      if (!guardEditorAction()) return;
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (!file) return;
+      await insertImageFileIntoConfluence(file);
+    }
+
+    async function handleConfluencePaste(event, docId) {
+      if (!canEdit()) return;
+      const items = Array.from(event.clipboardData?.items || []);
+      const imgItem = items.find(i => i.type && i.type.startsWith('image/'));
+      if (imgItem) {
+        event.preventDefault();
+        const file = imgItem.getAsFile();
+        if (file) await insertImageFileIntoConfluence(file);
+      }
+    }
+
+    async function handleConfluenceDropImage(event, docId) {
+      if (!canEdit()) return;
+      const files = Array.from(event.dataTransfer?.files || []);
+      const imgFile = files.find(f => f.type && f.type.startsWith('image/'));
+      if (imgFile) {
+        event.preventDefault();
+        await insertImageFileIntoConfluence(imgFile);
+      }
+    }
+
+    function compressImageToDataUrl(file, maxWidth = 1100, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = new Image();
+          img.onload = () => {
+            let w = img.width;
+            let h = img.height;
+            if (w > maxWidth) {
+              h = Math.round((h * maxWidth) / w);
+              w = maxWidth;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = () => resolve(e.target.result);
+          img.src = e.target.result;
+        };
+        reader.onerror = err => reject(err);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function insertImageFileIntoConfluence(file) {
+      if (!activeGlobalDocId) return;
+      showToast('Inserindo imagem...');
+      const dataUrl = await compressImageToDataUrl(file);
+      const editor = document.getElementById('conf-editor-body');
+      if (editor) {
+        editor.focus();
+        document.execCommand('insertHTML', false, `<img src="${dataUrl}" alt="${file.name}" /><p><br/></p>`);
+        onConfluenceBodyInput(activeGlobalDocId);
+        showToast('Imagem inserida na página.');
+      }
+    }
+
+    function onConfluenceBodyInput(docId) {
+      if (!canEdit()) return;
+      const doc = state.docs.find(d => d.id === docId);
+      const editor = document.getElementById('conf-editor-body');
+      if (!doc || !editor) return;
+      doc.content = editor.innerHTML;
+      doc.updatedAt = new Date().toISOString().split('T')[0];
+      saveLocalCache();
+      const statusEl = document.getElementById('conf-save-status');
+      if (statusEl) statusEl.textContent = 'Salvando...';
+
+      clearTimeout(confSaveTimer);
+      confSaveTimer = setTimeout(async () => {
+        await safeDbUpsert('vulp_docs', {
+          id: doc.id,
+          project_id: doc.projectId || null,
+          title: doc.title,
+          content: doc.content,
+          author_id: doc.authorId || null,
+          updated_at: doc.updatedAt
+        });
+        const s2 = document.getElementById('conf-save-status');
+        if (s2) s2.textContent = 'Salvo';
+      }, 700);
+    }
+
+    async function updateDocTitle(docId, newTitle) {
+      if (!guardEditorAction()) return;
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc || !newTitle.trim()) return;
+      doc.title = newTitle.trim();
+      doc.updatedAt = new Date().toISOString().split('T')[0];
+      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
+      renderGlobalWiki();
+    }
+
+    async function updateDocProject(docId, newProjId) {
+      if (!guardEditorAction()) return;
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc) return;
+      doc.projectId = newProjId || '';
+      doc.updatedAt = new Date().toISOString().split('T')[0];
+      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
+      renderGlobalWiki();
+      showToast('Vínculo da página atualizado.');
+    }
+
+    function openNewDocModal() {
+      if (!guardEditorAction()) return;
+      const visProjects = getVisibleProjectsForCurrentUser();
+      const sel = document.getElementById('new-doc-project-select');
+      sel.innerHTML = (!isProjectGuest() ? '<option value="">Base Geral (sem projeto)</option>' : '') +
+        visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
+      const filterProj = document.getElementById('wiki-project-filter')?.value;
+      sel.value = (filterProj && filterProj !== 'ALL') ? filterProj : (visProjects[0]?.id || '');
+      document.getElementById('new-doc-title-input').value = '';
+      document.getElementById('new-doc-modal').classList.add('is-open');
+    }
+
+    async function confirmCreateNewDoc() {
+      if (!guardEditorAction()) return;
+      const rawName = document.getElementById('new-doc-title-input').value.trim();
+      if (!rawName) { showToast('Informe o título da página.'); return; }
+      const targetProj = document.getElementById('new-doc-project-select').value;
+      const newDoc = {
+        id: 'd_' + Date.now(),
+        projectId: targetProj,
+        title: rawName,
+        updatedAt: new Date().toISOString().split('T')[0],
+        authorId: currentSession?.userId || 'u_rafaela',
+        content: `<h2>Contexto e objetivo</h2><p>Escreva aqui o conteúdo desta página...</p><ul><li>Primeiro ponto</li></ul>`
+      };
+      state.docs.unshift(newDoc);
+      activeGlobalDocId = newDoc.id;
+      await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId || null, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId, updated_at: newDoc.updatedAt });
+      closeModal('new-doc-modal');
+      renderGlobalWiki();
+      showToast('Página criada.');
     }
 
     function triggerDocFileUpload() {
@@ -3912,66 +4899,34 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (inp) inp.click();
     }
 
-    function handleMarkdownDragOver(event) {
-      if (!canEdit()) return;
-      event.preventDefault();
-      const ws = document.querySelector('#global-wiki-container .md-workspace');
-      if (ws) ws.classList.add('is-dragover');
-    }
-
-    function handleMarkdownDragLeave(event) {
-      const ws = document.querySelector('#global-wiki-container .md-workspace');
-      if (ws) ws.classList.remove('is-dragover');
-    }
-
     async function handleMarkdownFileUpload(event) {
       if (!guardEditorAction()) return;
       const files = Array.from(event.target.files || []);
-      await ingestUploadedDocFiles(files);
       event.target.value = '';
-    }
-
-    async function handleMarkdownDrop(event) {
-      event.preventDefault();
-      handleMarkdownDragLeave(event);
-      if (!guardEditorAction()) return;
-      const files = Array.from(event.dataTransfer?.files || []);
-      if (files.length) await ingestUploadedDocFiles(files);
-    }
-
-    async function ingestUploadedDocFiles(files) {
       if (!files.length) return;
+      const visProjects = getVisibleProjectsForCurrentUser();
       const filterProj = document.getElementById('wiki-project-filter')?.value;
-      const targetProj = (filterProj && filterProj !== 'ALL') ? filterProj : (state.projects[0]?.id || '');
+      const targetProj = (filterProj && filterProj !== 'ALL') ? filterProj : (visProjects[0]?.id || '');
       const today = new Date().toISOString().split('T')[0];
 
-      let uploadedCount = 0;
       for (const file of files) {
         const text = await readFileAsText(file);
-        const cleanName = (file.name.endsWith('.md') || file.name.endsWith('.txt')) ? file.name : (file.name + '.md');
+        const cleanTitle = file.name.replace(/\.(md|markdown|txt|html)$/i, '');
+        const htmlBody = convertLegacyMarkdownToHtml(text);
         const newDoc = {
           id: 'd_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
           projectId: targetProj,
-          title: cleanName,
+          title: cleanTitle,
           updatedAt: today,
           authorId: currentSession?.userId || 'u_rafaela',
-          content: text
+          content: htmlBody
         };
         state.docs.unshift(newDoc);
         activeGlobalDocId = newDoc.id;
-        await safeDbUpsert('vulp_docs', {
-          id: newDoc.id,
-          project_id: newDoc.projectId || null,
-          title: newDoc.title,
-          content: newDoc.content,
-          author_id: newDoc.authorId || null,
-          updated_at: newDoc.updatedAt
-        });
-        uploadedCount++;
+        await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId || null, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId || null, updated_at: newDoc.updatedAt });
       }
-
       renderGlobalWiki();
-      showToast(uploadedCount === 1 ? 'Documento enviado com sucesso.' : `${uploadedCount} documentos enviados com sucesso.`);
+      showToast('Arquivo(s) importado(s) como página.');
     }
 
     function readFileAsText(file) {
@@ -3983,132 +4938,174 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       });
     }
 
-    function liveUpdateMarkdown(docId, value) {
-      if (!guardEditorAction()) return;
-      const doc = state.docs.find(d => d.id === docId);
-      if (!doc) return;
-      doc.content = value;
-      doc.updatedAt = new Date().toISOString().split('T')[0];
-      saveLocalCache();
-      const prev = document.getElementById('md-preview-box');
-      if (prev) prev.innerHTML = parseMarkdown(value);
-      clearTimeout(mdDebounceTimer);
-      mdDebounceTimer = setTimeout(() => {
-        safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
-      }, 800);
-    }
-
-    async function updateDocTitle(docId, newTitle) {
-      if (!guardEditorAction()) return;
-      const doc = state.docs.find(d => d.id === docId);
-      if (!doc || !newTitle.trim()) return;
-      doc.title = newTitle.trim().endsWith('.md') ? newTitle.trim() : newTitle.trim() + '.md';
-      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
-      renderGlobalWiki();
-    }
-
-    function openNewDocModal() {
-      if (!guardEditorAction()) return;
-      const sel = document.getElementById('new-doc-project-select');
-      sel.innerHTML = '<option value="">Geral (sem projeto)</option>' +
-        state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
-      const filterProj = document.getElementById('wiki-project-filter')?.value;
-      sel.value = (filterProj && filterProj !== 'ALL') ? filterProj : (state.projects[0]?.id || '');
-      document.getElementById('new-doc-title-input').value = '';
-      document.getElementById('new-doc-modal').classList.add('is-open');
-    }
-
-    async function confirmCreateNewDoc() {
-      if (!guardEditorAction()) return;
-      const rawName = document.getElementById('new-doc-title-input').value.trim();
-      if (!rawName) { showToast('Informe o nome do documento.'); return; }
-      const cleanName = rawName.endsWith('.md') ? rawName : rawName + '.md';
-      const targetProj = document.getElementById('new-doc-project-select').value;
-      const newDoc = {
-        id: 'd_' + Date.now(),
-        projectId: targetProj,
-        title: cleanName,
-        updatedAt: new Date().toISOString().split('T')[0],
-        authorId: currentSession?.userId || 'u_rafaela',
-        content: `# ${cleanName.replace('.md', '').replace(/_/g, ' ')}
-
-## Visão geral
-Documentação padronizada Vulp Air.
-
-- [ ] Item inicial`
-      };
-      state.docs.unshift(newDoc);
-      activeGlobalDocId = newDoc.id;
-      await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId || null, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId, updated_at: newDoc.updatedAt });
-      closeModal('new-doc-modal');
-      renderGlobalWiki();
-      showToast('Documento criado.');
-    }
-
     async function deleteMarkdownDoc(docId) {
-      if (!guardAdminAction() || !confirm('Excluir documento?')) return;
+      if (!guardAdminAction() || !confirm('Excluir esta página?')) return;
       state.docs = state.docs.filter(d => d.id !== docId);
       await safeDbDelete('vulp_docs', docId);
       renderGlobalWiki();
-      showToast('Documento excluído.');
+      showToast('Página excluída.');
     }
 
-    function downloadMarkdownFile(docId) {
+    function downloadDocHtml(docId) {
       const doc = state.docs.find(d => d.id === docId);
       if (!doc) return;
-      const blob = new Blob([doc.content], { type: 'text/markdown;charset=utf-8' });
+      const fullHtml = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${doc.title}</title><style>body{font-family:Arial,sans-serif;color:#07384D;max-width:860px;margin:40px auto;padding:0 20px;line-height:1.6}img{max-width:100%;border-radius:8px}table{width:100%;border-collapse:collapse}th{background:#07384D;color:#fff;padding:8px}td{border:1px solid #D4E8ED;padding:8px}.conf-callout{background:#E6F8FA;border-left:4px solid #DCEB15;padding:12px;margin:12px 0}</style></head><body><h1>${doc.title}</h1>${convertLegacyMarkdownToHtml(doc.content)}</body></html>`;
+      const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = doc.title; a.click();
+      a.href = url; a.download = doc.title.replace(/[^a-zA-Z0-9_-]/g, '_') + '.html'; a.click();
       URL.revokeObjectURL(url);
     }
 
     /* ==========================================================================
-       EQUIPE E ACESSOS (ADMIN MASTER, PADRÃO, VISUALIZADOR + SENHAS)
+       EQUIPE & ESTRUTURA ORGANIZACIONAL (ÁREA -> GESTOR -> LIDERADOS + PROJETO ESPECÍFICO)
        ========================================================================== */
+    function onNewMemberAccessChange() {
+      const lvl = document.getElementById('new-member-access').value;
+      document.getElementById('new-member-projects-box').style.display = (lvl === 'project_guest') ? 'flex' : 'none';
+      document.getElementById('new-member-manager-wrap').style.display = (lvl === 'project_guest' || lvl === 'admin') ? 'none' : 'flex';
+    }
+
     function renderTeam() {
       const admin = isAdmin();
-      document.getElementById('team-grid').innerHTML = state.team.map(m => {
-        const lvl = m.accessLevel || 'member';
-        const isSelf = currentSession && currentSession.userId === m.id;
-        const activeCount = state.tasks.filter(t => t.assigneeId === m.id && t.status !== 'done').length;
-        const tagClass = lvl === 'admin' ? 'tag--lime-pill' : (lvl === 'viewer' ? 'tag--muted' : 'tag--teal');
-        return `
-          <div class="team-card">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-              <div style="display:flex;align-items:center;gap:10px">
-                <div class="avatar-sm" style="width:32px;height:32px;font-size:11px">${getInitials(m.name)}</div>
-                <div>
-                  <div class="t-h3">${m.name} ${isSelf ? '<span class="t-micro">(você)</span>' : ''}</div>
-                  <div class="t-micro">${m.role} ${m.email ? '• ' + m.email : ''}</div>
-                </div>
-              </div>
-              <span class="tag ${tagClass}">${getRoleLabel(lvl)}</span>
-            </div>
+      const container = document.getElementById('org-structure-container');
 
-            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--line);gap:6px;flex-wrap:wrap">
-              <span class="t-micro">${lvl !== 'viewer' ? activeCount + ' tarefas ativas' : 'Somente leitura'}</span>
-              <div style="display:flex;gap:6px;align-items:center">
-                ${admin ? `
-                  <select class="filter-select" style="height:26px;font-size:11px;padding:0 6px" onchange="changeMemberAccessLevel('${m.id}', this.value)">
-                    <option value="admin" ${lvl === 'admin' ? 'selected' : ''}>Admin Master</option>
-                    <option value="member" ${lvl === 'member' ? 'selected' : ''}>Padrão</option>
-                    <option value="viewer" ${lvl === 'viewer' ? 'selected' : ''}>Visualizador</option>
-                  </select>
-                ` : ''}
-                ${(admin || isSelf) ? `
-                  <button class="btn btn--xs btn--secondary" onclick="openPasswordModal('${m.id}')">Senha</button>
-                ` : ''}
-                ${(admin && !isSelf) ? `
-                  <button class="icon-btn icon-btn--danger" onclick="removeTeamMember('${m.id}')" title="Remover usuário">
-                    <svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg>
-                  </button>
-                ` : ''}
+      // 1. Bloco Admin Master
+      const admins = state.team.filter(m => m.accessLevel === 'admin');
+      // 2. Usuários com Acesso por Projeto(s) Específico(s)
+      const projectGuests = state.team.filter(m => m.accessLevel === 'project_guest');
+      // 3. Visualizadores Gerais
+      const generalViewers = state.team.filter(m => m.accessLevel === 'viewer');
+
+      // 4. Estrutura por Área (Gestores e seus Liderados)
+      const areaBlocksHtml = state.categories.map(areaName => {
+        const areaUsers = state.team.filter(m => m.area === areaName && (m.accessLevel === 'manager' || m.accessLevel === 'member'));
+        const managers = areaUsers.filter(m => m.accessLevel === 'manager');
+        const members = areaUsers.filter(m => m.accessLevel === 'member');
+
+        return `
+          <div class="org-area-block">
+            <div class="org-area-head">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="tag tag--navy">ÁREA</span>
+                <span class="t-h2">${areaName}</span>
+                <span class="t-micro">• ${managers.length} gestor(es) • ${members.length} liderado(s)</span>
               </div>
+            </div>
+            <div class="org-area-body">
+              ${managers.length ? managers.map(mgr => {
+                const directReports = members.filter(sub => sub.managerId === mgr.id);
+                return `
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    ${renderUserCardHTML(mgr, admin, true)}
+                    ${directReports.length ? `
+                      <div class="org-subordinates-grid">
+                        ${directReports.map(sub => renderUserCardHTML(sub, admin, false)).join('')}
+                      </div>
+                    ` : `<div class="t-micro" style="padding-left:18px">Nenhum liderado vinculado diretamente a ${mgr.name}.</div>`}
+                  </div>
+                `;
+              }).join('') : `<div class="t-micro">Nenhum gestor definido para esta área.</div>`}
+
+              ${(() => {
+                const unassignedMembers = members.filter(sub => !managers.some(mgr => mgr.id === sub.managerId));
+                if (!unassignedMembers.length) return '';
+                return `
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <div class="t-micro" style="font-weight:700">Integrantes da área (${unassignedMembers.length})</div>
+                    <div class="org-subordinates-grid">
+                      ${unassignedMembers.map(sub => renderUserCardHTML(sub, admin, false)).join('')}
+                    </div>
+                  </div>
+                `;
+              })()}
             </div>
           </div>
         `;
       }).join('');
+
+      container.innerHTML = `
+        <!-- Administração Geral -->
+        <div class="org-area-block">
+          <div class="org-area-head">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="tag tag--lime-pill">ADMIN MASTER</span>
+              <span class="t-h3">Administração Geral do Vulp Flow</span>
+            </div>
+          </div>
+          <div class="org-area-body">
+            <div class="cards-grid">
+              ${admins.map(a => renderUserCardHTML(a, admin, false)).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Organograma por Área -> Gestor -> Liderados -->
+        ${areaBlocksHtml}
+
+        <!-- Perfis de Acesso por Projeto(s) Específico(s) -->
+        ${(projectGuests.length || generalViewers.length) ? `
+          <div class="org-area-block">
+            <div class="org-area-head">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="tag tag--teal">ACESSOS ESPECÍFICOS & VISUALIZADORES</span>
+                <span class="t-h3">Compartilhamento por Projeto ou Leitura Geral</span>
+              </div>
+            </div>
+            <div class="org-area-body">
+              <div class="cards-grid">
+                ${[...projectGuests, ...generalViewers].map(g => renderUserCardHTML(g, admin, false)).join('')}
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    function renderUserCardHTML(m, admin, highlightManager = false) {
+      const lvl = m.accessLevel || 'member';
+      const isSelf = currentSession && currentSession.userId === m.id;
+      const activeCount = state.tasks.filter(t => t.assigneeId === m.id && t.status !== 'done').length;
+      const tagClass = (lvl === 'admin' || lvl === 'manager') ? 'tag--lime-pill' : (lvl === 'viewer' ? 'tag--muted' : 'tag--teal');
+      const mgrObj = m.managerId ? state.team.find(x => x.id === m.managerId) : null;
+
+      let scopeDetailHtml = '';
+      if (lvl === 'project_guest') {
+        const allowed = parseAllowedProjects(m.allowedProjects);
+        const projLabels = allowed.map(pid => getProject(pid)).filter(Boolean).map(p => `${p.code} • ${p.name}`).join(', ');
+        scopeDetailHtml = `<div class="t-micro" style="color:var(--navy)"><strong>Projetos:</strong> ${projLabels || 'Nenhum selecionado'} (${m.guestCanEdit ? 'Edição' : 'Leitura'})</div>`;
+      } else if (mgrObj) {
+        scopeDetailHtml = `<div class="t-micro">Gestor: <strong>${mgrObj.name}</strong></div>`;
+      }
+
+      return `
+        <div class="team-card ${highlightManager ? 'team-card--manager' : ''}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="avatar-sm" style="width:32px;height:32px;font-size:11px">${getInitials(m.name)}</div>
+              <div>
+                <div class="t-h3">${m.name} ${isSelf ? '<span class="t-micro">(você)</span>' : ''}</div>
+                <div class="t-micro">${m.role} ${m.email ? '• ' + m.email : ''}</div>
+                ${scopeDetailHtml}
+              </div>
+            </div>
+            <span class="tag ${tagClass}">${getRoleLabel(lvl)}</span>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--line);gap:6px;flex-wrap:wrap">
+            <span class="t-micro">${activeCount} tarefa(s) ativa(s)</span>
+            <div style="display:flex;gap:6px;align-items:center">
+              ${admin ? `<button type="button" class="btn btn--xs btn--soft" onclick="openEditUserModal('${m.id}')">Editar</button>` : ''}
+              ${(admin || isSelf) ? `<button type="button" class="btn btn--xs btn--secondary" onclick="openPasswordModal('${m.id}')">Senha</button>` : ''}
+              ${(admin && !isSelf) ? `
+                <button type="button" class="icon-btn icon-btn--danger" onclick="removeTeamMember('${m.id}')" title="Remover usuário">
+                  <svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     async function addTeamMember() {
@@ -4118,45 +5115,122 @@ Documentação padronizada Vulp Air.
       if (!name) { showToast('Informe o nome do usuário.'); return; }
       if (!pwd) { showToast('Defina uma senha obrigatória para este usuário.'); return; }
 
+      const lvl = document.getElementById('new-member-access').value;
+      const allowedProjects = lvl === 'project_guest'
+        ? Array.from(document.querySelectorAll('.new-member-proj-cb:checked')).map(cb => cb.value)
+        : [];
+
+      if (lvl === 'project_guest' && !allowedProjects.length) {
+        showToast('Selecione pelo menos um projeto para compartilhar com este usuário.');
+        return;
+      }
+
       const member = {
         id: 'u_' + Date.now(),
         name,
         email: document.getElementById('new-member-email').value.trim(),
-        role: document.getElementById('new-member-role').value.trim() || 'Especialista Vulp Air',
-        accessLevel: document.getElementById('new-member-access').value,
+        role: document.getElementById('new-member-role').value.trim() || getRoleLabel(lvl),
+        area: document.getElementById('new-member-area').value || state.categories[0],
+        managerId: (lvl === 'project_guest' || lvl === 'admin') ? '' : (document.getElementById('new-member-manager').value || ''),
+        accessLevel: lvl,
+        allowedProjects,
+        guestCanEdit: document.getElementById('new-member-guest-edit').checked,
         accessPin: pwd
       };
+
       state.team.push(member);
       document.getElementById('new-member-name').value = '';
       document.getElementById('new-member-email').value = '';
       document.getElementById('new-member-role').value = '';
       document.getElementById('new-member-pin').value = '';
-      await safeDbUpsert('vulp_team', { id: member.id, name: member.name, email: member.email, role: member.role, access_level: member.accessLevel, access_pin: member.accessPin });
+      document.querySelectorAll('.new-member-proj-cb').forEach(cb => cb.checked = false);
+
+      await safeDbUpsert('vulp_team', toDbTeamMember(member));
       populateSelectOptions();
       renderTeam();
-      showToast(`Usuário "${member.name}" cadastrado.`);
+      showToast(`Usuário "${member.name}" adicionado.`);
     }
 
-    async function changeMemberAccessLevel(id, newLevel) {
+    function openEditUserModal(userId) {
       if (!guardAdminAction()) return;
-      const m = state.team.find(x => x.id === id);
+      const m = state.team.find(x => x.id === userId);
       if (!m) return;
-      if (m.accessLevel === 'admin' && newLevel !== 'admin') {
-        const adminCount = state.team.filter(x => x.accessLevel === 'admin').length;
-        if (adminCount <= 1) {
-          showToast('Deve existir pelo menos um Admin Master.');
-          renderTeam();
-          return;
-        }
+
+      document.getElementById('edit-user-id').value = m.id;
+      document.getElementById('edit-user-modal-title').textContent = `Editar • ${m.name}`;
+      document.getElementById('edit-user-name').value = m.name;
+      document.getElementById('edit-user-email').value = m.email || '';
+      document.getElementById('edit-user-role').value = m.role || '';
+
+      const areaSel = document.getElementById('edit-user-area');
+      areaSel.innerHTML = state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      areaSel.value = m.area || state.categories[0];
+
+      const accSel = document.getElementById('edit-user-access');
+      accSel.value = m.accessLevel || 'member';
+      accSel.disabled = (m.id === 'u_rafaela');
+
+      const mgrSel = document.getElementById('edit-user-manager');
+      const managers = state.team.filter(x => x.id !== m.id && (x.accessLevel === 'admin' || x.accessLevel === 'manager'));
+      mgrSel.innerHTML = '<option value="">Sem gestor direto</option>' +
+        managers.map(x => `<option value="${x.id}">${x.name} (${x.area})</option>`).join('');
+      mgrSel.value = m.managerId || '';
+
+      const allowedSet = new Set(parseAllowedProjects(m.allowedProjects));
+      document.getElementById('edit-user-guest-edit').checked = m.guestCanEdit !== false;
+      document.getElementById('edit-user-projects-list').innerHTML = state.projects.map(p => `
+        <label class="project-check-item">
+          <input type="checkbox" class="edit-user-proj-cb" value="${p.id}" ${allowedSet.has(p.id) ? 'checked' : ''} />
+          <span><strong>${p.code}</strong> • ${p.name}</span>
+        </label>
+      `).join('');
+
+      onEditUserAccessChange();
+      document.getElementById('edit-user-modal').classList.add('is-open');
+    }
+
+    function onEditUserAccessChange() {
+      const lvl = document.getElementById('edit-user-access').value;
+      document.getElementById('edit-user-projects-box').style.display = (lvl === 'project_guest') ? 'flex' : 'none';
+      document.getElementById('edit-user-manager-wrap').style.display = (lvl === 'project_guest' || lvl === 'admin') ? 'none' : 'flex';
+    }
+
+    async function saveEditedUser() {
+      if (!guardAdminAction()) return;
+      const uid = document.getElementById('edit-user-id').value;
+      const m = state.team.find(x => x.id === uid);
+      if (!m) return;
+
+      const name = document.getElementById('edit-user-name').value.trim();
+      if (!name) { showToast('Informe o nome.'); return; }
+
+      const lvl = m.id === 'u_rafaela' ? 'admin' : document.getElementById('edit-user-access').value;
+      const allowedProjects = lvl === 'project_guest'
+        ? Array.from(document.querySelectorAll('.edit-user-proj-cb:checked')).map(cb => cb.value)
+        : [];
+
+      if (lvl === 'project_guest' && !allowedProjects.length) {
+        showToast('Marque pelo menos um projeto para este perfil.');
+        return;
       }
-      m.accessLevel = newLevel;
-      await safeDbUpsert('vulp_team', { id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel, access_pin: m.accessPin || 'vulp2026' });
-      if (currentSession && currentSession.userId === id) {
-        currentSession.mode = newLevel;
+
+      m.name = name;
+      m.email = document.getElementById('edit-user-email').value.trim();
+      m.role = document.getElementById('edit-user-role').value.trim() || getRoleLabel(lvl);
+      m.area = document.getElementById('edit-user-area').value;
+      m.accessLevel = lvl;
+      m.managerId = (lvl === 'project_guest' || lvl === 'admin') ? '' : (document.getElementById('edit-user-manager').value || '');
+      m.allowedProjects = allowedProjects;
+      m.guestCanEdit = document.getElementById('edit-user-guest-edit').checked;
+
+      await safeDbUpsert('vulp_team', toDbTeamMember(m));
+      if (currentSession && currentSession.userId === m.id) {
         applySessionPermissions();
       }
+      populateSelectOptions();
+      closeModal('edit-user-modal');
       renderTeam();
-      showToast(`Perfil de ${m.name} atualizado para ${getRoleLabel(newLevel)}.`);
+      showToast('Usuário atualizado.');
     }
 
     function openPasswordModal(userId) {
@@ -4180,7 +5254,7 @@ Documentação padronizada Vulp Air.
       const m = state.team.find(x => x.id === uid);
       if (!m) return;
       m.accessPin = newPwd;
-      await safeDbUpsert('vulp_team', { id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel, access_pin: m.accessPin });
+      await safeDbUpsert('vulp_team', toDbTeamMember(m));
       closeModal('password-modal');
       showToast(`Senha de ${m.name} atualizada.`);
     }
@@ -4189,12 +5263,13 @@ Documentação padronizada Vulp Air.
       if (!guardAdminAction()) return;
       const m = state.team.find(x => x.id === id);
       if (!m) return;
-      if (m.accessLevel === 'admin' && state.team.filter(x => x.accessLevel === 'admin').length <= 1) {
-        showToast('Não é possível remover o único Admin Master.');
+      if (m.id === 'u_rafaela' || (m.accessLevel === 'admin' && state.team.filter(x => x.accessLevel === 'admin').length <= 1)) {
+        showToast('Não é possível remover a Admin Master principal.');
         return;
       }
       if (!confirm(`Remover o usuário "${m.name}"?`)) return;
-      state.team = state.team.filter(m => m.id !== id);
+      state.team = state.team.filter(x => x.id !== id);
+      state.team.forEach(x => { if (x.managerId === id) x.managerId = ''; });
       await safeDbDelete('vulp_team', id);
       populateSelectOptions();
       renderTeam();
