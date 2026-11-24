@@ -1406,9 +1406,12 @@
               </div>
             </div>
 
+            <div id="supabase-diagnostic-box" style="display:none;background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--navy)"></div>
+
             <div style="display:flex;flex-wrap:wrap;gap:8px">
               <button class="btn btn--sm btn--primary" onclick="connectSupabase(true)">Reconectar</button>
               <button class="btn btn--sm btn--soft" onclick="pushLocalDataToSupabase()">Sincronizar dados locais</button>
+              <button class="btn btn--sm btn--secondary" onclick="resetSupabaseDefaults()">Restaurar URL/Chave Vulp Air</button>
               <button class="btn btn--sm btn--secondary" onclick="exportJSON()">Exportar JSON</button>
               <label class="btn btn--sm btn--secondary member-only" style="cursor:pointer">
                 Importar JSON
@@ -1701,7 +1704,7 @@
     /* ==========================================================================
        SCHEMA SQL SUPABASE v3
        ========================================================================== */
-    const SUPABASE_SCHEMA_SQL = `-- VULP FLOW (VULP AIR) — SCHEMA SUPABASE v3
+    const SUPABASE_SCHEMA_SQL = `-- VULP FLOW (VULP AIR) — SCHEMA SUPABASE v3 (Idempotente)
 create table if not exists public.vulp_team (
   id text primary key,
   name text not null,
@@ -1711,6 +1714,10 @@ create table if not exists public.vulp_team (
   access_pin text not null default '',
   created_at timestamptz not null default now()
 );
+alter table public.vulp_team add column if not exists email text not null default '';
+alter table public.vulp_team add column if not exists access_level text not null default 'member';
+alter table public.vulp_team add column if not exists access_pin text not null default '';
+
 create table if not exists public.vulp_projects (
   id text primary key,
   name text not null,
@@ -1722,6 +1729,8 @@ create table if not exists public.vulp_projects (
   description text,
   created_at timestamptz not null default now()
 );
+alter table public.vulp_projects add column if not exists color text not null default '#07384D';
+
 create table if not exists public.vulp_epics (
   id text primary key,
   project_id text not null references public.vulp_projects(id) on delete cascade,
@@ -1733,6 +1742,7 @@ create table if not exists public.vulp_epics (
   description text,
   created_at timestamptz not null default now()
 );
+
 create table if not exists public.vulp_tasks (
   id text primary key,
   title text not null,
@@ -1749,6 +1759,9 @@ create table if not exists public.vulp_tasks (
   description text,
   created_at timestamptz not null default now()
 );
+alter table public.vulp_tasks add column if not exists epic_id text references public.vulp_epics(id) on delete set null;
+alter table public.vulp_tasks add column if not exists color text not null default '#07384D';
+
 create table if not exists public.vulp_docs (
   id text primary key,
   project_id text references public.vulp_projects(id) on delete cascade,
@@ -1758,11 +1771,13 @@ create table if not exists public.vulp_docs (
   updated_at text not null default to_char(now(), 'YYYY-MM-DD'),
   created_at timestamptz not null default now()
 );
+
 alter table public.vulp_team enable row level security;
 alter table public.vulp_projects enable row level security;
 alter table public.vulp_epics enable row level security;
 alter table public.vulp_tasks enable row level security;
 alter table public.vulp_docs enable row level security;
+
 drop policy if exists "vulp_team_all" on public.vulp_team;
 create policy "vulp_team_all" on public.vulp_team for all using (true) with check (true);
 drop policy if exists "vulp_projects_all" on public.vulp_projects;
@@ -1773,6 +1788,7 @@ drop policy if exists "vulp_tasks_all" on public.vulp_tasks;
 create policy "vulp_tasks_all" on public.vulp_tasks for all using (true) with check (true);
 drop policy if exists "vulp_docs_all" on public.vulp_docs;
 create policy "vulp_docs_all" on public.vulp_docs for all using (true) with check (true);
+
 do $$ begin alter publication supabase_realtime add table public.vulp_team; exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.vulp_projects; exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.vulp_epics; exception when duplicate_object then null; end $$;
@@ -2118,19 +2134,37 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const dot = document.getElementById('db-pulse-dot');
       const title = document.getElementById('db-status-title');
       const badge = document.getElementById('supabase-badge-detail');
+      const diag = document.getElementById('supabase-diagnostic-box');
       if (status === 'online') {
         dot.className = 'dot-indicator dot-indicator--online';
         title.textContent = 'Supabase conectado';
         if (badge) { badge.textContent = detail || 'Conectado • Realtime ativo'; badge.className = 'tag tag--teal'; }
+        if (diag) { diag.style.display = 'none'; diag.innerHTML = ''; }
       } else if (status === 'error') {
         dot.className = 'dot-indicator dot-indicator--error';
         title.textContent = 'Erro Supabase';
-        if (badge) { badge.textContent = detail || 'Erro ao conectar'; badge.className = 'tag tag--amber'; }
+        if (badge) { badge.textContent = 'Erro de conexão'; badge.className = 'tag tag--amber'; }
+        if (diag) {
+          diag.style.display = 'block';
+          const isSchemaErr = (detail || '').toLowerCase().includes('does not exist') || (detail || '').toLowerCase().includes('schema cache') || (detail || '').toLowerCase().includes('column');
+          diag.innerHTML = `<strong>Detalhe técnico:</strong> ${detail || 'Falha ao conectar'}<br/>` +
+            (isSchemaErr
+              ? '<strong>Como resolver:</strong> Copie o <em>Script SQL v3</em> abaixo, cole no <strong>SQL Editor</strong> do seu Supabase, clique em <strong>Run</strong> e depois clique em <strong>Reconectar</strong>.'
+              : '<strong>Como resolver:</strong> Verifique se o Script SQL v3 foi executado no Supabase SQL Editor e se a chave pública (Publishable / anon key) está correta.');
+        }
       } else {
         dot.className = 'dot-indicator dot-indicator--local';
         title.textContent = 'Modo local';
         if (badge) { badge.textContent = 'Modo local'; badge.className = 'tag tag--mint'; }
+        if (diag) { diag.style.display = 'none'; }
       }
+    }
+
+    async function resetSupabaseDefaults() {
+      localStorage.removeItem(SB_CREDS_KEY);
+      document.getElementById('sb-url').value = DEFAULT_SB_URL;
+      document.getElementById('sb-key').value = DEFAULT_SB_KEY;
+      await connectSupabase(true);
     }
 
     async function initSupabaseFromStorage() {
@@ -2243,13 +2277,31 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     async function pushLocalDataToSupabase(silent = false) {
       if (!sbConnected || !sbClient) return;
       try {
-        if (state.team.length) await sbClient.from('vulp_team').upsert(state.team.map(m => ({ id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel || 'member', access_pin: m.accessPin || '' })));
-        if (state.projects.length) await sbClient.from('vulp_projects').upsert(state.projects.map(p => ({ id: p.id, name: p.name, owner_id: p.ownerId || null, category: p.category, status: p.status, color: p.color || '#07384D', deadline: p.deadline || null, description: p.description || '' })));
-        if (state.epics.length) await sbClient.from('vulp_epics').upsert(state.epics.map(e => ({ id: e.id, project_id: e.projectId, title: e.title, owner_id: e.ownerId || null, status: e.status, color: e.color || '#5ADCE8', deadline: e.deadline || null, description: e.description || '' })));
-        if (state.tasks.length) await sbClient.from('vulp_tasks').upsert(state.tasks.map(t => toDbTask(t)));
-        if (state.docs.length) await sbClient.from('vulp_docs').upsert(state.docs.map(d => ({ id: d.id, project_id: d.projectId || null, title: d.title, content: d.content || '', author_id: d.authorId || null, updated_at: d.updatedAt || '' })));
+        if (state.team.length) {
+          const r1 = await sbClient.from('vulp_team').upsert(state.team.map(m => ({ id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel || 'member', access_pin: m.accessPin || '' })));
+          if (r1.error) throw r1.error;
+        }
+        if (state.projects.length) {
+          const r2 = await sbClient.from('vulp_projects').upsert(state.projects.map(p => ({ id: p.id, name: p.name, owner_id: p.ownerId || null, category: p.category, status: p.status, color: p.color || '#07384D', deadline: p.deadline || null, description: p.description || '' })));
+          if (r2.error) throw r2.error;
+        }
+        if (state.epics.length) {
+          const r3 = await sbClient.from('vulp_epics').upsert(state.epics.map(e => ({ id: e.id, project_id: e.projectId, title: e.title, owner_id: e.ownerId || null, status: e.status, color: e.color || '#5ADCE8', deadline: e.deadline || null, description: e.description || '' })));
+          if (r3.error) throw r3.error;
+        }
+        if (state.tasks.length) {
+          const r4 = await sbClient.from('vulp_tasks').upsert(state.tasks.map(t => toDbTask(t)));
+          if (r4.error) throw r4.error;
+        }
+        if (state.docs.length) {
+          const r5 = await sbClient.from('vulp_docs').upsert(state.docs.map(d => ({ id: d.id, project_id: d.projectId || null, title: d.title, content: d.content || '', author_id: d.authorId || null, updated_at: d.updatedAt || '' })));
+          if (r5.error) throw r5.error;
+        }
         if (!silent) showToast('Dados sincronizados.');
-      } catch (err) {}
+      } catch (err) {
+        updateDbStatusUI('error', err.message || 'Erro ao gravar dados');
+        showToast('Erro Supabase: ' + (err.message || 'verifique o SQL v3'));
+      }
     }
 
     async function dbUpsert(table, row) {
