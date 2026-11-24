@@ -1776,6 +1776,13 @@ alter table public.vulp_team enable row level security;
 alter table public.vulp_projects enable row level security;
 alter table public.vulp_epics enable row level security;
 alter table public.vulp_tasks enable row level security;
+grant usage on schema public to anon, authenticated;
+grant all on table public.vulp_team to anon, authenticated;
+grant all on table public.vulp_projects to anon, authenticated;
+grant all on table public.vulp_epics to anon, authenticated;
+grant all on table public.vulp_tasks to anon, authenticated;
+grant all on table public.vulp_docs to anon, authenticated;
+
 alter table public.vulp_docs enable row level security;
 
 drop policy if exists "vulp_team_all" on public.vulp_team;
