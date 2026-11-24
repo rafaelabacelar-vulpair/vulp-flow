@@ -1492,6 +1492,15 @@
         <section id="view-tasks" style="display:flex;flex-direction:column;gap:14px">
           <div class="filter-bar">
             <div class="filter-bar__left">
+              <select id="filter-date" class="filter-select" onchange="renderTasks()">
+                <option value="ALL">Prazo: Todos</option>
+                <option value="OVERDUE">Atrasadas</option>
+                <option value="TODAY">Para hoje</option>
+                <option value="THIS_WEEK">Nesta semana</option>
+                <option value="THIS_MONTH">Neste mês</option>
+                <option value="FUTURE">Futuras</option>
+                <option value="NO_DATE">Sem prazo</option>
+              </select>
               <select id="filter-project" class="filter-select" onchange="onFilterProjectChange()">
                 <option value="ALL">Projeto / Rotina: Todos</option>
               </select>
@@ -3546,12 +3555,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
 
     function getFilteredTasks() {
       const q = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
+      const dateF = document.getElementById('filter-date')?.value || 'ALL';
       const proj = document.getElementById('filter-project')?.value || 'ALL';
       const epic = document.getElementById('filter-epic')?.value || 'ALL';
       const area = document.getElementById('filter-area')?.value || 'ALL';
       const ass = document.getElementById('filter-assignee')?.value || 'ALL';
       const rec = document.getElementById('filter-recurrence')?.value || 'ALL';
 
+      document.getElementById('filter-date')?.classList.toggle('is-filtered', dateF !== 'ALL');
       document.getElementById('filter-epic')?.classList.toggle('is-filtered', epic !== 'ALL');
       document.getElementById('filter-area')?.classList.toggle('is-filtered', area !== 'ALL');
       document.getElementById('filter-assignee')?.classList.toggle('is-filtered', ass !== 'ALL');
@@ -3568,6 +3579,42 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         if (rec === 'RECURRING' && spec.mode !== 'period') return false;
         if (rec === 'INFINITE' && (spec.mode !== 'period' || Boolean(spec.end))) return false;
         if (rec === 'ONCE' && spec.mode !== 'single') return false;
+        
+        if (dateF !== 'ALL') {
+          if (!t.due) {
+            if (dateF !== 'NO_DATE') return false;
+          } else {
+            if (dateF === 'NO_DATE') return false;
+            
+            // Get local date safely
+            const d = new Date();
+            const tz = d.getTimezoneOffset() * 60000;
+            const localNow = new Date(d.getTime() - tz);
+            const today = localNow.toISOString().split('T')[0];
+            
+            if (dateF === 'OVERDUE' && (t.due >= today || t.status === 'done')) return false;
+            if (dateF === 'TODAY' && t.due !== today) return false;
+            if (dateF === 'THIS_WEEK') {
+              const day = localNow.getUTCDay();
+              const diff = day === 0 ? -6 : 1 - day;
+              const mon = new Date(localNow); mon.setUTCDate(localNow.getUTCDate() + diff);
+              const sun = new Date(mon); sun.setUTCDate(mon.getUTCDate() + 6);
+              const monIso = mon.toISOString().split('T')[0];
+              const sunIso = sun.toISOString().split('T')[0];
+              if (t.due < monIso || t.due > sunIso) return false;
+            }
+            if (dateF === 'THIS_MONTH') {
+              const currentMonth = today.substring(0, 7);
+              if (!t.due.startsWith(currentMonth)) return false;
+            }
+            if (dateF === 'FUTURE') {
+              // End of current month
+              const nextMonth = new Date(localNow.getUTCFullYear(), localNow.getUTCMonth() + 1, 1);
+              const nextMonthIso = new Date(nextMonth.getTime() - tz).toISOString().split('T')[0];
+              if (t.due < nextMonthIso) return false;
+            }
+          }
+        }
         if (q) {
           const hay = `${t.code || ''} ${t.title} ${t.description || ''} ${taskArea}`.toLowerCase();
           if (!hay.includes(q)) return false;
@@ -5737,4 +5784,3 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
   </script>
 </body>
 </html>
-
