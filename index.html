@@ -215,7 +215,7 @@
       font-weight: 700;
     }
 
-    /* Weekday Pills (Recorrência estilo limpo) */
+    /* Weekday Pills */
     .weekday-row {
       display: flex;
       flex-wrap: wrap;
@@ -501,7 +501,7 @@
       display: inline-block;
       margin-right: 6px;
     }
-    .dot-indicator--online {{ background: var(--lime); }}
+    .dot-indicator--online { background: var(--lime); }
     .dot-indicator--local { background: var(--teal); }
     .dot-indicator--error { background: var(--amber); }
 
@@ -874,6 +874,9 @@
       padding: 16px;
       z-index: 150;
     }
+    .modal-backdrop--top {
+      z-index: 185;
+    }
     .modal-backdrop.is-open { display: flex; }
     .modal-panel {
       background: var(--white);
@@ -990,7 +993,7 @@
       flex-direction: column;
       gap: 12px;
     }
-    .md-toolbar {{
+    .md-toolbar {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -998,7 +1001,7 @@
       border-bottom: 1px solid var(--line);
       align-items: center;
       justify-content: space-between;
-    }}
+    }
     .md-split {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1198,7 +1201,7 @@
       </div>
 
       <div id="login-default-hint" class="t-micro" style="background:var(--mint-page);padding:8px 10px;border-radius:6px;border:1px solid var(--line)">
-        Senha inicial padrão dos usuários cadastrados: <strong>vulp2026</strong>
+        Senha inicial: <strong>vulp2026</strong> (você pode alterar na aba Equipe e acessos)
       </div>
 
       <button class="btn btn--lg btn--primary" style="width:100%" onclick="submitLoginGate()">
@@ -1261,10 +1264,10 @@
       <div class="sidebar-bottom">
         <div class="session-card">
           <div style="display:flex;align-items:center;gap:9px">
-            <div class="avatar-teal" id="session-avatar">MC</div>
+            <div class="avatar-teal" id="session-avatar">RB</div>
             <div style="min-width:0;flex:1">
-              <div style="font-size:12px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="session-user-name">Mariana Costa</div>
-              <div style="font-size:10px;color:var(--teal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="session-user-role">Product Ops</div>
+              <div style="font-size:12px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="session-user-name">Rafaela Bacelar</div>
+              <div style="font-size:10px;color:var(--teal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="session-user-role">Admin Master</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid rgba(255,255,255,0.1)">
@@ -1328,9 +1331,10 @@
                 <option value="ALL">Responsável: Todos</option>
               </select>
               <select id="filter-recurrence" class="filter-select" onchange="renderTasks()">
-                <option value="ALL">Ciclo: Todos</option>
-                <option value="RECURRING">Recorrentes</option>
-                <option value="ONCE">Pontuais</option>
+                <option value="ALL">Tipo: Todos</option>
+                <option value="ONCE">Pontuais (1 dia)</option>
+                <option value="RECURRING">Recorrentes (todas)</option>
+                <option value="INFINITE">Recorrentes sem fim</option>
               </select>
             </div>
 
@@ -1344,7 +1348,7 @@
         </section>
 
         <!-- ====================================================================
-             ABA 2: PROJETOS (SEM BOTÕES DUPLICADOS DE NOVO PROJETO / NOVO ÉPICO)
+             ABA 2: PROJETOS
              ==================================================================== -->
         <section id="view-projects" style="display:none;flex-direction:column;gap:14px">
           <div class="filter-bar">
@@ -1355,8 +1359,8 @@
               <button class="btn btn--xs btn--ghost" onclick="toggleAllCascade(true)">Expandir tudo</button>
               <button class="btn btn--xs btn--ghost" onclick="toggleAllCascade(false)">Recolher tudo</button>
             </div>
-            <div class="admin-only" style="display:flex;gap:8px">
-              <button class="btn btn--sm btn--secondary" onclick="openCategoriesModal()">Gerenciar frentes</button>
+            <div class="editor-only" style="display:flex;gap:8px">
+              <button type="button" class="btn btn--sm btn--secondary" onclick="openCategoriesModal()">Frentes de projeto</button>
             </div>
           </div>
 
@@ -1364,7 +1368,7 @@
         </section>
 
         <!-- ====================================================================
-             ABA 3: DOCUMENTAÇÃO MARKDOWN (COM UPLOAD DE ARQUIVOS .MD / .TXT)
+             ABA 3: DOCUMENTAÇÃO MARKDOWN
              ==================================================================== -->
         <section id="view-docs" style="display:none;flex-direction:column;gap:14px">
           <div class="filter-bar">
@@ -1374,12 +1378,12 @@
               </select>
             </div>
             <div class="editor-only" style="display:flex;gap:8px;align-items:center">
-              <label class="btn btn--sm btn--soft" style="cursor:pointer" title="Enviar arquivos .md ou .txt do computador">
+              <input type="file" id="md-file-upload-input" multiple style="position:fixed;left:-9999px;opacity:0" onchange="handleMarkdownFileUpload(event)" />
+              <button type="button" class="btn btn--sm btn--soft" onclick="triggerDocFileUpload()">
                 <svg class="va-icon" width="14" height="14" style="transform:rotate(180deg)"><use href="#va-download"/></svg>
                 <span>Subir arquivo (.md / .txt)</span>
-                <input type="file" id="md-file-upload-input" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple style="display:none" onchange="handleMarkdownFileUpload(event)" />
-              </label>
-              <button class="btn btn--sm btn--primary" onclick="openNewDocModal()">+ Novo documento .md</button>
+              </button>
+              <button type="button" class="btn btn--sm btn--primary" onclick="openNewDocModal()">+ Novo documento .md</button>
             </div>
           </div>
           <div id="global-wiki-container"
@@ -1389,7 +1393,7 @@
         </section>
 
         <!-- ====================================================================
-             ABA 4: EQUIPE E ACESSOS (ADMIN MASTER, PADRÃO, VISUALIZADOR + SENHAS)
+             ABA 4: EQUIPE E ACESSOS
              ==================================================================== -->
         <section id="view-team" style="display:none;flex-direction:column;gap:16px">
           <div class="admin-only" style="background:var(--surface-subtle);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:12px">
@@ -1488,7 +1492,7 @@
   </div>
 
   <!-- ==========================================================================
-       POP-UP MODAL: CRIAR / EDITAR TAREFA (IGUAL AO PROJETO E ÉPICO, SEM FERRAMENTA)
+       POP-UP MODAL: CRIAR / EDITAR TAREFA
        ========================================================================== -->
   <div class="modal-backdrop" id="task-modal">
     <div class="modal-panel" style="max-width:580px">
@@ -1521,7 +1525,7 @@
         </div>
       </div>
 
-      <!-- De quem é? / Prioridade / Status -->
+      <!-- De quem é? / Prioridade -->
       <div class="modal-grid-2">
         <div class="field">
           <label class="field__label">De quem é? (Responsável)</label>
@@ -1547,40 +1551,49 @@
         </select>
       </div>
 
-      <!-- Quando? (Num dia só vs Repetir num período com dias da semana e preview) -->
+      <!-- Quando? (Tarefa pontual num dia só vs Tarefa recorrente sem fim ou com data final) -->
       <div class="modal-section-box">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <span class="field__label" style="margin:0;color:var(--navy)">Quando?</span>
           <div class="segmented-group">
-            <button type="button" class="segmented-btn is-active" id="btn-when-single" onclick="setTaskRepeatMode('single')">Num dia só</button>
-            <button type="button" class="segmented-btn" id="btn-when-period" onclick="setTaskRepeatMode('period')">Repetir num período</button>
+            <button type="button" class="segmented-btn is-active" id="btn-when-single" onclick="setTaskRepeatMode('single')">Tarefa pontual</button>
+            <button type="button" class="segmented-btn" id="btn-when-period" onclick="setTaskRepeatMode('period')">Tarefa recorrente</button>
           </div>
         </div>
 
-        <!-- Modo 1: Num dia só -->
+        <!-- Modo 1: Tarefa pontual (Num dia só) -->
         <div id="when-single-box">
           <div class="field">
-            <label class="field__label">Data</label>
+            <label class="field__label">Num dia só</label>
             <input type="date" id="task-due-single" class="field__input" />
           </div>
         </div>
 
-        <!-- Modo 2: Repetir num período -->
+        <!-- Modo 2: Tarefa recorrente (Sem fim ou com data final) -->
         <div id="when-period-box" style="display:none;flex-direction:column;gap:10px">
-          <div class="modal-grid-2">
-            <div class="field">
-              <label class="field__label">De</label>
-              <input type="date" id="task-repeat-start" class="field__input" onchange="updateRecurrencePreview()" />
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <span class="field__label" style="margin:0">Duração da repetição</span>
+            <div class="segmented-group">
+              <button type="button" class="segmented-btn is-active" id="btn-end-infinite" onclick="setTaskEndMode('infinite')">Sem fim</button>
+              <button type="button" class="segmented-btn" id="btn-end-date" onclick="setTaskEndMode('date')">Definir data final</button>
             </div>
+          </div>
+
+          <div class="modal-grid-2" id="repeat-dates-grid" style="grid-template-columns:1fr">
             <div class="field">
+              <label class="field__label">A partir de</label>
+              <input type="date" id="task-repeat-start" class="field__input" onchange="onRepeatStartDateChange()" />
+            </div>
+            <div class="field" id="repeat-end-field" style="display:none">
               <label class="field__label">Até (último dia)</label>
               <input type="date" id="task-repeat-end" class="field__input" onchange="updateRecurrencePreview()" />
             </div>
           </div>
 
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('all')">Todos os dias</button>
+            <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('oneday')">Num dia só (1x/sem)</button>
             <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('weekdays')">Dias úteis</button>
+            <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('all')">Todos os dias</button>
           </div>
 
           <div class="weekday-row" id="task-weekdays-row">
@@ -1594,7 +1607,7 @@
           </div>
 
           <div class="recurrence-summary-box" id="recurrence-preview-text">
-            Vai aparecer 8 vezes. Depois disso some sozinha.
+            Tarefa recorrente sem fim. Ao concluir, a próxima é criada automaticamente.
           </div>
         </div>
       </div>
@@ -1636,8 +1649,8 @@
         </div>
         <div class="field">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <label class="field__label">Frente</label>
-            <button type="button" class="admin-only" style="background:none;border:none;color:var(--navy);font-size:11px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline" onclick="openCategoriesModal()">+ Gerenciar frentes</button>
+            <label class="field__label">Frente (Área)</label>
+            <button type="button" class="editor-only" style="background:none;border:none;color:var(--navy);font-size:11px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline" onclick="openCategoriesModal()">+ Nova frente</button>
           </div>
           <select id="project-category" class="field__input"></select>
         </div>
@@ -1674,15 +1687,15 @@
   </div>
 
   <!-- ==========================================================================
-       MODAL: GERENCIAR FRENTES (CADASTRAR, EDITAR E EXCLUIR FRENTES DE PROJETO)
+       MODAL: GERENCIAR FRENTES (Z-INDEX SUPERIOR AO MODAL DE PROJETO)
        ========================================================================== -->
-  <div class="modal-backdrop" id="categories-modal">
+  <div class="modal-backdrop modal-backdrop--top" id="categories-modal">
     <div class="modal-panel" style="max-width:460px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 class="t-h2">Frentes de Projeto</h3>
+        <h3 class="t-h2">Frentes de Projeto (Categorias)</h3>
         <button class="icon-btn" onclick="closeModal('categories-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
       </div>
-      <p class="t-cap" style="margin:0">Cadastre novas frentes ou controle as frentes disponíveis ao criar projetos.</p>
+      <p class="t-cap" style="margin:0">Frentes são as áreas de atuação usadas para agrupar seus projetos (ex: Engenharia, Operações, Comercial).</p>
 
       <div style="display:flex;gap:8px">
         <input type="text" id="new-category-input" class="field__input" placeholder="Nome da nova frente..." onkeydown="if(event.key==='Enter') addProjectCategory()" />
@@ -1698,7 +1711,7 @@
   </div>
 
   <!-- ==========================================================================
-       MODAL: ÉPICO (COM ID E-1 E EXCLUIR)
+       MODAL: ÉPICO
        ========================================================================== -->
   <div class="modal-backdrop" id="epic-modal">
     <div class="modal-panel">
@@ -1748,7 +1761,7 @@
   <!-- ==========================================================================
        MODAL: NOVO DOCUMENTO MARKDOWN
        ========================================================================== -->
-  <div class="modal-backdrop" id="new-doc-modal">
+  <div class="modal-backdrop modal-backdrop--top" id="new-doc-modal">
     <div class="modal-panel" style="max-width:440px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h3 class="t-h2">Novo documento Markdown</h3>
@@ -1772,7 +1785,7 @@
   <!-- ==========================================================================
        MODAL: ALTERAR SENHA DE USUÁRIO
        ========================================================================== -->
-  <div class="modal-backdrop" id="password-modal">
+  <div class="modal-backdrop modal-backdrop--top" id="password-modal">
     <div class="modal-panel" style="max-width:400px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h3 class="t-h2" id="password-modal-title">Alterar senha</h3>
@@ -1793,7 +1806,7 @@
   <!-- ==========================================================================
        MODAL: COMPARTILHAR ACESSO
        ========================================================================== -->
-  <div class="modal-backdrop" id="share-modal">
+  <div class="modal-backdrop modal-backdrop--top" id="share-modal">
     <div class="modal-panel" style="max-width:480px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h3 class="t-h2">Links de acesso</h3>
@@ -1917,13 +1930,15 @@ alter table public.vulp_tasks drop constraint if exists vulp_tasks_assignee_id_f
 
 create table if not exists public.vulp_docs (
   id text primary key,
-  project_id text references public.vulp_projects(id) on delete cascade,
+  project_id text,
   title text not null,
   content text not null default '',
-  author_id text references public.vulp_team(id) on delete set null,
+  author_id text,
   updated_at text not null default to_char(now(), 'YYYY-MM-DD'),
   created_at timestamptz not null default now()
 );
+alter table public.vulp_docs drop constraint if exists vulp_docs_project_id_fkey;
+alter table public.vulp_docs drop constraint if exists vulp_docs_author_id_fkey;
 
 grant usage on schema public to anon, authenticated;
 grant all on table public.vulp_team to anon, authenticated;
@@ -1963,9 +1978,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
     /* ==========================================================================
        ESTADO, CREDENCIAIS EMBUTIDAS & PERSISTÊNCIA
        ========================================================================== */
-    const STORAGE_KEY = 'vulp_flow_state_v7';
+    const STORAGE_KEY = 'vulp_flow_state_v8';
     const SB_CREDS_KEY = 'vulp_flow_supabase_creds_v1';
-    const SESSION_KEY = 'vulp_flow_session_v2';
+    const SESSION_KEY = 'vulp_flow_session_v3';
+    const FICTITIOUS_USER_IDS = new Set(['u1', 'u2', 'u3', 'u4', 'u5']);
     const DEFAULT_SB_URL = 'https://kqatzgclcxrkibvywigo.supabase.co';
     const DEFAULT_SB_KEY = 'sb_publishable_xmdMl6UhilK9K8azlVqzwg_HxI_voAY';
 
@@ -1990,21 +2006,26 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       'Implantação Cliente'
     ];
 
+    const RAFAELA_ADMIN_USER = {
+      id: 'u_rafaela',
+      name: 'Rafaela Bacelar',
+      email: 'rafaela.bacelar@vulpair.com.br',
+      role: 'Admin Master',
+      accessLevel: 'admin',
+      accessPin: 'vulp2026'
+    };
+
     const DEFAULT_STATE = {
       categories: [...DEFAULT_CATEGORIES],
       team: [
-        { id: 'u1', name: 'Mariana Costa', email: 'mariana@vulpair.com.br', role: 'Product Ops e Gestão', accessLevel: 'admin', accessPin: 'vulp2026' },
-        { id: 'u2', name: 'Lucas Mendes', email: 'lucas@vulpair.com.br', role: 'Engenharia de Automação e IA', accessLevel: 'admin', accessPin: 'vulp2026' },
-        { id: 'u3', name: 'Rafael Oliveira', email: 'rafael@vulpair.com.br', role: 'Coordenação Técnica HVAC / PMOC', accessLevel: 'member', accessPin: 'vulp2026' },
-        { id: 'u4', name: 'Camila Ferreira', email: 'camila@vulpair.com.br', role: 'Documentação e Processos', accessLevel: 'member', accessPin: 'vulp2026' },
-        { id: 'u5', name: 'Diretoria Executiva', email: 'diretoria@vulpair.com.br', role: 'Controladoria e Diretoria', accessLevel: 'viewer', accessPin: 'vulp2026' }
+        { ...RAFAELA_ADMIN_USER }
       ],
       projects: [
         {
           id: 'p1',
           code: 'P-1',
           name: 'Automação Jira e Claude AI',
-          ownerId: 'u2',
+          ownerId: 'u_rafaela',
           category: 'IA e Conhecimento',
           status: 'Em andamento',
           color: '#07384D',
@@ -2015,7 +2036,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           id: 'p2',
           code: 'P-2',
           name: 'Confluence e PMOC Digital',
-          ownerId: 'u4',
+          ownerId: 'u_rafaela',
           category: 'Operações e PMOC',
           status: 'Em andamento',
           color: '#3C6776',
@@ -2029,7 +2050,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           code: 'E-1',
           projectId: 'p1',
           title: 'Motor de Triagem Inteligente',
-          ownerId: 'u2',
+          ownerId: 'u_rafaela',
           status: 'Em andamento',
           color: '#5ADCE8',
           deadline: '2026-12-05',
@@ -2040,7 +2061,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           code: 'E-2',
           projectId: 'p1',
           title: 'Governança de SLAs 24x7',
-          ownerId: 'u1',
+          ownerId: 'u_rafaela',
           status: 'Em andamento',
           color: '#DCEB15',
           deadline: '2026-12-12',
@@ -2051,7 +2072,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           code: 'E-3',
           projectId: 'p2',
           title: 'Conformidade Legal PMOC / ART',
-          ownerId: 'u3',
+          ownerId: 'u_rafaela',
           status: 'Em andamento',
           color: '#07384D',
           deadline: '2026-12-18',
@@ -2065,7 +2086,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           title: 'Configurar webhook para Claude com resumo de incidentes',
           projectId: 'p1',
           epicId: 'e1',
-          assigneeId: 'u2',
+          assigneeId: 'u_rafaela',
           priority: 'Alta',
           status: 'doing',
           color: '#5ADCE8',
@@ -2080,12 +2101,12 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           title: 'Revisão semanal de backlog e SLAs 24x7',
           projectId: 'p1',
           epicId: 'e2',
-          assigneeId: 'u1',
+          assigneeId: 'u_rafaela',
           priority: 'Alta',
           status: 'todo',
           color: '#DCEB15',
           due: '2026-11-24',
-          recurrence: 'period|2026-12-22|1,3,5',
+          recurrence: 'period||1,3,5',
           cycleCount: 1,
           description: 'Auditar chamados abertos e atualizar prioridades da sprint.'
         },
@@ -2095,7 +2116,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           title: 'Auditoria de conformidade PMOC / ART',
           projectId: 'p2',
           epicId: 'e3',
-          assigneeId: 'u3',
+          assigneeId: 'u_rafaela',
           priority: 'Alta',
           status: 'todo',
           color: '#07384D',
@@ -2111,7 +2132,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           projectId: 'p1',
           title: 'Arquitetura_Integracao_Claude_Jira.md',
           updatedAt: '2026-11-24',
-          authorId: 'u2',
+          authorId: 'u_rafaela',
           content: `# Arquitetura de integração: Operações, Claude AI e App AUVO
 
 ## Objetivo
@@ -2134,6 +2155,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     let activeGlobalDocId = null;
     let mdViewMode = 'split';
     let currentRepeatMode = 'single';
+    let currentRepeatEndMode = 'infinite';
 
     function ensureCodesAndDefaults(st) {
       if (!Array.isArray(st.categories) || !st.categories.length) {
@@ -2143,15 +2165,34 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (!Array.isArray(st.projects)) st.projects = [];
       if (!Array.isArray(st.tasks)) st.tasks = [];
       if (!Array.isArray(st.docs)) st.docs = [];
-      if (!Array.isArray(st.team) || !st.team.length) st.team = JSON.parse(JSON.stringify(DEFAULT_STATE.team));
+      if (!Array.isArray(st.team)) st.team = [];
 
-      let hasAdmin = false;
+      // Remover usuários fictícios antigos (u1..u5)
+      st.team = st.team.filter(m => !FICTITIOUS_USER_IDS.has(m.id));
+
+      // Garantir que Rafaela Bacelar exista como Admin Master
+      let rafa = st.team.find(m => m.id === 'u_rafaela' || (m.email && m.email.toLowerCase() === 'rafaela.bacelar@vulpair.com.br'));
+      if (!rafa) {
+        rafa = { ...RAFAELA_ADMIN_USER };
+        st.team.unshift(rafa);
+      } else {
+        rafa.id = 'u_rafaela';
+        rafa.name = 'Rafaela Bacelar';
+        rafa.email = 'rafaela.bacelar@vulpair.com.br';
+        rafa.accessLevel = 'admin';
+        if (!rafa.accessPin || !rafa.accessPin.trim()) rafa.accessPin = 'vulp2026';
+      }
+
+      // Reatribuir itens que apontavam para usuários fictícios para Rafaela
+      st.projects.forEach(p => { if (!p.ownerId || FICTITIOUS_USER_IDS.has(p.ownerId)) p.ownerId = 'u_rafaela'; });
+      st.epics.forEach(e => { if (!e.ownerId || FICTITIOUS_USER_IDS.has(e.ownerId)) e.ownerId = 'u_rafaela'; });
+      st.tasks.forEach(t => { if (!t.assigneeId || FICTITIOUS_USER_IDS.has(t.assigneeId)) t.assigneeId = 'u_rafaela'; });
+      st.docs.forEach(d => { if (!d.authorId || FICTITIOUS_USER_IDS.has(d.authorId)) d.authorId = 'u_rafaela'; });
+
       st.team.forEach(m => {
         if (!m.accessPin || !m.accessPin.trim()) m.accessPin = 'vulp2026';
         if (!['admin', 'member', 'viewer'].includes(m.accessLevel)) m.accessLevel = 'member';
-        if (m.accessLevel === 'admin') hasAdmin = true;
       });
-      if (!hasAdmin && st.team.length) st.team[0].accessLevel = 'admin';
 
       assignMissingCodes(st.projects, 'P');
       assignMissingCodes(st.epics, 'E');
@@ -2194,7 +2235,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
     function loadLocalState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('vulp_flow_state_v6');
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('vulp_flow_state_v7') || localStorage.getItem('vulp_flow_state_v6');
         if (raw) {
           return ensureCodesAndDefaults(JSON.parse(raw));
         }
@@ -2246,7 +2287,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
           const dbUser = state.team.find(m => m.id === saved.userId);
           if (dbUser) {
             currentSession = {
-              mode: dbUser.accessLevel || 'member',
+              mode: dbUser.accessLevel || 'admin',
               userId: dbUser.id,
               name: dbUser.name,
               role: dbUser.role
@@ -2266,7 +2307,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const params = new URLSearchParams(window.location.search);
       const preUid = params.get('uid');
       sel.innerHTML = state.team.map(m =>
-        `<option value="${m.id}" ${preUid === m.id ? 'selected' : ''}>${m.name} — ${getRoleLabel(m.accessLevel)}</option>`
+        `<option value="${m.id}" ${preUid === m.id ? 'selected' : ''}>${m.name} (${m.email || getRoleLabel(m.accessLevel)}) — ${getRoleLabel(m.accessLevel)}</option>`
       ).join('');
       document.getElementById('login-password-input').value = '';
       const hasDefaultPwd = state.team.some(m => m.accessPin === 'vulp2026');
@@ -2296,7 +2337,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       document.getElementById('login-gate').classList.remove('is-open');
       applySessionPermissions();
       refreshCurrentView();
-      showToast(`Bem-vindo(a), ${member.name} (${getRoleLabel(currentSession.mode)}).`);
+      showToast(`Bem-vinda, ${member.name} (${getRoleLabel(currentSession.mode)}).`);
     }
 
     function logoutSession() {
@@ -2345,7 +2386,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       INTEGRAÇÃO SUPABASE (RESILIENTE A SCHEMA v3 E v4)
+       INTEGRAÇÃO SUPABASE
        ========================================================================== */
     function updateDbStatusUI(status, detail) {
       const dot = document.getElementById('db-pulse-dot');
@@ -2394,6 +2435,24 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       } catch (e) {}
     }
 
+    async function syncRafaelaAndPurgeFictitiousInDb() {
+      if (!sbConnected || !sbClient) return;
+      try {
+        const rafa = state.team.find(m => m.id === 'u_rafaela') || RAFAELA_ADMIN_USER;
+        await sbClient.from('vulp_team').upsert({
+          id: 'u_rafaela',
+          name: rafa.name,
+          email: rafa.email,
+          role: rafa.role,
+          access_level: 'admin',
+          access_pin: rafa.accessPin || 'vulp2026'
+        });
+        for (const fid of FICTITIOUS_USER_IDS) {
+          await sbClient.from('vulp_team').delete().eq('id', fid);
+        }
+      } catch (e) {}
+    }
+
     async function connectSupabase(isManual = false) {
       const url = document.getElementById('sb-url').value.trim();
       const key = document.getElementById('sb-key').value.trim();
@@ -2418,11 +2477,16 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         sbConnected = true;
 
         const catRows = (!catRes.error && Array.isArray(catRes.data)) ? catRes.data : null;
+        const hasFictitious = teamRes.data.some(r => FICTITIOUS_USER_IDS.has(r.id));
+        const hasRafa = teamRes.data.some(r => r.id === 'u_rafaela');
 
         if (teamRes.data.length === 0 && projRes.data.length === 0 && taskRes.data.length === 0) {
           await pushLocalDataToSupabase(true);
         } else {
           hydrateStateFromSupabase(teamRes.data, projRes.data, epicRes.data, taskRes.data, docRes.data, catRows);
+          if (hasFictitious || !hasRafa) {
+            await syncRafaelaAndPurgeFictitiousInDb();
+          }
         }
 
         setupSupabaseRealtime();
@@ -2464,6 +2528,9 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
       ensureCodesAndDefaults(state);
       saveLocalCache();
+      if (document.getElementById('login-gate').classList.contains('is-open')) {
+        openLoginGate();
+      }
       if (currentSession) {
         const refreshedUser = state.team.find(m => m.id === currentSession.userId);
         if (refreshedUser) {
@@ -2499,7 +2566,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (!sbClient) return;
       if (sbRealtimeChannel) sbClient.removeChannel(sbRealtimeChannel);
       sbRealtimeChannel = sbClient
-        .channel('vulp-flow-realtime-v7')
+        .channel('vulp-flow-realtime-v8')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_team' }, () => refreshFromSupabaseSilent())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_categories' }, () => refreshFromSupabaseSilent())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_projects' }, () => refreshFromSupabaseSilent())
@@ -2512,11 +2579,17 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     async function safeDbUpsert(table, row) {
       saveLocalCache();
       if (!sbConnected || !sbClient) return { ok: true, localOnly: true };
-      let res = await sbClient.from(table).upsert(row);
+      let payload = { ...row };
+      let res = await sbClient.from(table).upsert(payload);
       if (res.error && res.error.message && res.error.message.includes('code')) {
-        const fallback = { ...row };
-        delete fallback.code;
-        res = await sbClient.from(table).upsert(fallback);
+        delete payload.code;
+        res = await sbClient.from(table).upsert(payload);
+      }
+      if (res.error && res.error.message && (res.error.message.includes('foreign key') || res.error.message.includes('fkey'))) {
+        if ('project_id' in payload) payload.project_id = null;
+        if ('author_id' in payload) payload.author_id = null;
+        if ('assignee_id' in payload) payload.assignee_id = null;
+        res = await sbClient.from(table).upsert(payload);
       }
       if (res.error) {
         console.warn('Supabase upsert warning on', table, res.error.message);
@@ -2536,6 +2609,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     async function pushLocalDataToSupabase(silent = false) {
       if (!sbConnected || !sbClient) return;
       try {
+        await syncRafaelaAndPurgeFictitiousInDb();
         for (const m of state.team) {
           await safeDbUpsert('vulp_team', { id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel || 'member', access_pin: m.accessPin || 'vulp2026' });
         }
@@ -2578,7 +2652,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
     function getMember(id) {
       if (id === 'team_all') return { id: 'team_all', name: 'Juntos (Equipe)', role: 'Colaborativo', accessLevel: 'member' };
-      return state.team.find(m => m.id === id) || { name: 'Não atribuído', role: '—', accessLevel: 'member' };
+      return state.team.find(m => m.id === id) || { name: 'Rafaela Bacelar', role: 'Admin Master', accessLevel: 'admin' };
     }
     function getInitials(name) {
       if (name === 'Juntos (Equipe)') return 'EQ';
@@ -2686,20 +2760,32 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       LÓGICA DE RECORRÊNCIA AVANÇADA (PERÍODO + DIAS DA SEMANA + PREVIEW)
+       LÓGICA DE RECORRÊNCIA (PONTUAL NUM DIA SÓ vs RECORRENTE SEM FIM / COM DATA)
+       Formato salvo no campo `recurrence`:
+       - 'none' -> Tarefa pontual (num dia só)
+       - 'period||1,2,3' -> Tarefa recorrente SEM FIM nos dias marcados
+       - 'period|YYYY-MM-DD|1,2,3' -> Tarefa recorrente ATÉ uma data final
        ========================================================================== */
     function parseRecurrenceSpec(recStr, startDateStr) {
       if (!recStr || recStr === 'none') {
-        return { mode: 'single', start: startDateStr || '', end: '', days: [1, 2, 3, 4, 5, 6, 0] };
+        return { mode: 'single', endMode: 'infinite', start: startDateStr || '', end: '', days: [1, 2, 3, 4, 5, 6, 0] };
       }
       if (recStr.startsWith('period|')) {
         const parts = recStr.split('|');
         const end = parts[1] || '';
         const days = (parts[2] || '').split(',').filter(x => x !== '').map(Number);
-        return { mode: 'period', start: startDateStr || '', end, days: days.length ? days : [1, 2, 3, 4, 5, 6, 0] };
+        return {
+          mode: 'period',
+          endMode: end ? 'date' : 'infinite',
+          start: startDateStr || '',
+          end,
+          days: days.length ? days : [1, 2, 3, 4, 5, 6, 0]
+        };
       }
-      const legacyDays = recStr === 'daily' ? [1, 2, 3, 4, 5, 6, 0] : [new Date((startDateStr || new Date().toISOString().split('T')[0]) + 'T12:00:00').getDay()];
-      return { mode: 'period', start: startDateStr || '', end: '', days: legacyDays };
+      const legacyDays = recStr === 'daily'
+        ? [1, 2, 3, 4, 5, 6, 0]
+        : [new Date((startDateStr || new Date().toISOString().split('T')[0]) + 'T12:00:00').getDay()];
+      return { mode: 'period', endMode: 'infinite', start: startDateStr || '', end: '', days: legacyDays };
     }
 
     function formatShortDateBR(isoDate) {
@@ -2743,21 +2829,24 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       return null;
     }
 
+    function formatDaysShortLabel(daysArray) {
+      const sorted = [...daysArray].sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b));
+      if (sorted.length === 7) return 'Todos os dias';
+      if (sorted.length === 5 && !sorted.includes(0) && !sorted.includes(6)) return 'Dias úteis';
+      if (sorted.length === 1) return `Toda ${WEEKDAY_NAMES_SHORT[sorted[0]]}`;
+      return sorted.map(d => WEEKDAY_NAMES_SHORT[d]).join(', ');
+    }
+
     function formatRecurrenceBadge(t) {
       const spec = parseRecurrenceSpec(t.recurrence, t.due);
       if (spec.mode === 'single') return '';
-      const sorted = [...spec.days].sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b));
-      let daysLabel = '';
-      if (sorted.length === 7) daysLabel = 'Todos os dias';
-      else if (sorted.length === 5 && !sorted.includes(0) && !sorted.includes(6)) daysLabel = 'Dias úteis';
-      else daysLabel = sorted.map(d => WEEKDAY_NAMES_SHORT[d]).join(', ');
-
+      const daysLabel = formatDaysShortLabel(spec.days);
       if (spec.end && t.due) {
         const count = computeMatchingDates(t.due, spec.end, spec.days).length;
         const [, m, d] = spec.end.split('-');
         return `${daysLabel} • ${count}x (até ${d}/${m})`;
       }
-      return daysLabel;
+      return `${daysLabel} • Sem fim`;
     }
 
     /* ==========================================================================
@@ -2785,9 +2874,10 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         if (proj !== 'ALL' && t.projectId !== proj) return false;
         if (epic !== 'ALL' && t.epicId !== epic) return false;
         if (ass !== 'ALL' && t.assigneeId !== ass) return false;
-        const isRec = t.recurrence && t.recurrence !== 'none';
-        if (rec === 'RECURRING' && !isRec) return false;
-        if (rec === 'ONCE' && isRec) return false;
+        const spec = parseRecurrenceSpec(t.recurrence, t.due);
+        if (rec === 'RECURRING' && spec.mode !== 'period') return false;
+        if (rec === 'INFINITE' && (spec.mode !== 'period' || Boolean(spec.end))) return false;
+        if (rec === 'ONCE' && spec.mode !== 'single') return false;
         if (q) {
           const hay = `${t.code || ''} ${t.title} ${t.description || ''}`.toLowerCase();
           if (!hay.includes(q)) return false;
@@ -2866,7 +2956,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
           <!-- Título -->
           <h4 class="task-card__title">${t.title}</h4>
 
-          <!-- Rodapé (sem Ferramenta) -->
+          <!-- Rodapé -->
           <div class="task-card__foot">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               ${t.priority === 'Alta' ? `<span style="font-size:10px;font-weight:700;color:var(--amber)">• Alta</span>` : ''}
@@ -3009,7 +3099,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                 ${editable ? `
                   <button class="btn btn--xs btn--secondary" onclick="openProjectModal('${proj.id}')">Editar</button>
                   <button class="btn btn--xs btn--soft" onclick="openEpicModal(null, '${proj.id}')">+ Épico</button>
-                  <button class="btn btn--xs btn--primary" onclick="openTaskModal(null, '${proj.id}}')">+ Tarefa</button>
+                  <button class="btn btn--xs btn--primary" onclick="openTaskModal(null, '${proj.id}')">+ Tarefa</button>
                 ` : ''}
                 ${admin ? `
                   <button class="icon-btn icon-btn--danger" onclick="deleteProjectById('${proj.id}', false)" title="Excluir projeto">
@@ -3125,15 +3215,37 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (mode === 'period') {
         const singleVal = document.getElementById('task-due-single').value || new Date().toISOString().split('T')[0];
         const startEl = document.getElementById('task-repeat-start');
-        const endEl = document.getElementById('task-repeat-end');
         if (!startEl.value) startEl.value = singleVal;
-        if (!endEl.value) {
-          const d = new Date(startEl.value + 'T12:00:00');
+        setTaskEndMode(currentRepeatEndMode);
+      }
+    }
+
+    function setTaskEndMode(endMode) {
+      currentRepeatEndMode = endMode;
+      document.getElementById('btn-end-infinite').classList.toggle('is-active', endMode === 'infinite');
+      document.getElementById('btn-end-date').classList.toggle('is-active', endMode === 'date');
+      const endField = document.getElementById('repeat-end-field');
+      const grid = document.getElementById('repeat-dates-grid');
+
+      if (endMode === 'date') {
+        endField.style.display = 'flex';
+        grid.style.gridTemplateColumns = '1fr 1fr';
+        const startVal = document.getElementById('task-repeat-start').value || new Date().toISOString().split('T')[0];
+        const endEl = document.getElementById('task-repeat-end');
+        if (!endEl.value || endEl.value < startVal) {
+          const d = new Date(startVal + 'T12:00:00');
           d.setDate(d.getDate() + 7);
           endEl.value = d.toISOString().split('T')[0];
         }
-        updateRecurrencePreview();
+      } else {
+        endField.style.display = 'none';
+        grid.style.gridTemplateColumns = '1fr';
       }
+      updateRecurrencePreview();
+    }
+
+    function onRepeatStartDateChange() {
+      updateRecurrencePreview();
     }
 
     function toggleWeekdayPill(btn) {
@@ -3143,10 +3255,14 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
     function applyRepeatPreset(preset) {
       const pills = document.querySelectorAll('#task-weekdays-row .weekday-pill');
+      const startIso = document.getElementById('task-repeat-start').value || new Date().toISOString().split('T')[0];
+      const startDay = new Date(startIso + 'T12:00:00').getDay();
+
       pills.forEach(p => {
         const day = Number(p.getAttribute('data-day'));
         if (preset === 'all') p.classList.add('is-selected');
         if (preset === 'weekdays') p.classList.toggle('is-selected', day >= 1 && day <= 5);
+        if (preset === 'oneday') p.classList.toggle('is-selected', day === startDay);
       });
       updateRecurrencePreview();
     }
@@ -3166,7 +3282,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
     function updateRecurrencePreview() {
       const startIso = document.getElementById('task-repeat-start').value;
-      const endIso = document.getElementById('task-repeat-end').value;
+      const endIso = currentRepeatEndMode === 'date' ? document.getElementById('task-repeat-end').value : '';
       const days = getSelectedWeekdays();
       const box = document.getElementById('recurrence-preview-text');
 
@@ -3175,11 +3291,12 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         return;
       }
       if (!startIso) {
-        box.textContent = 'Escolha a data inicial (De) para calcular as repetições.';
+        box.textContent = 'Escolha a data inicial (A partir de).';
         return;
       }
-      if (!endIso) {
-        box.textContent = `Repete semanalmente nos dias marcados a partir de ${formatShortDateBR(startIso)} (sem data final).`;
+      const daysLabel = formatDaysShortLabel(days);
+      if (currentRepeatEndMode === 'infinite' || !endIso) {
+        box.textContent = `Tarefa recorrente sem fim (${daysLabel}), começando em ${formatShortDateBR(startIso)}. Ao concluir, a próxima é criada automaticamente.`;
         return;
       }
       const matches = computeMatchingDates(startIso, endIso, days);
@@ -3234,7 +3351,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('task-title').value = t.title;
         projSel.value = t.projectId || '';
         onTaskProjectChange(t.epicId || '');
-        assSel.value = t.assigneeId || 'team_all';
+        assSel.value = t.assigneeId || 'u_rafaela';
         document.getElementById('task-status').value = t.status || 'todo';
         document.getElementById('task-priority').value = t.priority || 'Média';
         document.getElementById('task-desc').value = t.description || '';
@@ -3247,6 +3364,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('task-repeat-start').value = t.due || todayIso;
         document.getElementById('task-repeat-end').value = spec.end || '';
         setSelectedWeekdays(spec.days);
+        currentRepeatEndMode = spec.endMode;
         setTaskRepeatMode(spec.mode);
       } else {
         document.getElementById('task-modal-code').textContent = getNextCode(state.tasks, 'T');
@@ -3257,7 +3375,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         projSel.value = defaultProj;
         const defaultEpic = preselectedEpicId || (document.getElementById('filter-epic')?.value !== 'ALL' ? document.getElementById('filter-epic').value : '');
         onTaskProjectChange(defaultEpic);
-        assSel.value = currentSession?.userId && teamMembers.some(m => m.id === currentSession.userId) ? currentSession.userId : 'team_all';
+        assSel.value = currentSession?.userId && teamMembers.some(m => m.id === currentSession.userId) ? currentSession.userId : 'u_rafaela';
         document.getElementById('task-status').value = 'todo';
         document.getElementById('task-priority').value = 'Média';
         document.getElementById('task-desc').value = '';
@@ -3267,10 +3385,9 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
         document.getElementById('task-due-single').value = todayIso;
         document.getElementById('task-repeat-start').value = todayIso;
-        const nextWeek = new Date(todayIso + 'T12:00:00');
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        document.getElementById('task-repeat-end').value = nextWeek.toISOString().split('T')[0];
+        document.getElementById('task-repeat-end').value = '';
         setSelectedWeekdays([1, 2, 3, 4, 5, 6, 0]);
+        currentRepeatEndMode = 'infinite';
         setTaskRepeatMode('single');
       }
 
@@ -3316,17 +3433,17 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         recurrence = 'none';
       } else {
         due = document.getElementById('task-repeat-start').value;
-        const endIso = document.getElementById('task-repeat-end').value;
+        const endIso = currentRepeatEndMode === 'date' ? document.getElementById('task-repeat-end').value : '';
         const days = getSelectedWeekdays();
         if (!days.length) {
           showToast('Selecione ao menos um dia da semana.');
           return;
         }
-        if (endIso && due && endIso < due) {
+        if (currentRepeatEndMode === 'date' && endIso && due && endIso < due) {
           showToast('A data final (Até) não pode ser anterior à data inicial.');
           return;
         }
-        recurrence = `period|${endIso || ''}|${days.join(',')}`;
+        recurrence = `period|${endIso}|${days.join(',')}`;
       }
 
       const payload = {
@@ -3416,7 +3533,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       GERENCIADOR DE FRENTES DE PROJETO
+       GERENCIADOR DE FRENTES DE PROJETO (CATEGORIAS)
        ========================================================================== */
     function populateProjectCategorySelect(selectedCat = null) {
       const sel = document.getElementById('project-category');
@@ -3428,7 +3545,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     function openCategoriesModal() {
-      if (!guardAdminAction()) return;
+      if (!guardEditorAction()) return;
       renderCategoriesList();
       document.getElementById('new-category-input').value = '';
       document.getElementById('categories-modal').classList.add('is-open');
@@ -3456,7 +3573,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     async function addProjectCategory() {
-      if (!guardAdminAction()) return;
+      if (!guardEditorAction()) return;
       const input = document.getElementById('new-category-input');
       const val = input.value.trim();
       if (!val) { showToast('Digite o nome da frente.'); return; }
@@ -3469,14 +3586,16 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       saveLocalCache();
       populateProjectCategorySelect(val);
       renderCategoriesList();
-      if (sbConnected && sbClient) {
-        await sbClient.from('vulp_categories').upsert({ id: 'cat_' + Date.now(), name: val });
-      }
+      try {
+        if (sbConnected && sbClient) {
+          await sbClient.from('vulp_categories').upsert({ id: 'cat_' + Date.now(), name: val });
+        }
+      } catch (e) {}
       showToast(`Frente "${val}" cadastrada.`);
     }
 
     async function renameProjectCategory(idx) {
-      if (!guardAdminAction()) return;
+      if (!guardEditorAction()) return;
       const oldName = state.categories[idx];
       const nextName = prompt('Novo nome da frente:', oldName);
       if (!nextName || !nextName.trim() || nextName.trim() === oldName) return;
@@ -3487,12 +3606,14 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       populateProjectCategorySelect(clean);
       renderCategoriesList();
       refreshCurrentView();
-      if (sbConnected) await pushLocalDataToSupabase(true);
+      try {
+        if (sbConnected) await pushLocalDataToSupabase(true);
+      } catch (e) {}
       showToast('Frente renomeada.');
     }
 
     async function deleteProjectCategory(idx) {
-      if (!guardAdminAction()) return;
+      if (!guardEditorAction()) return;
       if (state.categories.length <= 1) {
         showToast('Mantenha pelo menos uma frente cadastrada.');
         return;
@@ -3507,9 +3628,11 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       saveLocalCache();
       populateProjectCategorySelect();
       renderCategoriesList();
-      if (sbConnected && sbClient) {
-        await sbClient.from('vulp_categories').delete().eq('name', cat);
-      }
+      try {
+        if (sbConnected && sbClient) {
+          await sbClient.from('vulp_categories').delete().eq('name', cat);
+        }
+      } catch (e) {}
       showToast('Frente excluída.');
     }
 
@@ -3540,7 +3663,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('project-modal-title').textContent = 'Novo projeto';
         document.getElementById('project-id').value = '';
         document.getElementById('project-name').value = '';
-        ownerSel.value = teamMembers[0]?.id || '';
+        ownerSel.value = teamMembers[0]?.id || 'u_rafaela';
         populateProjectCategorySelect(state.categories[0]);
         document.getElementById('project-status').value = 'Em andamento';
         document.getElementById('project-deadline').value = '';
@@ -3635,7 +3758,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         document.getElementById('epic-id').value = '';
         projSel.value = preselectedProjectId || state.projects[0].id;
         document.getElementById('epic-title').value = '';
-        ownerSel.value = teamMembers[0]?.id || '';
+        ownerSel.value = teamMembers[0]?.id || 'u_rafaela';
         document.getElementById('epic-deadline').value = '';
         document.getElementById('epic-desc').value = '';
         document.getElementById('epic-delete-btn').style.display = 'none';
@@ -3743,7 +3866,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                   <span class="t-micro">${proj ? proj.code + ' • ' + proj.name : 'Geral'} • ${d.updatedAt}</span>
                 </button>
               `;
-            }).join('') : `<div class="t-micro" style="padding:12px">Nenhum documento. Clique em <strong>Subir arquivo (.md / .txt)</strong> ou arraste arquivos aqui.</div>`}
+            }).join('') : `<div class="t-micro" style="padding:12px">Nenhum documento nesta visão.</div>`}
           </div>
 
           <div class="md-editor-box">
@@ -3767,10 +3890,26 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                 ${effectiveMode !== 'preview' ? `<textarea class="md-textarea" oninput="liveUpdateMarkdown('${doc.id}', this.value)">${doc.content}</textarea>` : ''}
                 <div id="md-preview-box" class="md-preview">${parseMarkdown(doc.content)}</div>
               </div>
-            ` : `<div class="t-cap" style="text-align:center;padding:48px 20px">Envie um arquivo <strong>.md</strong> / <strong>.txt</strong> pelo botão acima (ou arraste para esta área) ou clique em <strong>+ Novo documento .md</strong>.</div>`}
+            ` : `
+              <div style="text-align:center;padding:48px 20px;display:flex;flex-direction:column;align-items:center;gap:12px">
+                <p class="t-cap" style="margin:0">Nenhum documento selecionado. Envie um arquivo do seu computador ou crie um novo Markdown.</p>
+                ${editable ? `
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+                    <button type="button" class="btn btn--sm btn--soft" onclick="triggerDocFileUpload()">Subir arquivo (.md / .txt)</button>
+                    <button type="button" class="btn btn--sm btn--primary" onclick="openNewDocModal()">+ Novo documento .md</button>
+                  </div>
+                ` : ''}
+              </div>
+            `}
           </div>
         </div>
       `;
+    }
+
+    function triggerDocFileUpload() {
+      if (!guardEditorAction()) return;
+      const inp = document.getElementById('md-file-upload-input');
+      if (inp) inp.click();
     }
 
     function handleMarkdownDragOver(event) {
@@ -3809,13 +3948,13 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       let uploadedCount = 0;
       for (const file of files) {
         const text = await readFileAsText(file);
-        const cleanName = file.name.endsWith('.md') || file.name.endsWith('.txt') ? file.name : (file.name + '.md');
+        const cleanName = (file.name.endsWith('.md') || file.name.endsWith('.txt')) ? file.name : (file.name + '.md');
         const newDoc = {
           id: 'd_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
           projectId: targetProj,
           title: cleanName,
           updatedAt: today,
-          authorId: currentSession?.userId || 'u1',
+          authorId: currentSession?.userId || 'u_rafaela',
           content: text
         };
         state.docs.unshift(newDoc);
@@ -3890,7 +4029,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         projectId: targetProj,
         title: cleanName,
         updatedAt: new Date().toISOString().split('T')[0],
-        authorId: currentSession?.userId || 'u1',
+        authorId: currentSession?.userId || 'u_rafaela',
         content: `# ${cleanName.replace('.md', '').replace(/_/g, ' ')}
 
 ## Visão geral
