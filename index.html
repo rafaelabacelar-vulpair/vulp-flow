@@ -1827,6 +1827,11 @@
               <input type="date" id="task-repeat-end" class="field__input" onchange="updateRecurrencePreview()" />
             </div>
           </div>
+          
+          <div class="field" id="repeat-month-day-field" style="display:none; margin-bottom:4px;">
+            <label class="field__label">Dia do mês (1 a 31)</label>
+            <input type="number" id="task-repeat-month-day" class="field__input" min="1" max="31" oninput="updateRecurrencePreview()" />
+          </div>
 
           <div id="repeat-weekdays-block" style="display:flex;flex-direction:column;gap:8px">
             <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -3451,13 +3456,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       const matches = [];
       if (freq === 'monthly' || freq === 'quarterly') {
         const step = freq === 'quarterly' ? 3 : 1;
-        const targetDay = start.getDate();
-        let idx = 0;
-        while (idx < 120) {
-          const cur = addMonthsKeepingDay(start, idx * step, targetDay);
+        const targetDay = (daysArray && daysArray[0]) ? daysArray[0] : start.getDate();
+        let monthsToAdd = 0;
+        while (monthsToAdd < 120) {
+          const cur = addMonthsKeepingDay(start, monthsToAdd, targetDay);
+          monthsToAdd += step;
+          if (cur < start) continue;
           if (cur > end) break;
           matches.push(cur.toISOString().split('T')[0]);
-          idx++;
         }
         return matches;
       }
@@ -3496,9 +3502,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
 
       if (freq === 'monthly' || freq === 'quarterly') {
         const step = freq === 'quarterly' ? 3 : 1;
-        const nextDate = addMonthsKeepingDay(base, step, base.getDate());
-        if (limit && nextDate > limit) return null;
-        return nextDate.toISOString().split('T')[0];
+        const targetDay = (daysArray && daysArray[0]) ? daysArray[0] : base.getDate();
+        
+        let cur = addMonthsKeepingDay(base, 0, targetDay);
+        if (cur <= base) {
+           cur = addMonthsKeepingDay(base, step, targetDay);
+        }
+        
+        if (limit && cur > limit) return null;
+        return cur.toISOString().split('T')[0];
       }
 
       if (!daysArray || !daysArray.length) return null;
@@ -3532,7 +3544,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       if (spec.mode === 'single') return '';
       const freqText = FREQ_LABELS[spec.freq] || 'Semanal';
       const detail = (spec.freq === 'monthly' || spec.freq === 'quarterly')
-        ? (t.due ? `dia ${t.due.split('-')[2]}` : '')
+        ? `dia ${spec.days[0] || (t.due ? parseInt(t.due.split('-')[2],10) : 1)}`
         : formatDaysShortLabel(spec.days);
 
       if (spec.end && t.due) {
@@ -3997,8 +4009,17 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
     function onRepeatFreqChange() {
       const freq = document.getElementById('task-repeat-freq').value;
       const wdBlock = document.getElementById('repeat-weekdays-block');
-      // Para Mensal e Trimestral repete no mesmo dia do mês da data inicial; para Diária/Semanal/Quinzenal mostra dias da semana
+      const mdBlock = document.getElementById('repeat-month-day-field');
       wdBlock.style.display = (freq === 'monthly' || freq === 'quarterly') ? 'none' : 'flex';
+      if (mdBlock) mdBlock.style.display = (freq === 'monthly' || freq === 'quarterly') ? 'flex' : 'none';
+      
+      if (freq === 'monthly' || freq === 'quarterly') {
+        const startIso = document.getElementById('task-repeat-start').value;
+        const mdInput = document.getElementById('task-repeat-month-day');
+        if (startIso && !mdInput.value) {
+          mdInput.value = parseInt(startIso.split('-')[2], 10);
+        }
+      }
       updateRecurrencePreview();
     }
 
@@ -4074,8 +4095,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         return;
       }
 
+      const md = document.getElementById('task-repeat-month-day').value;
+      if ((freq === 'monthly' || freq === 'quarterly') && (!md || md < 1 || md > 31)) {
+        box.textContent = 'Informe um dia do mês válido (1 a 31).';
+        return;
+      }
+      
       const detail = (freq === 'monthly' || freq === 'quarterly')
-        ? `todo dia ${startIso.split('-')[2]}`
+        ? `todo dia ${md}`
         : formatDaysShortLabel(days);
 
       if (currentRepeatEndMode === 'infinite' || !endIso) {
@@ -4083,7 +4110,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         return;
       }
 
-      const matches = computeMatchingDates(startIso, endIso, freq, days);
+      let finalDaysForPreview = days;
+      if (freq === 'monthly' || freq === 'quarterly') finalDaysForPreview = [parseInt(md, 10)];
+      const matches = computeMatchingDates(startIso, endIso, freq, finalDaysForPreview);
       if (!matches.length) {
         box.textContent = 'Nenhuma ocorrência cai entre as datas escolhidas.';
         return;
@@ -4168,6 +4197,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         document.getElementById('task-repeat-end').value = spec.end || '';
         document.getElementById('task-repeat-freq').value = spec.freq || 'weekly';
         setSelectedWeekdays(spec.days);
+        if (spec.freq === 'monthly' || spec.freq === 'quarterly') {
+           document.getElementById('task-repeat-month-day').value = spec.days[0] || (t.due ? parseInt(t.due.split('-')[2], 10) : 1);
+        }
         currentRepeatEndMode = spec.endMode;
         setTaskRepeatMode(spec.mode);
       } else {
@@ -4204,6 +4236,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         document.getElementById('task-repeat-end').value = '';
         document.getElementById('task-repeat-freq').value = 'weekly';
         setSelectedWeekdays([new Date(todayIso + 'T12:00:00').getDay()]);
+        document.getElementById('task-repeat-month-day').value = parseInt(todayIso.split('-')[2], 10);
         currentRepeatEndMode = 'infinite';
         setTaskRepeatMode('single');
       }
@@ -4273,15 +4306,24 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         const endIso = currentRepeatEndMode === 'date' ? document.getElementById('task-repeat-end').value : '';
         const days = getSelectedWeekdays();
 
-        if (freq !== 'monthly' && freq !== 'quarterly' && !days.length) {
+        let finalDays = days;
+        if (freq === 'monthly' || freq === 'quarterly') {
+           const md = parseInt(document.getElementById('task-repeat-month-day').value, 10);
+           if (!md || md < 1 || md > 31) {
+             showToast('Informe um dia do mês válido (1 a 31).');
+             return;
+           }
+           finalDays = [md];
+        } else if (!days.length) {
           showToast('Selecione ao menos um dia da semana.');
           return;
         }
+
         if (currentRepeatEndMode === 'date' && endIso && due && endIso < due) {
           showToast('A data final (Até) não pode ser anterior à data inicial.');
           return;
         }
-        recurrence = `period|${freq}|${endIso}|${days.join(',')}`;
+        recurrence = `period|${freq}|${endIso}|${finalDays.join(',')}`;
       }
 
       const assigneeId = document.getElementById('task-assignee').value;
