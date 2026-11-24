@@ -38,8 +38,7 @@
 
       --shadow-xs: 0 1px 2px rgba(7, 56, 77, 0.04);
       --shadow-sm: 0 2px 6px rgba(7, 56, 77, 0.07);
-      --shadow-md: 0 8px 24px rgba(7, 56, 77, 0.12);
-      --shadow-drawer: -8px 0 32px rgba(7, 56, 77, 0.16);
+      --shadow-md: 0 8px 24px rgba(7, 56, 77, 0.14);
     }
 
     * { box-sizing: border-box; }
@@ -54,8 +53,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    body.is-viewer-mode .member-only { display: none !important; }
-    body.is-viewer-mode .task-card { cursor: pointer; }
+    /* Controle de visibilidade por perfil de acesso */
+    body.role-viewer .editor-only { display: none !important; }
+    body.role-viewer .admin-only { display: none !important; }
+    body.role-member .admin-only { display: none !important; }
+    body.role-viewer .task-card { cursor: pointer; }
 
     /* Tipografia Oficial — Arial */
     .t-h1 { font-size: 20px; line-height: 26px; font-weight: 700; color: var(--navy); margin: 0; }
@@ -72,7 +74,7 @@
     }
 
     /* ==========================================================================
-       SISTEMA DE BOTÕES (HIERARQUIA LIMPA E CONSISTENTE)
+       SISTEMA DE BOTÕES
        ========================================================================== */
     .btn {
       font-family: var(--font-main);
@@ -135,6 +137,16 @@
     }
     .btn--ghost:hover { background: var(--mint-page); }
 
+    .btn--danger-soft {
+      background: var(--amber-bg);
+      color: var(--amber);
+      border-color: rgba(216, 115, 0, 0.25);
+    }
+    .btn--danger-soft:hover {
+      background: var(--amber);
+      color: var(--white);
+    }
+
     .btn--ghost-dark {
       background: rgba(255, 255, 255, 0.06);
       color: var(--white);
@@ -170,7 +182,7 @@
       border-color: rgba(216, 115, 0, 0.3);
     }
 
-    /* Segmented Control (Kanban / Tabela, Dividido / Leitura) */
+    /* Segmented Control */
     .segmented-group {
       display: inline-flex;
       background: var(--surface-subtle);
@@ -187,11 +199,12 @@
       background: transparent;
       border: none;
       border-radius: 6px;
-      height: 26px;
+      height: 28px;
       padding: 0 12px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 5px;
       transition: all .15s ease;
     }
@@ -202,9 +215,71 @@
       font-weight: 700;
     }
 
+    /* Weekday Pills (Recorrência estilo limpo) */
+    .weekday-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .weekday-pill {
+      font-family: var(--font-main);
+      font-size: 12px;
+      font-weight: 700;
+      height: 30px;
+      min-width: 42px;
+      padding: 0 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--line);
+      background: var(--white);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .12s ease;
+    }
+    .weekday-pill:hover {
+      border-color: var(--navy);
+      color: var(--navy);
+    }
+    .weekday-pill.is-selected {
+      background: var(--navy);
+      color: var(--white);
+      border-color: var(--navy);
+    }
+
+    .recurrence-summary-box {
+      background: var(--mint-page);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--navy);
+      border-radius: var(--radius-md);
+      padding: 9px 12px;
+      font-size: 12px;
+      line-height: 17px;
+      color: var(--navy);
+    }
+
     /* ==========================================================================
-       ETIQUETAS JIRA-STYLE (PROJETO & ÉPICO NOS CARDS)
+       ETIQUETAS JIRA-STYLE & IDs SEQUENCIAIS (P-1, E-1, T-1)
        ========================================================================== */
+    .code-badge {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      background: var(--navy);
+      color: var(--teal);
+      letter-spacing: 0.02em;
+      flex-shrink: 0;
+    }
+    .code-badge--subtle {
+      background: var(--surface-subtle);
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
     .jira-label {
       display: inline-flex;
       align-items: center;
@@ -375,7 +450,7 @@
       color: var(--navy);
     }
 
-    /* Rodapé da Sidebar (Perfil + Status Banco) */
+    /* Rodapé da Sidebar */
     .sidebar-bottom {
       margin-top: auto;
       padding-top: 14px;
@@ -426,12 +501,12 @@
       display: inline-block;
       margin-right: 6px;
     }
-    .dot-indicator--online { background: var(--lime); }
+    .dot-indicator--online {{ background: var(--lime); }}
     .dot-indicator--local { background: var(--teal); }
     .dot-indicator--error { background: var(--amber); }
 
     /* ==========================================================================
-       TOPBAR BRANCA ENXUTA (SEM BANNER GIGANTE!)
+       TOPBAR BRANCA ENXUTA
        ========================================================================== */
     .main-wrap {
       display: flex;
@@ -519,7 +594,7 @@
       height: 32px;
       padding: 0 10px;
       cursor: pointer;
-      max-width: 210px;
+      max-width: 220px;
     }
     .filter-select:hover { border-color: var(--navy); }
     .filter-select.is-filtered {
@@ -529,7 +604,7 @@
     }
 
     /* ==========================================================================
-       ABA 1: KANBAN LIMPO COM ETIQUETAS DE PROJETO E ÉPICO
+       ABA 1: KANBAN LIMPO COM ETIQUETAS DE PROJETO, ÉPICO E ID
        ========================================================================== */
     .kanban-grid {
       display: grid;
@@ -586,6 +661,12 @@
       box-shadow: var(--shadow-sm);
       transform: translateY(-1px);
     }
+    .task-card__top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 6px;
+    }
     .task-card__labels {
       display: flex;
       flex-wrap: wrap;
@@ -622,7 +703,7 @@
     }
 
     /* ==========================================================================
-       ABA 2: PROJETOS & CASCATA (ESTILO JIRA BACKLOG / ÁRVORE EXPANSÍVEL)
+       ABA 2: PROJETOS (ÁRVORE EXPANSÍVEL: PROJETO -> ÉPICOS -> TAREFAS)
        ========================================================================== */
     .cascade-container {
       display: flex;
@@ -683,7 +764,6 @@
       display: none;
     }
 
-    /* Nível 2: Épico dentro do Projeto */
     .cascade-epic {
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
@@ -713,7 +793,6 @@
       display: none;
     }
 
-    /* Nível 3: Linha de Tarefa estilo Jira Backlog */
     .jira-task-row {
       display: flex;
       align-items: center;
@@ -783,76 +862,53 @@
     .vulp-table tbody tr:hover { background: var(--surface-subtle); }
 
     /* ==========================================================================
-       PAINEL LATERAL (DRAWER) PARA CRIAR / EDITAR TAREFA & ATRELAR ETIQUETAS
+       MODAIS / POP-UPS CENTRALIZADOS (TAREFA, PROJETO, ÉPICO, FRENTES, DOCS)
        ========================================================================== */
-    .drawer-overlay {
+    .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(7, 56, 77, 0.38);
-      z-index: 100;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .2s ease;
-    }
-    .drawer-overlay.is-open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .drawer {
-      position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 480px;
-      max-width: 100vw;
-      background: var(--white);
-      box-shadow: var(--shadow-drawer);
-      z-index: 110;
-      transform: translateX(100%);
-      transition: transform .22s cubic-bezier(0.16, 1, 0.3, 1);
-      display: flex;
-      flex-direction: column;
-    }
-    .drawer.is-open { transform: translateX(0); }
-    .drawer-header {
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      justify-content: space-between;
+      background: rgba(7, 56, 77, 0.58);
+      display: none;
       align-items: center;
-      gap: 12px;
-      background: var(--surface-subtle);
+      justify-content: center;
+      padding: 16px;
+      z-index: 150;
     }
-    .drawer-body {
-      padding: 20px 24px;
+    .modal-backdrop.is-open { display: flex; }
+    .modal-panel {
+      background: var(--white);
+      border-radius: var(--radius-xl);
+      width: 100%;
+      max-width: 560px;
+      max-height: 92vh;
       overflow-y: auto;
-      flex: 1;
+      padding: 24px;
+      box-shadow: var(--shadow-md);
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
-    .drawer-section-box {
-      background: var(--mint-page);
+    .modal-section-box {
+      background: var(--surface-subtle);
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
-      padding: 14px;
+      padding: 13px 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
-    .drawer-grid-2 {
+    .modal-grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
-    .drawer-footer {
-      padding: 14px 24px;
-      border-top: 1px solid var(--line);
+    .modal-footer {
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 10px;
-      background: var(--surface-subtle);
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
     }
 
     /* Seletor de Cores da Paleta Vulp Air */
@@ -881,13 +937,19 @@
     .swatch-btn.is-selected .swatch-btn__dot { display: block; }
 
     /* ==========================================================================
-       DOCUMENTAÇÃO MARKDOWN
+       DOCUMENTAÇÃO MARKDOWN + DRAG AND DROP UPLOAD
        ========================================================================== */
     .md-workspace {
       display: grid;
       grid-template-columns: 240px 1fr;
       gap: 16px;
       min-height: 500px;
+      border-radius: var(--radius-lg);
+      transition: outline .15s;
+    }
+    .md-workspace.is-dragover {
+      outline: 2px dashed var(--navy);
+      background: var(--mint-page);
     }
     .md-sidebar {
       background: var(--surface-subtle);
@@ -928,7 +990,7 @@
       flex-direction: column;
       gap: 12px;
     }
-    .md-toolbar {
+    .md-toolbar {{
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -936,7 +998,7 @@
       border-bottom: 1px solid var(--line);
       align-items: center;
       justify-content: space-between;
-    }
+    }}
     .md-split {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -984,39 +1046,7 @@
       font-size: 12px;
     }
 
-    /* Modais & Login */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(7, 56, 77, 0.65);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 150;
-    }
-    .modal-backdrop.is-open { display: flex; }
-    .modal-panel {
-      background: var(--white);
-      border-radius: var(--radius-xl);
-      width: 100%;
-      max-width: 520px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 24px;
-      box-shadow: var(--shadow-md);
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      padding-top: 8px;
-      border-top: 1px solid var(--line);
-    }
-
+    /* Login Gate */
     .login-gate {
       position: fixed;
       inset: 0;
@@ -1037,11 +1067,12 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      box-shadow: var(--shadow-md);
     }
 
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 14px;
     }
     .team-card {
@@ -1102,7 +1133,7 @@
       .md-workspace { grid-template-columns: 1fr; }
     }
     @media (max-width: 680px) {
-      .kanban-grid, .drawer-grid-2, .md-split { grid-template-columns: 1fr; }
+      .kanban-grid, .modal-grid-2, .md-split { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -1142,7 +1173,9 @@
     <symbol id="va-warning" viewBox="0 -960 960 960"><path d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z"/></symbol>
   </svg>
 
-  <!-- TELA DE LOGIN FIXO -->
+  <!-- ==========================================================================
+       TELA DE LOGIN OBRIGATÓRIO COM SENHA PARA TODOS OS PERFIS
+       ========================================================================== -->
   <div class="login-gate" id="login-gate">
     <div class="login-card">
       <div style="background:var(--navy);padding:18px;border-radius:10px;display:flex;flex-direction:column;gap:6px">
@@ -1151,17 +1184,21 @@
       </div>
 
       <p class="t-cap" style="margin:0;color:var(--navy)">
-        Selecione seu usuário para entrar. O nível de acesso (<strong>Parte do time</strong> ou <strong>Visualizador</strong>) é vinculado ao seu perfil.
+        Selecione seu usuário e informe sua <strong>senha</strong> para acessar o ambiente.
       </p>
 
       <div class="field">
         <label class="field__label">Usuário</label>
-        <select id="login-user-select" class="field__input" onchange="onLoginUserChange()"></select>
+        <select id="login-user-select" class="field__input"></select>
       </div>
 
-      <div class="field" id="login-pin-wrap" style="display:none">
-        <label class="field__label">PIN de acesso</label>
-        <input type="password" id="login-pin-input" class="field__input" placeholder="Digite seu PIN" />
+      <div class="field">
+        <label class="field__label">Senha de acesso</label>
+        <input type="password" id="login-password-input" class="field__input" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter') submitLoginGate()" />
+      </div>
+
+      <div id="login-default-hint" class="t-micro" style="background:var(--mint-page);padding:8px 10px;border-radius:6px;border:1px solid var(--line)">
+        Senha inicial padrão dos usuários cadastrados: <strong>vulp2026</strong>
       </div>
 
       <button class="btn btn--lg btn--primary" style="width:100%" onclick="submitLoginGate()">
@@ -1213,7 +1250,7 @@
           </span>
           <span class="nav-badge" id="badge-team">0</span>
         </button>
-        <button class="nav-btn" id="nav-supabase" onclick="switchView('supabase')">
+        <button class="nav-btn admin-only" id="nav-supabase" onclick="switchView('supabase')">
           <span class="nav-btn__left">
             <svg class="va-icon" width="16" height="16"><use href="#va-monitoring"/></svg>
             <span>Banco Supabase</span>
@@ -1231,20 +1268,20 @@
             </div>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid rgba(255,255,255,0.1)">
-            <span class="tag tag--lime-pill" id="session-role-badge" style="font-size:9px;padding:1px 6px">PARTE DO TIME</span>
+            <span class="tag tag--lime-pill" id="session-role-badge" style="font-size:9px;padding:1px 6px">ADMIN MASTER</span>
             <button onclick="logoutSession()" style="background:none;border:none;color:var(--teal);font-size:11px;font-weight:700;cursor:pointer">Sair</button>
           </div>
         </div>
 
-        <div class="db-pill" onclick="switchView('supabase')" title="Status da sincronização Supabase">
+        <div class="db-pill" onclick="if(isAdmin()) switchView('supabase')" title="Status da sincronização Supabase">
           <span>
             <span class="dot-indicator dot-indicator--local" id="db-pulse-dot"></span>
             <span id="db-status-title">Conectando...</span>
           </span>
-          <svg class="va-icon" width="13" height="13" style="color:var(--teal)"><use href="#va-build"/></svg>
+          <svg class="va-icon admin-only" width="13" height="13" style="color:var(--teal)"><use href="#va-build"/></svg>
         </div>
 
-        <button class="btn btn--xs btn--ghost-dark member-only" style="width:100%" onclick="openShareAccessModal()">
+        <button class="btn btn--xs btn--ghost-dark admin-only" style="width:100%" onclick="openShareAccessModal()">
           Compartilhar links de acesso
         </button>
       </div>
@@ -1265,18 +1302,18 @@
         </div>
 
         <div class="topbar-right">
-          <input type="search" id="global-search" class="field__input" style="height:32px;width:210px" placeholder="Buscar tarefa..." oninput="refreshCurrentView()" />
-          <div class="member-only" style="display:flex;gap:8px">
+          <input type="search" id="global-search" class="field__input" style="height:32px;width:230px" placeholder="Buscar título ou ID (T-1, P-1)..." oninput="refreshCurrentView()" />
+          <div class="editor-only" style="display:flex;gap:8px">
             <button class="btn btn--sm btn--secondary" onclick="openProjectModal()">+ Projeto</button>
             <button class="btn btn--sm btn--secondary" onclick="openEpicModal()">+ Épico</button>
-            <button class="btn btn--sm btn--primary" onclick="openTaskDrawer(null)">+ Nova tarefa</button>
+            <button class="btn btn--sm btn--primary" onclick="openTaskModal(null)">+ Nova tarefa</button>
           </div>
         </div>
       </header>
 
       <main class="workspace">
         <!-- ====================================================================
-             ABA 1: TAREFAS (KANBAN COM ETIQUETAS DE PROJETO E ÉPICO)
+             ABA 1: TAREFAS
              ==================================================================== -->
         <section id="view-tasks" style="display:flex;flex-direction:column;gap:14px">
           <div class="filter-bar">
@@ -1307,7 +1344,7 @@
         </section>
 
         <!-- ====================================================================
-             ABA 2: PROJETOS EM CASCATA (PROJETO -> ÉPICOS -> TAREFAS BEM JIRA)
+             ABA 2: PROJETOS (SEM BOTÕES DUPLICADOS DE NOVO PROJETO / NOVO ÉPICO)
              ==================================================================== -->
         <section id="view-projects" style="display:none;flex-direction:column;gap:14px">
           <div class="filter-bar">
@@ -1318,9 +1355,8 @@
               <button class="btn btn--xs btn--ghost" onclick="toggleAllCascade(true)">Expandir tudo</button>
               <button class="btn btn--xs btn--ghost" onclick="toggleAllCascade(false)">Recolher tudo</button>
             </div>
-            <div class="member-only" style="display:flex;gap:8px">
-              <button class="btn btn--sm btn--secondary" onclick="openProjectModal()">+ Novo projeto</button>
-              <button class="btn btn--sm btn--primary" onclick="openEpicModal()">+ Novo épico</button>
+            <div class="admin-only" style="display:flex;gap:8px">
+              <button class="btn btn--sm btn--secondary" onclick="openCategoriesModal()">Gerenciar frentes</button>
             </div>
           </div>
 
@@ -1328,7 +1364,7 @@
         </section>
 
         <!-- ====================================================================
-             ABA 3: DOCUMENTAÇÃO MARKDOWN
+             ABA 3: DOCUMENTAÇÃO MARKDOWN (COM UPLOAD DE ARQUIVOS .MD / .TXT)
              ==================================================================== -->
         <section id="view-docs" style="display:none;flex-direction:column;gap:14px">
           <div class="filter-bar">
@@ -1337,21 +1373,34 @@
                 <option value="ALL">Todos os projetos</option>
               </select>
             </div>
-            <button class="btn btn--sm btn--primary member-only" onclick="createNewDocInWiki()">+ Novo documento .md</button>
+            <div class="editor-only" style="display:flex;gap:8px;align-items:center">
+              <label class="btn btn--sm btn--soft" style="cursor:pointer" title="Enviar arquivos .md ou .txt do computador">
+                <svg class="va-icon" width="14" height="14" style="transform:rotate(180deg)"><use href="#va-download"/></svg>
+                <span>Subir arquivo (.md / .txt)</span>
+                <input type="file" id="md-file-upload-input" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple style="display:none" onchange="handleMarkdownFileUpload(event)" />
+              </label>
+              <button class="btn btn--sm btn--primary" onclick="openNewDocModal()">+ Novo documento .md</button>
+            </div>
           </div>
-          <div id="global-wiki-container"></div>
+          <div id="global-wiki-container"
+               ondragover="handleMarkdownDragOver(event)"
+               ondragleave="handleMarkdownDragLeave(event)"
+               ondrop="handleMarkdownDrop(event)"></div>
         </section>
 
         <!-- ====================================================================
-             ABA 4: EQUIPE E ACESSOS
+             ABA 4: EQUIPE E ACESSOS (ADMIN MASTER, PADRÃO, VISUALIZADOR + SENHAS)
              ==================================================================== -->
         <section id="view-team" style="display:none;flex-direction:column;gap:16px">
-          <div class="member-only" style="background:var(--surface-subtle);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:12px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <h3 class="t-h3">Adicionar membro ou visualizador</h3>
-              <button class="btn btn--xs btn--secondary" onclick="openShareAccessModal()">Links de convite</button>
+          <div class="admin-only" style="background:var(--surface-subtle);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <div>
+                <h3 class="t-h3">Cadastrar usuário e definir perfil de acesso</h3>
+                <p class="t-micro" style="margin:2px 0 0"><strong>Admin Master:</strong> controle total • <strong>Padrão:</strong> cria/edita tarefas, projetos e docs • <strong>Visualizador:</strong> somente leitura.</p>
+              </div>
+              <button class="btn btn--xs btn--secondary" onclick="openShareAccessModal()">Links de acesso</button>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:10px;align-items:end">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(155px, 1fr));gap:10px;align-items:end">
               <div class="field">
                 <label class="field__label">Nome</label>
                 <input type="text" id="new-member-name" class="field__input" placeholder="Ex: Ana Paula" />
@@ -1365,17 +1414,18 @@
                 <input type="text" id="new-member-role" class="field__input" placeholder="Ex: Engenharia" />
               </div>
               <div class="field">
-                <label class="field__label">Permissão</label>
+                <label class="field__label">Perfil de acesso</label>
                 <select id="new-member-access" class="field__input">
-                  <option value="member">Parte do time (edição)</option>
-                  <option value="viewer">Visualizador (leitura)</option>
+                  <option value="member">Padrão (edição operacional)</option>
+                  <option value="admin">Admin Master (acesso total)</option>
+                  <option value="viewer">Visualizador (somente leitura)</option>
                 </select>
               </div>
               <div class="field">
-                <label class="field__label">PIN (opcional)</label>
-                <input type="text" id="new-member-pin" class="field__input" placeholder="Ex: 1234" maxlength="12" />
+                <label class="field__label">Senha (obrigatória)</label>
+                <input type="password" id="new-member-pin" class="field__input" placeholder="Crie uma senha" />
               </div>
-              <button class="btn btn--primary" onclick="addTeamMember()">Adicionar</button>
+              <button class="btn btn--primary" onclick="addTeamMember()">Adicionar usuário</button>
             </div>
           </div>
 
@@ -1383,7 +1433,7 @@
         </section>
 
         <!-- ====================================================================
-             ABA 5: BANCO SUPABASE & BACKUP
+             ABA 5: BANCO SUPABASE & BACKUP (ADMIN MASTER)
              ==================================================================== -->
         <section id="view-supabase" style="display:none;flex-direction:column;gap:16px">
           <div style="border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:14px">
@@ -1395,7 +1445,7 @@
               <span class="tag tag--mint" id="supabase-badge-detail">Modo local</span>
             </div>
 
-            <div class="drawer-grid-2">
+            <div class="modal-grid-2">
               <div class="field">
                 <label class="field__label">Supabase Project URL</label>
                 <input type="url" id="sb-url" class="field__input" />
@@ -1413,7 +1463,7 @@
               <button class="btn btn--sm btn--soft" onclick="pushLocalDataToSupabase()">Sincronizar dados locais</button>
               <button class="btn btn--sm btn--secondary" onclick="resetSupabaseDefaults()">Restaurar URL/Chave Vulp Air</button>
               <button class="btn btn--sm btn--secondary" onclick="exportJSON()">Exportar JSON</button>
-              <label class="btn btn--sm btn--secondary member-only" style="cursor:pointer">
+              <label class="btn btn--sm btn--secondary admin-only" style="cursor:pointer">
                 Importar JSON
                 <input type="file" accept=".json" style="display:none" onchange="importJSON(event)" />
               </label>
@@ -1422,7 +1472,7 @@
 
           <div style="border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:10px">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <h3 class="t-h3">Script SQL v3 (Tabelas & Realtime)</h3>
+              <h3 class="t-h3">Script SQL v4 (Tabelas, IDs, Frentes & Permissões)</h3>
               <button class="btn btn--xs btn--secondary" onclick="copySupabaseSQL()">Copiar SQL</button>
             </div>
             <pre class="sql-box" id="sql-preview-box"></pre>
@@ -1438,120 +1488,140 @@
   </div>
 
   <!-- ==========================================================================
-       DRAWER LATERAL: CRIAR / EDITAR TAREFA & ATRELAR ETIQUETAS (PROJETO + ÉPICO)
+       POP-UP MODAL: CRIAR / EDITAR TAREFA (IGUAL AO PROJETO E ÉPICO, SEM FERRAMENTA)
        ========================================================================== -->
-  <div class="drawer-overlay" id="task-drawer-overlay" onclick="closeTaskDrawer()"></div>
-  <aside class="drawer" id="task-drawer">
-    <div class="drawer-header">
-      <div>
-        <div class="t-micro" id="drawer-subtitle">Detalhes da tarefa</div>
-        <h2 class="t-h2" id="drawer-heading">Nova tarefa</h2>
+  <div class="modal-backdrop" id="task-modal">
+    <div class="modal-panel" style="max-width:580px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="code-badge" id="task-modal-code">T-1</span>
+          <h3 class="t-h2" id="task-modal-heading">Nova tarefa</h3>
+        </div>
+        <button class="icon-btn" onclick="closeModal('task-modal')" title="Fechar">
+          <svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg>
+        </button>
       </div>
-      <button class="icon-btn" onclick="closeTaskDrawer()" title="Fechar">
-        <svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg>
-      </button>
-    </div>
 
-    <div class="drawer-body">
-      <input type="hidden" id="drawer-task-id" />
+      <input type="hidden" id="task-modal-id" />
 
       <div class="field">
         <label class="field__label">Título da tarefa</label>
-        <input type="text" id="drawer-title" class="field__input" style="font-weight:700" placeholder="Ex: Configurar webhook de triagem no Jira" />
+        <input type="text" id="task-title" class="field__input" style="font-weight:700" placeholder="Ex: Configurar webhook de triagem no Jira" />
       </div>
 
-      <!-- BLOCO DE ETIQUETAS JIRA: ATRELAR PROJETO E ÉPICO -->
-      <div class="drawer-section-box">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span class="t-h3" style="font-size:12px">Etiquetas de Vínculo</span>
-          <span class="t-micro">Atrele ao Projeto e ao Épico</span>
-        </div>
-
-        <div class="drawer-grid-2">
-          <div class="field">
-            <label class="field__label">Projeto</label>
-            <select id="drawer-project" class="field__input" onchange="onDrawerProjectChange()"></select>
-          </div>
-          <div class="field">
-            <label class="field__label">Épico</label>
-            <select id="drawer-epic" class="field__input"></select>
-          </div>
-        </div>
-      </div>
-
-      <div class="drawer-grid-2">
+      <!-- Vínculo Projeto & Épico -->
+      <div class="modal-grid-2">
         <div class="field">
-          <label class="field__label">Status</label>
-          <select id="drawer-status" class="field__input" style="font-weight:700">
-            <option value="todo">A fazer</option>
-            <option value="doing">Em andamento</option>
-            <option value="review">Em revisão</option>
-            <option value="done">Concluído</option>
-          </select>
+          <label class="field__label">Projeto</label>
+          <select id="task-project" class="field__input" onchange="onTaskProjectChange()"></select>
         </div>
         <div class="field">
-          <label class="field__label">Responsável</label>
-          <select id="drawer-assignee" class="field__input"></select>
+          <label class="field__label">Épico</label>
+          <select id="task-epic" class="field__input"></select>
         </div>
       </div>
 
-      <div class="drawer-grid-2">
+      <!-- De quem é? / Prioridade / Status -->
+      <div class="modal-grid-2">
+        <div class="field">
+          <label class="field__label">De quem é? (Responsável)</label>
+          <select id="task-assignee" class="field__input"></select>
+        </div>
         <div class="field">
           <label class="field__label">Prioridade</label>
-          <select id="drawer-priority" class="field__input">
+          <select id="task-priority" class="field__input">
             <option value="Alta">Alta</option>
             <option value="Média">Média</option>
             <option value="Baixa">Baixa</option>
           </select>
         </div>
-        <div class="field">
-          <label class="field__label">Ferramenta</label>
-          <select id="drawer-tool" class="field__input">
-            <option value="Jira">Jira</option>
-            <option value="Confluence">Confluence</option>
-            <option value="Claude AI">Claude AI</option>
-            <option value="App AUVO">App AUVO</option>
-            <option value="PMOC / Operações">PMOC / Operações</option>
-          </select>
-        </div>
       </div>
 
-      <div class="drawer-grid-2">
-        <div class="field">
-          <label class="field__label">Prazo</label>
-          <input type="date" id="drawer-due" class="field__input" />
+      <div class="field" id="task-status-wrap">
+        <label class="field__label">Status</label>
+        <select id="task-status" class="field__input" style="font-weight:700">
+          <option value="todo">A fazer</option>
+          <option value="doing">Em andamento</option>
+          <option value="review">Em revisão</option>
+          <option value="done">Concluído</option>
+        </select>
+      </div>
+
+      <!-- Quando? (Num dia só vs Repetir num período com dias da semana e preview) -->
+      <div class="modal-section-box">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span class="field__label" style="margin:0;color:var(--navy)">Quando?</span>
+          <div class="segmented-group">
+            <button type="button" class="segmented-btn is-active" id="btn-when-single" onclick="setTaskRepeatMode('single')">Num dia só</button>
+            <button type="button" class="segmented-btn" id="btn-when-period" onclick="setTaskRepeatMode('period')">Repetir num período</button>
+          </div>
         </div>
-        <div class="field">
-          <label class="field__label">Recorrência</label>
-          <select id="drawer-recurrence" class="field__input">
-            <option value="none">Pontual</option>
-            <option value="daily">Diária</option>
-            <option value="weekly">Semanal (7 dias)</option>
-            <option value="biweekly">Quinzenal (15 dias)</option>
-            <option value="monthly">Mensal (30 dias)</option>
-            <option value="quarterly">Trimestral (PMOC)</option>
-          </select>
+
+        <!-- Modo 1: Num dia só -->
+        <div id="when-single-box">
+          <div class="field">
+            <label class="field__label">Data</label>
+            <input type="date" id="task-due-single" class="field__input" />
+          </div>
+        </div>
+
+        <!-- Modo 2: Repetir num período -->
+        <div id="when-period-box" style="display:none;flex-direction:column;gap:10px">
+          <div class="modal-grid-2">
+            <div class="field">
+              <label class="field__label">De</label>
+              <input type="date" id="task-repeat-start" class="field__input" onchange="updateRecurrencePreview()" />
+            </div>
+            <div class="field">
+              <label class="field__label">Até (último dia)</label>
+              <input type="date" id="task-repeat-end" class="field__input" onchange="updateRecurrencePreview()" />
+            </div>
+          </div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('all')">Todos os dias</button>
+            <button type="button" class="btn btn--xs btn--soft" onclick="applyRepeatPreset('weekdays')">Dias úteis</button>
+          </div>
+
+          <div class="weekday-row" id="task-weekdays-row">
+            <button type="button" class="weekday-pill is-selected" data-day="1" onclick="toggleWeekdayPill(this)">Seg</button>
+            <button type="button" class="weekday-pill is-selected" data-day="2" onclick="toggleWeekdayPill(this)">Ter</button>
+            <button type="button" class="weekday-pill is-selected" data-day="3" onclick="toggleWeekdayPill(this)">Qua</button>
+            <button type="button" class="weekday-pill is-selected" data-day="4" onclick="toggleWeekdayPill(this)">Qui</button>
+            <button type="button" class="weekday-pill is-selected" data-day="5" onclick="toggleWeekdayPill(this)">Sex</button>
+            <button type="button" class="weekday-pill is-selected" data-day="6" onclick="toggleWeekdayPill(this)">Sáb</button>
+            <button type="button" class="weekday-pill is-selected" data-day="0" onclick="toggleWeekdayPill(this)">Dom</button>
+          </div>
+
+          <div class="recurrence-summary-box" id="recurrence-preview-text">
+            Vai aparecer 8 vezes. Depois disso some sozinha.
+          </div>
         </div>
       </div>
 
       <div class="field">
-        <label class="field__label">Descrição / Critérios de Aceite</label>
-        <textarea id="drawer-desc" class="field__input" rows="5" placeholder="Detalhe o que precisa ser feito..."></textarea>
+        <label class="field__label">Descrição / Observações</label>
+        <textarea id="task-desc" class="field__input" rows="3" placeholder="Detalhe o que precisa ser feito..."></textarea>
+      </div>
+
+      <div class="modal-footer editor-only">
+        <button type="button" class="btn btn--sm btn--danger-soft" id="task-delete-btn" style="margin-right:auto" onclick="deleteTaskFromModal()">Excluir</button>
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('task-modal')">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" id="task-save-btn" onclick="saveTaskFromModal()">Adicionar</button>
       </div>
     </div>
+  </div>
 
-    <div class="drawer-footer member-only">
-      <button class="btn btn--sm btn--ghost" id="drawer-delete-btn" style="margin-right:auto;color:var(--amber)" onclick="deleteTaskFromDrawer()">Excluir</button>
-      <button class="btn btn--sm btn--secondary" onclick="closeTaskDrawer()">Cancelar</button>
-      <button class="btn btn--sm btn--primary" onclick="saveTaskFromDrawer()">Salvar tarefa</button>
-    </div>
-  </aside>
-
-  <!-- MODAL: PROJETO -->
+  <!-- ==========================================================================
+       MODAL: PROJETO (COM CONTROLE DE FRENTES & EXCLUIR)
+       ========================================================================== -->
   <div class="modal-backdrop" id="project-modal">
     <div class="modal-panel">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 class="t-h2" id="project-modal-title">Novo projeto</h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="code-badge" id="project-modal-code">P-1</span>
+          <h3 class="t-h2" id="project-modal-title">Novo projeto</h3>
+        </div>
         <button class="icon-btn" onclick="closeModal('project-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
       </div>
       <input type="hidden" id="project-id" />
@@ -1559,22 +1629,20 @@
         <label class="field__label">Nome do projeto</label>
         <input type="text" id="project-name" class="field__input" placeholder="Ex: Automação Jira e Claude AI" />
       </div>
-      <div class="drawer-grid-2">
+      <div class="modal-grid-2">
         <div class="field">
           <label class="field__label">Líder</label>
           <select id="project-owner" class="field__input"></select>
         </div>
         <div class="field">
-          <label class="field__label">Frente</label>
-          <select id="project-category" class="field__input">
-            <option value="Engenharia e Automação">Engenharia e Automação</option>
-            <option value="Operações e PMOC">Operações e PMOC</option>
-            <option value="IA e Conhecimento">IA e Conhecimento</option>
-            <option value="Implantação Cliente">Implantação Cliente</option>
-          </select>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <label class="field__label">Frente</label>
+            <button type="button" class="admin-only" style="background:none;border:none;color:var(--navy);font-size:11px;font-weight:700;cursor:pointer;padding:0;text-decoration:underline" onclick="openCategoriesModal()">+ Gerenciar frentes</button>
+          </div>
+          <select id="project-category" class="field__input"></select>
         </div>
       </div>
-      <div class="drawer-grid-2">
+      <div class="modal-grid-2">
         <div class="field">
           <label class="field__label">Status</label>
           <select id="project-status" class="field__input">
@@ -1598,17 +1666,47 @@
         <textarea id="project-desc" class="field__input" rows="3" placeholder="Escopo resumido..."></textarea>
       </div>
       <div class="modal-footer">
-        <button class="btn btn--sm btn--secondary" onclick="closeModal('project-modal')">Cancelar</button>
-        <button class="btn btn--sm btn--primary" onclick="saveProject()">Salvar projeto</button>
+        <button type="button" class="btn btn--sm btn--danger-soft admin-only" id="project-delete-btn" style="margin-right:auto" onclick="deleteProjectById(document.getElementById('project-id').value, true)">Excluir projeto</button>
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('project-modal')">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="saveProject()">Salvar projeto</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: ÉPICO -->
+  <!-- ==========================================================================
+       MODAL: GERENCIAR FRENTES (CADASTRAR, EDITAR E EXCLUIR FRENTES DE PROJETO)
+       ========================================================================== -->
+  <div class="modal-backdrop" id="categories-modal">
+    <div class="modal-panel" style="max-width:460px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 class="t-h2">Frentes de Projeto</h3>
+        <button class="icon-btn" onclick="closeModal('categories-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <p class="t-cap" style="margin:0">Cadastre novas frentes ou controle as frentes disponíveis ao criar projetos.</p>
+
+      <div style="display:flex;gap:8px">
+        <input type="text" id="new-category-input" class="field__input" placeholder="Nome da nova frente..." onkeydown="if(event.key==='Enter') addProjectCategory()" />
+        <button type="button" class="btn btn--primary" onclick="addProjectCategory()">Cadastrar</button>
+      </div>
+
+      <div id="categories-list-box" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto"></div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--primary" onclick="closeModal('categories-modal')">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: ÉPICO (COM ID E-1 E EXCLUIR)
+       ========================================================================== -->
   <div class="modal-backdrop" id="epic-modal">
     <div class="modal-panel">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 class="t-h2" id="epic-modal-title">Novo épico</h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="code-badge" id="epic-modal-code">E-1</span>
+          <h3 class="t-h2" id="epic-modal-title">Novo épico</h3>
+        </div>
         <button class="icon-btn" onclick="closeModal('epic-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
       </div>
       <input type="hidden" id="epic-id" />
@@ -1620,7 +1718,7 @@
         <label class="field__label">Nome do épico</label>
         <input type="text" id="epic-title" class="field__input" placeholder="Ex: Motor de Triagem Inteligente" />
       </div>
-      <div class="drawer-grid-2">
+      <div class="modal-grid-2">
         <div class="field">
           <label class="field__label">Responsável</label>
           <select id="epic-owner" class="field__input"></select>
@@ -1640,31 +1738,73 @@
         <textarea id="epic-desc" class="field__input" rows="3" placeholder="Escopo deste épico..."></textarea>
       </div>
       <div class="modal-footer">
-        <button class="btn btn--sm btn--secondary" onclick="closeModal('epic-modal')">Cancelar</button>
-        <button class="btn btn--sm btn--primary" onclick="saveEpic()">Salvar épico</button>
+        <button type="button" class="btn btn--sm btn--danger-soft admin-only" id="epic-delete-btn" style="margin-right:auto" onclick="deleteEpicById(document.getElementById('epic-id').value, true)">Excluir épico</button>
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('epic-modal')">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="saveEpic()">Salvar épico</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: COMPARTILHAR ACESSO -->
+  <!-- ==========================================================================
+       MODAL: NOVO DOCUMENTO MARKDOWN
+       ========================================================================== -->
+  <div class="modal-backdrop" id="new-doc-modal">
+    <div class="modal-panel" style="max-width:440px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 class="t-h2">Novo documento Markdown</h3>
+        <button class="icon-btn" onclick="closeModal('new-doc-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <div class="field">
+        <label class="field__label">Nome do arquivo (.md)</label>
+        <input type="text" id="new-doc-title-input" class="field__input" placeholder="Ex: Playbook_Operacoes_VulpAir.md" onkeydown="if(event.key==='Enter') confirmCreateNewDoc()" />
+      </div>
+      <div class="field">
+        <label class="field__label">Projeto vinculado</label>
+        <select id="new-doc-project-select" class="field__input"></select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('new-doc-modal')">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="confirmCreateNewDoc()">Criar documento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: ALTERAR SENHA DE USUÁRIO
+       ========================================================================== -->
+  <div class="modal-backdrop" id="password-modal">
+    <div class="modal-panel" style="max-width:400px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 class="t-h2" id="password-modal-title">Alterar senha</h3>
+        <button class="icon-btn" onclick="closeModal('password-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <input type="hidden" id="password-user-id" />
+      <div class="field">
+        <label class="field__label">Nova senha</label>
+        <input type="password" id="password-new-input" class="field__input" placeholder="Digite a nova senha" onkeydown="if(event.key==='Enter') saveUserPassword()" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('password-modal')">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="saveUserPassword()">Salvar senha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: COMPARTILHAR ACESSO
+       ========================================================================== -->
   <div class="modal-backdrop" id="share-modal">
     <div class="modal-panel" style="max-width:480px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 class="t-h2">Compartilhar links de acesso</h3>
+        <h3 class="t-h2">Links de acesso</h3>
         <button class="icon-btn" onclick="closeModal('share-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
       </div>
+      <p class="t-cap" style="margin:0">Todos os perfis exigem seleção do usuário e senha na tela de entrada.</p>
       <div style="background:var(--surface-subtle);padding:12px;border-radius:8px;border:1px solid var(--line);display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;justify-content:space-between"><span class="tag tag--navy">VISUALIZADOR</span><span class="t-micro">Somente leitura</span></div>
+        <div style="display:flex;justify-content:space-between"><span class="tag tag--navy">URL DO SISTEMA</span><span class="t-micro">Login com senha</span></div>
         <div style="display:flex;gap:6px">
-          <input type="text" id="share-link-viewer" class="field__input" readonly style="font-family:var(--font-mono);font-size:11px;height:32px" />
-          <button class="btn btn--sm btn--primary" onclick="copyShareLink('share-link-viewer')">Copiar</button>
-        </div>
-      </div>
-      <div style="background:var(--surface-subtle);padding:12px;border-radius:8px;border:1px solid var(--line);display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;justify-content:space-between"><span class="tag tag--teal">PARTE DO TIME</span><span class="t-micro">Edição completa</span></div>
-        <div style="display:flex;gap:6px">
-          <input type="text" id="share-link-member" class="field__input" readonly style="font-family:var(--font-mono);font-size:11px;height:32px" />
-          <button class="btn btn--sm btn--teal" onclick="copyShareLink('share-link-member')">Copiar</button>
+          <input type="text" id="share-link-app" class="field__input" readonly style="font-family:var(--font-mono);font-size:11px;height:32px" />
+          <button class="btn btn--sm btn--primary" onclick="copyShareLink('share-link-app')">Copiar</button>
         </div>
       </div>
     </div>
@@ -1702,24 +1842,31 @@
     }
 
     /* ==========================================================================
-       SCHEMA SQL SUPABASE v3
+       SCHEMA SQL SUPABASE v4 (IDEMPOTENTE)
        ========================================================================== */
-    const SUPABASE_SCHEMA_SQL = `-- VULP FLOW (VULP AIR) — SCHEMA SUPABASE v3 (Idempotente)
+    const SUPABASE_SCHEMA_SQL = `-- VULP FLOW (VULP AIR) — SCHEMA SUPABASE v4 (Idempotente)
 create table if not exists public.vulp_team (
   id text primary key,
   name text not null,
   email text not null default '',
   role text not null default 'Especialista Vulp Air',
   access_level text not null default 'member',
-  access_pin text not null default '',
+  access_pin text not null default 'vulp2026',
   created_at timestamptz not null default now()
 );
 alter table public.vulp_team add column if not exists email text not null default '';
 alter table public.vulp_team add column if not exists access_level text not null default 'member';
-alter table public.vulp_team add column if not exists access_pin text not null default '';
+alter table public.vulp_team add column if not exists access_pin text not null default 'vulp2026';
+
+create table if not exists public.vulp_categories (
+  id text primary key,
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
 
 create table if not exists public.vulp_projects (
   id text primary key,
+  code text,
   name text not null,
   owner_id text references public.vulp_team(id) on delete set null,
   category text not null default 'Engenharia e Automação',
@@ -1729,10 +1876,12 @@ create table if not exists public.vulp_projects (
   description text,
   created_at timestamptz not null default now()
 );
+alter table public.vulp_projects add column if not exists code text;
 alter table public.vulp_projects add column if not exists color text not null default '#07384D';
 
 create table if not exists public.vulp_epics (
   id text primary key,
+  code text,
   project_id text not null references public.vulp_projects(id) on delete cascade,
   title text not null,
   owner_id text references public.vulp_team(id) on delete set null,
@@ -1742,14 +1891,16 @@ create table if not exists public.vulp_epics (
   description text,
   created_at timestamptz not null default now()
 );
+alter table public.vulp_epics add column if not exists code text;
 
 create table if not exists public.vulp_tasks (
   id text primary key,
+  code text,
   title text not null,
   project_id text references public.vulp_projects(id) on delete cascade,
   epic_id text references public.vulp_epics(id) on delete set null,
-  assignee_id text references public.vulp_team(id) on delete set null,
-  tool text not null default 'Jira',
+  assignee_id text,
+  tool text not null default '',
   priority text not null default 'Média',
   status text not null default 'todo',
   color text not null default '#07384D',
@@ -1759,8 +1910,10 @@ create table if not exists public.vulp_tasks (
   description text,
   created_at timestamptz not null default now()
 );
+alter table public.vulp_tasks add column if not exists code text;
 alter table public.vulp_tasks add column if not exists epic_id text references public.vulp_epics(id) on delete set null;
 alter table public.vulp_tasks add column if not exists color text not null default '#07384D';
+alter table public.vulp_tasks drop constraint if exists vulp_tasks_assignee_id_fkey;
 
 create table if not exists public.vulp_docs (
   id text primary key,
@@ -1772,21 +1925,25 @@ create table if not exists public.vulp_docs (
   created_at timestamptz not null default now()
 );
 
-alter table public.vulp_team enable row level security;
-alter table public.vulp_projects enable row level security;
-alter table public.vulp_epics enable row level security;
-alter table public.vulp_tasks enable row level security;
 grant usage on schema public to anon, authenticated;
 grant all on table public.vulp_team to anon, authenticated;
+grant all on table public.vulp_categories to anon, authenticated;
 grant all on table public.vulp_projects to anon, authenticated;
 grant all on table public.vulp_epics to anon, authenticated;
 grant all on table public.vulp_tasks to anon, authenticated;
 grant all on table public.vulp_docs to anon, authenticated;
 
+alter table public.vulp_team enable row level security;
+alter table public.vulp_categories enable row level security;
+alter table public.vulp_projects enable row level security;
+alter table public.vulp_epics enable row level security;
+alter table public.vulp_tasks enable row level security;
 alter table public.vulp_docs enable row level security;
 
 drop policy if exists "vulp_team_all" on public.vulp_team;
 create policy "vulp_team_all" on public.vulp_team for all using (true) with check (true);
+drop policy if exists "vulp_categories_all" on public.vulp_categories;
+create policy "vulp_categories_all" on public.vulp_categories for all using (true) with check (true);
 drop policy if exists "vulp_projects_all" on public.vulp_projects;
 create policy "vulp_projects_all" on public.vulp_projects for all using (true) with check (true);
 drop policy if exists "vulp_epics_all" on public.vulp_epics;
@@ -1797,6 +1954,7 @@ drop policy if exists "vulp_docs_all" on public.vulp_docs;
 create policy "vulp_docs_all" on public.vulp_docs for all using (true) with check (true);
 
 do $$ begin alter publication supabase_realtime add table public.vulp_team; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.vulp_categories; exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.vulp_projects; exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.vulp_epics; exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.vulp_tasks; exception when duplicate_object then null; end $$;
@@ -1805,9 +1963,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
     /* ==========================================================================
        ESTADO, CREDENCIAIS EMBUTIDAS & PERSISTÊNCIA
        ========================================================================== */
-    const STORAGE_KEY = 'vulp_flow_state_v6';
+    const STORAGE_KEY = 'vulp_flow_state_v7';
     const SB_CREDS_KEY = 'vulp_flow_supabase_creds_v1';
-    const SESSION_KEY = 'vulp_flow_session_v1';
+    const SESSION_KEY = 'vulp_flow_session_v2';
     const DEFAULT_SB_URL = 'https://kqatzgclcxrkibvywigo.supabase.co';
     const DEFAULT_SB_KEY = 'sb_publishable_xmdMl6UhilK9K8azlVqzwg_HxI_voAY';
 
@@ -1816,14 +1974,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
     let sbRealtimeChannel = null;
     let mdDebounceTimer = null;
 
-    const RECURRENCE_LABELS = {
-      none: 'Pontual',
-      daily: 'Diária',
-      weekly: 'Semanal',
-      biweekly: 'Quinzenal',
-      monthly: 'Mensal',
-      quarterly: 'Trimestral'
-    };
+    const WEEKDAY_NAMES_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
     const STATUS_META = {
       todo: { label: 'A fazer', color: '#3C6776' },
@@ -1832,27 +1983,37 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       done: { label: 'Concluído', color: '#DCEB15' }
     };
 
+    const DEFAULT_CATEGORIES = [
+      'Engenharia e Automação',
+      'Operações e PMOC',
+      'IA e Conhecimento',
+      'Implantação Cliente'
+    ];
+
     const DEFAULT_STATE = {
+      categories: [...DEFAULT_CATEGORIES],
       team: [
-        { id: 'u1', name: 'Mariana Costa', email: 'mariana@vulpair.com.br', role: 'Product Ops e Jira', accessLevel: 'member', accessPin: '' },
-        { id: 'u2', name: 'Lucas Mendes', email: 'lucas@vulpair.com.br', role: 'Engenharia de Automação e IA', accessLevel: 'member', accessPin: '' },
-        { id: 'u3', name: 'Rafael Oliveira', email: 'rafael@vulpair.com.br', role: 'Coordenação Técnica HVAC / PMOC', accessLevel: 'member', accessPin: '' },
-        { id: 'u4', name: 'Camila Ferreira', email: 'camila@vulpair.com.br', role: 'Documentação e Confluence', accessLevel: 'member', accessPin: '' },
-        { id: 'u5', name: 'Diretoria Executiva', email: 'diretoria@vulpair.com.br', role: 'Controladoria e Diretoria', accessLevel: 'viewer', accessPin: '' }
+        { id: 'u1', name: 'Mariana Costa', email: 'mariana@vulpair.com.br', role: 'Product Ops e Gestão', accessLevel: 'admin', accessPin: 'vulp2026' },
+        { id: 'u2', name: 'Lucas Mendes', email: 'lucas@vulpair.com.br', role: 'Engenharia de Automação e IA', accessLevel: 'admin', accessPin: 'vulp2026' },
+        { id: 'u3', name: 'Rafael Oliveira', email: 'rafael@vulpair.com.br', role: 'Coordenação Técnica HVAC / PMOC', accessLevel: 'member', accessPin: 'vulp2026' },
+        { id: 'u4', name: 'Camila Ferreira', email: 'camila@vulpair.com.br', role: 'Documentação e Processos', accessLevel: 'member', accessPin: 'vulp2026' },
+        { id: 'u5', name: 'Diretoria Executiva', email: 'diretoria@vulpair.com.br', role: 'Controladoria e Diretoria', accessLevel: 'viewer', accessPin: 'vulp2026' }
       ],
       projects: [
         {
           id: 'p1',
+          code: 'P-1',
           name: 'Automação Jira e Claude AI',
           ownerId: 'u2',
           category: 'IA e Conhecimento',
           status: 'Em andamento',
           color: '#07384D',
           deadline: '2026-12-15',
-          description: 'Integração entre chamados técnicos do Jira, App AUVO e Claude AI para triagem automática.'
+          description: 'Integração entre chamados técnicos, App AUVO e Claude AI para triagem automática.'
         },
         {
           id: 'p2',
+          code: 'P-2',
           name: 'Confluence e PMOC Digital',
           ownerId: 'u4',
           category: 'Operações e PMOC',
@@ -1865,6 +2026,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       epics: [
         {
           id: 'e1',
+          code: 'E-1',
           projectId: 'p1',
           title: 'Motor de Triagem Inteligente',
           ownerId: 'u2',
@@ -1875,6 +2037,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         },
         {
           id: 'e2',
+          code: 'E-2',
           projectId: 'p1',
           title: 'Governança de SLAs 24x7',
           ownerId: 'u1',
@@ -1885,6 +2048,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         },
         {
           id: 'e3',
+          code: 'E-3',
           projectId: 'p2',
           title: 'Conformidade Legal PMOC / ART',
           ownerId: 'u3',
@@ -1897,47 +2061,47 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       tasks: [
         {
           id: 't1',
-          title: 'Configurar webhook Jira para Claude com resumo de incidentes',
+          code: 'T-1',
+          title: 'Configurar webhook para Claude com resumo de incidentes',
           projectId: 'p1',
           epicId: 'e1',
           assigneeId: 'u2',
-          tool: 'Claude AI',
           priority: 'Alta',
           status: 'doing',
           color: '#5ADCE8',
           due: '2026-11-28',
           recurrence: 'none',
           cycleCount: 1,
-          description: 'Gerar diagnóstico técnico antes do atendimento em campo no App AUVO.'
+          description: 'Gerar diagnóstico técnico antes do atendimento em campo.'
         },
         {
           id: 't2',
-          title: 'Revisão semanal de backlog Jira e SLAs 24x7',
+          code: 'T-2',
+          title: 'Revisão semanal de backlog e SLAs 24x7',
           projectId: 'p1',
           epicId: 'e2',
           assigneeId: 'u1',
-          tool: 'Jira',
           priority: 'Alta',
           status: 'todo',
           color: '#DCEB15',
-          due: '2026-11-27',
-          recurrence: 'weekly',
-          cycleCount: 4,
+          due: '2026-11-24',
+          recurrence: 'period|2026-12-22|1,3,5',
+          cycleCount: 1,
           description: 'Auditar chamados abertos e atualizar prioridades da sprint.'
         },
         {
           id: 't3',
-          title: 'Auditoria mensal de conformidade PMOC / ART',
+          code: 'T-3',
+          title: 'Auditoria de conformidade PMOC / ART',
           projectId: 'p2',
           epicId: 'e3',
           assigneeId: 'u3',
-          tool: 'PMOC / Operações',
           priority: 'Alta',
           status: 'todo',
           color: '#07384D',
           due: '2026-12-01',
-          recurrence: 'monthly',
-          cycleCount: 2,
+          recurrence: 'none',
+          cycleCount: 1,
           description: 'Validar laudos de qualidade do ar interno e assinaturas técnicas.'
         }
       ],
@@ -1948,14 +2112,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           title: 'Arquitetura_Integracao_Claude_Jira.md',
           updatedAt: '2026-11-24',
           authorId: 'u2',
-          content: `# Arquitetura de integração: Jira, Claude AI e App AUVO
+          content: `# Arquitetura de integração: Operações, Claude AI e App AUVO
 
 ## Objetivo
 Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
 > **Diretriz Vulp Air:** Instalou, funcionou. E se parar, trocou.
 
-- [x] Mapear campos customizados do Jira
+- [x] Mapear campos customizados de atendimento
 - [ ] Validar tempo de resposta em homologação`
         }
       ]
@@ -1969,17 +2133,73 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     let collapsedEpics = new Set();
     let activeGlobalDocId = null;
     let mdViewMode = 'split';
+    let currentRepeatMode = 'single';
+
+    function ensureCodesAndDefaults(st) {
+      if (!Array.isArray(st.categories) || !st.categories.length) {
+        st.categories = [...DEFAULT_CATEGORIES];
+      }
+      if (!Array.isArray(st.epics)) st.epics = [];
+      if (!Array.isArray(st.projects)) st.projects = [];
+      if (!Array.isArray(st.tasks)) st.tasks = [];
+      if (!Array.isArray(st.docs)) st.docs = [];
+      if (!Array.isArray(st.team) || !st.team.length) st.team = JSON.parse(JSON.stringify(DEFAULT_STATE.team));
+
+      let hasAdmin = false;
+      st.team.forEach(m => {
+        if (!m.accessPin || !m.accessPin.trim()) m.accessPin = 'vulp2026';
+        if (!['admin', 'member', 'viewer'].includes(m.accessLevel)) m.accessLevel = 'member';
+        if (m.accessLevel === 'admin') hasAdmin = true;
+      });
+      if (!hasAdmin && st.team.length) st.team[0].accessLevel = 'admin';
+
+      assignMissingCodes(st.projects, 'P');
+      assignMissingCodes(st.epics, 'E');
+      assignMissingCodes(st.tasks, 'T');
+
+      st.projects.forEach(p => {
+        if (p.category && !st.categories.includes(p.category)) st.categories.push(p.category);
+      });
+      return st;
+    }
+
+    function assignMissingCodes(list, prefix) {
+      const regex = new RegExp('^' + prefix + '-(\\d+)$', 'i');
+      let maxNum = 0;
+      list.forEach(item => {
+        if (item.code) {
+          const m = item.code.match(regex);
+          if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+        }
+      });
+      list.forEach(item => {
+        if (!item.code) {
+          maxNum += 1;
+          item.code = `${prefix}-${maxNum}`;
+        }
+      });
+    }
+
+    function getNextCode(list, prefix) {
+      const regex = new RegExp('^' + prefix + '-(\\d+)$', 'i');
+      let maxNum = 0;
+      list.forEach(item => {
+        if (item.code) {
+          const m = item.code.match(regex);
+          if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+        }
+      });
+      return `${prefix}-${maxNum + 1}`;
+    }
 
     function loadLocalState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('vulp_flow_state_v6');
         if (raw) {
-          const parsed = JSON.parse(raw);
-          if (!parsed.epics) parsed.epics = [];
-          return parsed;
+          return ensureCodesAndDefaults(JSON.parse(raw));
         }
       } catch (e) {}
-      return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      return ensureCodesAndDefaults(JSON.parse(JSON.stringify(DEFAULT_STATE)));
     }
 
     function saveLocalCache() {
@@ -1988,100 +2208,86 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       SESSÃO FIXA POR LOGIN
+       PERFIS DE ACESSO & LOGIN COM SENHA OBRIGATÓRIA
+       - Admin Master ('admin'): mexe em tudo
+       - Padrão ('member'): cria/edita tarefas, projetos, épicos e docs
+       - Visualizador ('viewer'): somente leitura
        ========================================================================== */
+    function isAdmin() { return currentSession && currentSession.mode === 'admin'; }
+    function isViewer() { return !currentSession || currentSession.mode === 'viewer'; }
+    function canEdit() { return currentSession && (currentSession.mode === 'admin' || currentSession.mode === 'member'); }
+
+    function getRoleLabel(level) {
+      if (level === 'admin') return 'Admin Master';
+      if (level === 'viewer') return 'Visualizador';
+      return 'Padrão';
+    }
+
+    function guardEditorAction() {
+      if (!canEdit()) {
+        showToast('Seu perfil é Visualizador (somente leitura).');
+        return false;
+      }
+      return true;
+    }
+
+    function guardAdminAction() {
+      if (!isAdmin()) {
+        showToast('Ação exclusiva do perfil Admin Master.');
+        return false;
+      }
+      return true;
+    }
+
     function initSession() {
-      const params = new URLSearchParams(window.location.search);
-      const urlAccess = params.get('acesso') || params.get('role');
-      const urlUserId = params.get('uid');
-
-      if (urlAccess === 'visualizador' || urlAccess === 'viewer') {
-        const viewerUser = state.team.find(m => m.accessLevel === 'viewer');
-        currentSession = {
-          mode: 'viewer',
-          userId: viewerUser?.id || 'viewer',
-          name: viewerUser?.name || 'Visualizador Vulp Air',
-          role: viewerUser?.role || 'Somente leitura'
-        };
-        localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
-        applySessionPermissions();
-        return;
-      }
-
-      if (urlUserId) {
-        const found = state.team.find(m => m.id === urlUserId);
-        if (found) {
-          currentSession = {
-            mode: found.accessLevel === 'viewer' ? 'viewer' : 'member',
-            userId: found.id,
-            name: found.name,
-            role: found.role
-          };
-          localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
-          applySessionPermissions();
-          return;
-        }
-      }
-
       try {
         const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-        if (saved && saved.mode && saved.name) {
+        if (saved && saved.userId) {
           const dbUser = state.team.find(m => m.id === saved.userId);
           if (dbUser) {
-            saved.mode = dbUser.accessLevel === 'viewer' ? 'viewer' : 'member';
-            saved.name = dbUser.name;
-            saved.role = dbUser.role;
+            currentSession = {
+              mode: dbUser.accessLevel || 'member',
+              userId: dbUser.id,
+              name: dbUser.name,
+              role: dbUser.role
+            };
+            localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
+            applySessionPermissions();
+            return;
           }
-          currentSession = saved;
-          applySessionPermissions();
-          return;
         }
       } catch (e) {}
-
-      if (urlAccess === 'time' || urlAccess === 'member') {
-        const firstMember = state.team.find(m => m.accessLevel !== 'viewer' && !m.accessPin) || state.team[0];
-        if (firstMember) {
-          currentSession = {
-            mode: firstMember.accessLevel === 'viewer' ? 'viewer' : 'member',
-            userId: firstMember.id,
-            name: firstMember.name,
-            role: firstMember.role
-          };
-          localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
-          applySessionPermissions();
-          return;
-        }
-      }
 
       openLoginGate();
     }
 
     function openLoginGate() {
       const sel = document.getElementById('login-user-select');
+      const params = new URLSearchParams(window.location.search);
+      const preUid = params.get('uid');
       sel.innerHTML = state.team.map(m =>
-        `<option value="${m.id}">${m.name} — ${m.accessLevel === 'viewer' ? 'Visualizador' : 'Parte do time'}</option>`
+        `<option value="${m.id}" ${preUid === m.id ? 'selected' : ''}>${m.name} — ${getRoleLabel(m.accessLevel)}</option>`
       ).join('');
-      onLoginUserChange();
+      document.getElementById('login-password-input').value = '';
+      const hasDefaultPwd = state.team.some(m => m.accessPin === 'vulp2026');
+      document.getElementById('login-default-hint').style.display = hasDefaultPwd ? 'block' : 'none';
       document.getElementById('login-gate').classList.add('is-open');
-    }
-
-    function onLoginUserChange() {
-      const uid = document.getElementById('login-user-select').value;
-      const member = state.team.find(m => m.id === uid);
-      document.getElementById('login-pin-input').value = '';
-      document.getElementById('login-pin-wrap').style.display = (member && member.accessPin) ? 'flex' : 'none';
     }
 
     function submitLoginGate() {
       const uid = document.getElementById('login-user-select').value;
+      const pwd = document.getElementById('login-password-input').value.trim();
       const member = state.team.find(m => m.id === uid);
       if (!member) return;
-      if (member.accessPin && document.getElementById('login-pin-input').value.trim() !== member.accessPin) {
-        showToast('PIN incorreto.');
+
+      const expectedPwd = (member.accessPin && member.accessPin.trim()) ? member.accessPin.trim() : 'vulp2026';
+      if (!pwd || pwd !== expectedPwd) {
+        showToast('Senha incorreta. Tente novamente.');
         return;
       }
+
       currentSession = {
-        mode: member.accessLevel === 'viewer' ? 'viewer' : 'member',
+        mode: member.accessLevel || 'member',
         userId: member.id,
         name: member.name,
         role: member.role
@@ -2090,42 +2296,46 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       document.getElementById('login-gate').classList.remove('is-open');
       applySessionPermissions();
       refreshCurrentView();
+      showToast(`Bem-vindo(a), ${member.name} (${getRoleLabel(currentSession.mode)}).`);
     }
 
     function logoutSession() {
       localStorage.removeItem(SESSION_KEY);
+      currentSession = null;
       if (window.history.replaceState) window.history.replaceState(null, '', window.location.pathname);
       openLoginGate();
     }
 
-    function isViewer() { return currentSession && currentSession.mode === 'viewer'; }
-
-    function guardMemberAction() {
-      if (isViewer()) {
-        showToast('Perfil de acesso somente leitura.');
-        return false;
-      }
-      return true;
-    }
-
     function applySessionPermissions() {
       if (!currentSession) return;
-      const viewer = isViewer();
-      document.body.classList.toggle('is-viewer-mode', viewer);
+      const mode = currentSession.mode;
+      document.body.classList.remove('role-admin', 'role-member', 'role-viewer');
+      document.body.classList.add('role-' + mode);
+
       document.getElementById('session-avatar').textContent = getInitials(currentSession.name);
       document.getElementById('session-user-name').textContent = currentSession.name;
       document.getElementById('session-user-role').textContent = currentSession.role || '';
+
       const badge = document.getElementById('session-role-badge');
-      badge.textContent = viewer ? 'VISUALIZADOR' : 'PARTE DO TIME';
-      badge.className = viewer ? 'tag tag--muted' : 'tag tag--lime-pill';
-      document.getElementById('viewer-alert').style.display = viewer ? 'flex' : 'none';
+      if (mode === 'admin') {
+        badge.textContent = 'ADMIN MASTER';
+        badge.className = 'tag tag--lime-pill';
+      } else if (mode === 'viewer') {
+        badge.textContent = 'VISUALIZADOR';
+        badge.className = 'tag tag--muted';
+      } else {
+        badge.textContent = 'PADRÃO';
+        badge.className = 'tag tag--teal';
+      }
+
+      document.getElementById('viewer-alert').style.display = (mode === 'viewer') ? 'flex' : 'none';
+      if (!isAdmin() && currentView === 'supabase') switchView('tasks');
     }
 
     function openShareAccessModal() {
-      if (!guardMemberAction()) return;
+      if (!guardAdminAction()) return;
       const baseUrl = window.location.origin + window.location.pathname;
-      document.getElementById('share-link-viewer').value = `${baseUrl}?acesso=visualizador`;
-      document.getElementById('share-link-member').value = `${baseUrl}?acesso=time`;
+      document.getElementById('share-link-app').value = baseUrl;
       document.getElementById('share-modal').classList.add('is-open');
     }
 
@@ -2135,7 +2345,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       INTEGRAÇÃO SUPABASE
+       INTEGRAÇÃO SUPABASE (RESILIENTE A SCHEMA v3 E v4)
        ========================================================================== */
     function updateDbStatusUI(status, detail) {
       const dot = document.getElementById('db-pulse-dot');
@@ -2153,11 +2363,8 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         if (badge) { badge.textContent = 'Erro de conexão'; badge.className = 'tag tag--amber'; }
         if (diag) {
           diag.style.display = 'block';
-          const isSchemaErr = (detail || '').toLowerCase().includes('does not exist') || (detail || '').toLowerCase().includes('schema cache') || (detail || '').toLowerCase().includes('column');
           diag.innerHTML = `<strong>Detalhe técnico:</strong> ${detail || 'Falha ao conectar'}<br/>` +
-            (isSchemaErr
-              ? '<strong>Como resolver:</strong> Copie o <em>Script SQL v3</em> abaixo, cole no <strong>SQL Editor</strong> do seu Supabase, clique em <strong>Run</strong> e depois clique em <strong>Reconectar</strong>.'
-              : '<strong>Como resolver:</strong> Verifique se o Script SQL v3 foi executado no Supabase SQL Editor e se a chave pública (Publishable / anon key) está correta.');
+            '<strong>Como resolver:</strong> Copie o <em>Script SQL v4</em> abaixo, cole no <strong>SQL Editor</strong> do seu Supabase, clique em <strong>Run</strong> e depois clique em <strong>Reconectar</strong>.';
         }
       } else {
         dot.className = 'dot-indicator dot-indicator--local';
@@ -2168,6 +2375,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     async function resetSupabaseDefaults() {
+      if (!guardAdminAction()) return;
       localStorage.removeItem(SB_CREDS_KEY);
       document.getElementById('sb-url').value = DEFAULT_SB_URL;
       document.getElementById('sb-key').value = DEFAULT_SB_KEY;
@@ -2192,12 +2400,13 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (!url || !key) return;
       try {
         sbClient = window.supabase.createClient(url, key);
-        const [teamRes, projRes, epicRes, taskRes, docRes] = await Promise.all([
+        const [teamRes, projRes, epicRes, taskRes, docRes, catRes] = await Promise.all([
           sbClient.from('vulp_team').select('*').order('created_at', { ascending: true }),
-          sbClient.from('vulp_projects').select('*').order('created_at', { ascending: false }),
-          sbClient.from('vulp_epics').select('*').order('created_at', { ascending: false }),
-          sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: false }),
-          sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false })
+          sbClient.from('vulp_projects').select('*').order('created_at', { ascending: true }),
+          sbClient.from('vulp_epics').select('*').order('created_at', { ascending: true }),
+          sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: true }),
+          sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false }),
+          sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true })
         ]);
         if (teamRes.error) throw teamRes.error;
         if (projRes.error) throw projRes.error;
@@ -2208,10 +2417,12 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         localStorage.setItem(SB_CREDS_KEY, JSON.stringify({ url, key }));
         sbConnected = true;
 
+        const catRows = (!catRes.error && Array.isArray(catRes.data)) ? catRes.data : null;
+
         if (teamRes.data.length === 0 && projRes.data.length === 0 && taskRes.data.length === 0) {
           await pushLocalDataToSupabase(true);
         } else {
-          hydrateStateFromSupabase(teamRes.data, projRes.data, epicRes.data, taskRes.data, docRes.data);
+          hydrateStateFromSupabase(teamRes.data, projRes.data, epicRes.data, taskRes.data, docRes.data, catRows);
         }
 
         setupSupabaseRealtime();
@@ -2224,22 +2435,25 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       }
     }
 
-    function hydrateStateFromSupabase(teamRows, projRows, epicRows, taskRows, docRows) {
+    function hydrateStateFromSupabase(teamRows, projRows, epicRows, taskRows, docRows, catRows) {
+      if (catRows && catRows.length) {
+        state.categories = catRows.map(c => c.name);
+      }
       state.team = teamRows.map(r => ({
         id: r.id, name: r.name, email: r.email || '', role: r.role,
-        accessLevel: r.access_level || 'member', accessPin: r.access_pin || ''
+        accessLevel: r.access_level || 'member', accessPin: (r.access_pin && r.access_pin.trim()) ? r.access_pin : 'vulp2026'
       }));
       state.projects = projRows.map(r => ({
-        id: r.id, name: r.name, ownerId: r.owner_id, category: r.category,
+        id: r.id, code: r.code || '', name: r.name, ownerId: r.owner_id, category: r.category,
         status: r.status, color: r.color || '#07384D', deadline: r.deadline || '', description: r.description || ''
       }));
       state.epics = epicRows.map(r => ({
-        id: r.id, projectId: r.project_id, title: r.title, ownerId: r.owner_id,
+        id: r.id, code: r.code || '', projectId: r.project_id, title: r.title, ownerId: r.owner_id,
         status: r.status, color: r.color || '#5ADCE8', deadline: r.deadline || '', description: r.description || ''
       }));
       state.tasks = taskRows.map(r => ({
-        id: r.id, title: r.title, projectId: r.project_id || '', epicId: r.epic_id || '',
-        assigneeId: r.assignee_id || '', tool: r.tool, priority: r.priority, status: r.status,
+        id: r.id, code: r.code || '', title: r.title, projectId: r.project_id || '', epicId: r.epic_id || '',
+        assigneeId: r.assignee_id || '', priority: r.priority, status: r.status,
         color: r.color || '#07384D', due: r.due || '', recurrence: r.recurrence || 'none',
         cycleCount: r.cycle_count || 1, description: r.description || ''
       }));
@@ -2247,7 +2461,18 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         id: r.id, projectId: r.project_id || '', title: r.title, content: r.content || '',
         authorId: r.author_id || '', updatedAt: r.updated_at || ''
       }));
+
+      ensureCodesAndDefaults(state);
       saveLocalCache();
+      if (currentSession) {
+        const refreshedUser = state.team.find(m => m.id === currentSession.userId);
+        if (refreshedUser) {
+          currentSession.mode = refreshedUser.accessLevel;
+          currentSession.name = refreshedUser.name;
+          currentSession.role = refreshedUser.role;
+          applySessionPermissions();
+        }
+      }
       populateSelectOptions();
       refreshCurrentView();
     }
@@ -2255,15 +2480,17 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     async function refreshFromSupabaseSilent() {
       if (!sbConnected || !sbClient) return;
       try {
-        const [teamRes, projRes, epicRes, taskRes, docRes] = await Promise.all([
+        const [teamRes, projRes, epicRes, taskRes, docRes, catRes] = await Promise.all([
           sbClient.from('vulp_team').select('*').order('created_at', { ascending: true }),
-          sbClient.from('vulp_projects').select('*').order('created_at', { ascending: false }),
-          sbClient.from('vulp_epics').select('*').order('created_at', { ascending: false }),
-          sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: false }),
-          sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false })
+          sbClient.from('vulp_projects').select('*').order('created_at', { ascending: true }),
+          sbClient.from('vulp_epics').select('*').order('created_at', { ascending: true }),
+          sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: true }),
+          sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false }),
+          sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true })
         ]);
         if (!teamRes.error && !projRes.error && !epicRes.error && !taskRes.error && !docRes.error) {
-          hydrateStateFromSupabase(teamRes.data, projRes.data, epicRes.data, taskRes.data, docRes.data);
+          const catRows = (!catRes.error && Array.isArray(catRes.data)) ? catRes.data : null;
+          hydrateStateFromSupabase(teamRes.data, projRes.data, epicRes.data, taskRes.data, docRes.data, catRows);
         }
       } catch (e) {}
     }
@@ -2272,8 +2499,9 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (!sbClient) return;
       if (sbRealtimeChannel) sbClient.removeChannel(sbRealtimeChannel);
       sbRealtimeChannel = sbClient
-        .channel('vulp-flow-realtime-v6')
+        .channel('vulp-flow-realtime-v7')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_team' }, () => refreshFromSupabaseSilent())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_categories' }, () => refreshFromSupabaseSilent())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_projects' }, () => refreshFromSupabaseSilent())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_epics' }, () => refreshFromSupabaseSilent())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'vulp_tasks' }, () => refreshFromSupabaseSilent())
@@ -2281,51 +2509,60 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         .subscribe();
     }
 
+    async function safeDbUpsert(table, row) {
+      saveLocalCache();
+      if (!sbConnected || !sbClient) return { ok: true, localOnly: true };
+      let res = await sbClient.from(table).upsert(row);
+      if (res.error && res.error.message && res.error.message.includes('code')) {
+        const fallback = { ...row };
+        delete fallback.code;
+        res = await sbClient.from(table).upsert(fallback);
+      }
+      if (res.error) {
+        console.warn('Supabase upsert warning on', table, res.error.message);
+        return { ok: false, error: res.error.message };
+      }
+      return { ok: true };
+    }
+
+    async function safeDbDelete(table, id) {
+      saveLocalCache();
+      if (!sbConnected || !sbClient) return { ok: true };
+      const res = await sbClient.from(table).delete().eq('id', id);
+      if (res.error) return { ok: false, error: res.error.message };
+      return { ok: true };
+    }
+
     async function pushLocalDataToSupabase(silent = false) {
       if (!sbConnected || !sbClient) return;
       try {
-        if (state.team.length) {
-          const r1 = await sbClient.from('vulp_team').upsert(state.team.map(m => ({ id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel || 'member', access_pin: m.accessPin || '' })));
-          if (r1.error) throw r1.error;
+        for (const m of state.team) {
+          await safeDbUpsert('vulp_team', { id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel || 'member', access_pin: m.accessPin || 'vulp2026' });
         }
-        if (state.projects.length) {
-          const r2 = await sbClient.from('vulp_projects').upsert(state.projects.map(p => ({ id: p.id, name: p.name, owner_id: p.ownerId || null, category: p.category, status: p.status, color: p.color || '#07384D', deadline: p.deadline || null, description: p.description || '' })));
-          if (r2.error) throw r2.error;
+        for (let i = 0; i < state.categories.length; i++) {
+          await sbClient.from('vulp_categories').upsert({ id: 'cat_' + i, name: state.categories[i] });
         }
-        if (state.epics.length) {
-          const r3 = await sbClient.from('vulp_epics').upsert(state.epics.map(e => ({ id: e.id, project_id: e.projectId, title: e.title, owner_id: e.ownerId || null, status: e.status, color: e.color || '#5ADCE8', deadline: e.deadline || null, description: e.description || '' })));
-          if (r3.error) throw r3.error;
+        for (const p of state.projects) {
+          await safeDbUpsert('vulp_projects', { id: p.id, code: p.code, name: p.name, owner_id: p.ownerId || null, category: p.category, status: p.status, color: p.color || '#07384D', deadline: p.deadline || null, description: p.description || '' });
         }
-        if (state.tasks.length) {
-          const r4 = await sbClient.from('vulp_tasks').upsert(state.tasks.map(t => toDbTask(t)));
-          if (r4.error) throw r4.error;
+        for (const e of state.epics) {
+          await safeDbUpsert('vulp_epics', { id: e.id, code: e.code, project_id: e.projectId, title: e.title, owner_id: e.ownerId || null, status: e.status, color: e.color || '#5ADCE8', deadline: e.deadline || null, description: e.description || '' });
         }
-        if (state.docs.length) {
-          const r5 = await sbClient.from('vulp_docs').upsert(state.docs.map(d => ({ id: d.id, project_id: d.projectId || null, title: d.title, content: d.content || '', author_id: d.authorId || null, updated_at: d.updatedAt || '' })));
-          if (r5.error) throw r5.error;
+        for (const t of state.tasks) {
+          await safeDbUpsert('vulp_tasks', toDbTask(t));
+        }
+        for (const d of state.docs) {
+          await safeDbUpsert('vulp_docs', { id: d.id, project_id: d.projectId || null, title: d.title, content: d.content || '', author_id: d.authorId || null, updated_at: d.updatedAt || '' });
         }
         if (!silent) showToast('Dados sincronizados.');
       } catch (err) {
         updateDbStatusUI('error', err.message || 'Erro ao gravar dados');
-        showToast('Erro Supabase: ' + (err.message || 'verifique o SQL v3'));
       }
-    }
-
-    async function dbUpsert(table, row) {
-      saveLocalCache();
-      if (!sbConnected || !sbClient) return;
-      await sbClient.from(table).upsert(row);
-    }
-
-    async function dbDelete(table, id) {
-      saveLocalCache();
-      if (!sbConnected || !sbClient) return;
-      await sbClient.from(table).delete().eq('id', id);
     }
 
     function copySupabaseSQL() {
       navigator.clipboard.writeText(SUPABASE_SCHEMA_SQL);
-      showToast('SQL copiado.');
+      showToast('SQL v4 copiado.');
     }
 
     /* ==========================================================================
@@ -2336,11 +2573,17 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       el.textContent = msg;
       el.classList.add('is-visible');
       clearTimeout(window._toastTimer);
-      window._toastTimer = setTimeout(() => el.classList.remove('is-visible'), 2800);
+      window._toastTimer = setTimeout(() => el.classList.remove('is-visible'), 3000);
     }
 
-    function getMember(id) { return state.team.find(m => m.id === id) || { name: 'Não atribuído', role: '—', accessLevel: 'member' }; }
-    function getInitials(name) { return name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') || '?'; }
+    function getMember(id) {
+      if (id === 'team_all') return { id: 'team_all', name: 'Juntos (Equipe)', role: 'Colaborativo', accessLevel: 'member' };
+      return state.team.find(m => m.id === id) || { name: 'Não atribuído', role: '—', accessLevel: 'member' };
+    }
+    function getInitials(name) {
+      if (name === 'Juntos (Equipe)') return 'EQ';
+      return name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') || '?';
+    }
     function getProject(id) { return state.projects.find(p => p.id === id) || null; }
     function getEpic(id) { return state.epics.find(e => e.id === id) || null; }
 
@@ -2358,13 +2601,6 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
     }
 
-    function addDaysToDate(dateStr, recurrence) {
-      const base = dateStr ? new Date(dateStr + 'T12:00:00') : new Date();
-      const map = { daily: 1, weekly: 7, biweekly: 15, monthly: 30, quarterly: 90 };
-      base.setDate(base.getDate() + (map[recurrence] || 7));
-      return base.toISOString().split('T')[0];
-    }
-
     function updateCounters() {
       const activeTasks = state.tasks.filter(t => t.status !== 'done').length;
       document.getElementById('badge-tasks').textContent = activeTasks;
@@ -2375,6 +2611,10 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     function switchView(view) {
+      if (view === 'supabase' && !isAdmin()) {
+        showToast('Acesso restrito ao Admin Master.');
+        return;
+      }
       currentView = view;
       ['tasks', 'projects', 'docs', 'team', 'supabase'].forEach(v => {
         document.getElementById('view-' + v).style.display = (v === view) ? 'flex' : 'none';
@@ -2405,7 +2645,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const projFilter = document.getElementById('filter-project');
       const curProj = projFilter.value;
       projFilter.innerHTML = '<option value="ALL">Projeto: Todos</option>' +
-        state.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
       projFilter.value = curProj || 'ALL';
       projFilter.classList.toggle('is-filtered', projFilter.value !== 'ALL');
 
@@ -2413,7 +2653,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
       const assFilter = document.getElementById('filter-assignee');
       const curAss = assFilter.value;
-      assFilter.innerHTML = '<option value="ALL">Responsável: Todos</option>' +
+      assFilter.innerHTML = '<option value="ALL">Responsável: Todos</option><option value="team_all">Juntos (Equipe)</option>' +
         state.team.filter(m => m.accessLevel !== 'viewer').map(m => `<option value="${m.id}">${m.name}</option>`).join('');
       assFilter.value = curAss || 'ALL';
       assFilter.classList.toggle('is-filtered', assFilter.value !== 'ALL');
@@ -2423,7 +2663,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         if (!el) return;
         const prev = el.value;
         el.innerHTML = '<option value="ALL">Todos os projetos</option>' +
-          state.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+          state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
         el.value = prev || 'ALL';
       });
     }
@@ -2440,13 +2680,88 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const prevEpic = epicFilter.value;
       const visibleEpics = projVal === 'ALL' ? state.epics : state.epics.filter(e => e.projectId === projVal);
       epicFilter.innerHTML = '<option value="ALL">Épico: Todos</option>' +
-        visibleEpics.map(e => `<option value="${e.id}">${e.title}</option>`).join('');
+        visibleEpics.map(e => `<option value="${e.id}">${e.code} • ${e.title}</option>`).join('');
       epicFilter.value = visibleEpics.some(e => e.id === prevEpic) ? prevEpic : 'ALL';
       epicFilter.classList.toggle('is-filtered', epicFilter.value !== 'ALL');
     }
 
     /* ==========================================================================
-       ABA 1: KANBAN & TABELA DE TAREFAS (COM ETIQUETAS DE PROJETO E ÉPICO)
+       LÓGICA DE RECORRÊNCIA AVANÇADA (PERÍODO + DIAS DA SEMANA + PREVIEW)
+       ========================================================================== */
+    function parseRecurrenceSpec(recStr, startDateStr) {
+      if (!recStr || recStr === 'none') {
+        return { mode: 'single', start: startDateStr || '', end: '', days: [1, 2, 3, 4, 5, 6, 0] };
+      }
+      if (recStr.startsWith('period|')) {
+        const parts = recStr.split('|');
+        const end = parts[1] || '';
+        const days = (parts[2] || '').split(',').filter(x => x !== '').map(Number);
+        return { mode: 'period', start: startDateStr || '', end, days: days.length ? days : [1, 2, 3, 4, 5, 6, 0] };
+      }
+      const legacyDays = recStr === 'daily' ? [1, 2, 3, 4, 5, 6, 0] : [new Date((startDateStr || new Date().toISOString().split('T')[0]) + 'T12:00:00').getDay()];
+      return { mode: 'period', start: startDateStr || '', end: '', days: legacyDays };
+    }
+
+    function formatShortDateBR(isoDate) {
+      if (!isoDate) return '';
+      const d = new Date(isoDate + 'T12:00:00');
+      const wd = WEEKDAY_NAMES_SHORT[d.getDay()];
+      const [, m, day] = isoDate.split('-');
+      return `${wd} ${day}/${m}`;
+    }
+
+    function computeMatchingDates(startIso, endIso, daysArray) {
+      if (!startIso || !endIso || !daysArray.length) return [];
+      const start = new Date(startIso + 'T12:00:00');
+      const end = new Date(endIso + 'T12:00:00');
+      if (end < start) return [];
+      const matches = [];
+      const cursor = new Date(start);
+      let safety = 0;
+      while (cursor <= end && safety < 730) {
+        if (daysArray.includes(cursor.getDay())) {
+          matches.push(cursor.toISOString().split('T')[0]);
+        }
+        cursor.setDate(cursor.getDate() + 1);
+        safety++;
+      }
+      return matches;
+    }
+
+    function findNextOccurrenceDate(afterIso, endIso, daysArray) {
+      if (!daysArray || !daysArray.length) return null;
+      const base = afterIso ? new Date(afterIso + 'T12:00:00') : new Date();
+      const limit = endIso ? new Date(endIso + 'T12:00:00') : null;
+      const cursor = new Date(base);
+      for (let i = 1; i <= 366; i++) {
+        cursor.setDate(cursor.getDate() + 1);
+        if (limit && cursor > limit) return null;
+        if (daysArray.includes(cursor.getDay())) {
+          return cursor.toISOString().split('T')[0];
+        }
+      }
+      return null;
+    }
+
+    function formatRecurrenceBadge(t) {
+      const spec = parseRecurrenceSpec(t.recurrence, t.due);
+      if (spec.mode === 'single') return '';
+      const sorted = [...spec.days].sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b));
+      let daysLabel = '';
+      if (sorted.length === 7) daysLabel = 'Todos os dias';
+      else if (sorted.length === 5 && !sorted.includes(0) && !sorted.includes(6)) daysLabel = 'Dias úteis';
+      else daysLabel = sorted.map(d => WEEKDAY_NAMES_SHORT[d]).join(', ');
+
+      if (spec.end && t.due) {
+        const count = computeMatchingDates(t.due, spec.end, spec.days).length;
+        const [, m, d] = spec.end.split('-');
+        return `${daysLabel} • ${count}x (até ${d}/${m})`;
+      }
+      return daysLabel;
+    }
+
+    /* ==========================================================================
+       ABA 1: KANBAN & TABELA DE TAREFAS
        ========================================================================== */
     function setTaskDisplay(mode) {
       taskDisplayMode = mode;
@@ -2470,9 +2785,13 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         if (proj !== 'ALL' && t.projectId !== proj) return false;
         if (epic !== 'ALL' && t.epicId !== epic) return false;
         if (ass !== 'ALL' && t.assigneeId !== ass) return false;
-        if (rec === 'RECURRING' && (!t.recurrence || t.recurrence === 'none')) return false;
-        if (rec === 'ONCE' && t.recurrence && t.recurrence !== 'none') return false;
-        if (q && !t.title.toLowerCase().includes(q) && !(t.description || '').toLowerCase().includes(q)) return false;
+        const isRec = t.recurrence && t.recurrence !== 'none';
+        if (rec === 'RECURRING' && !isRec) return false;
+        if (rec === 'ONCE' && isRec) return false;
+        if (q) {
+          const hay = `${t.code || ''} ${t.title} ${t.description || ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
         return true;
       });
     }
@@ -2493,7 +2812,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
           const meta = STATUS_META[status];
           return `
             <div class="kanban-col"
-                 ondragover="if(!isViewer()){event.preventDefault(); this.classList.add('drag-over');}"
+                 ondragover="if(canEdit()){event.preventDefault(); this.classList.add('drag-over');}"
                  ondragleave="this.classList.remove('drag-over')"
                  ondrop="handleDrop(event, '${status}')">
               <div class="kanban-col__head">
@@ -2517,42 +2836,44 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const member = getMember(t.assigneeId);
       const proj = getProject(t.projectId);
       const epic = getEpic(t.epicId);
-      const isRec = t.recurrence && t.recurrence !== 'none';
-      const viewer = isViewer();
+      const recBadge = formatRecurrenceBadge(t);
+      const editable = canEdit();
 
       return `
         <article class="task-card"
-                 draggable="${!viewer}"
-                 ondragstart="if(!isViewer()) event.dataTransfer.setData('text/plain', '${t.id}')"
-                 onclick="openTaskDrawer('${t.id}')">
-          <!-- Etiquetas Jira: Projeto + Épico -->
-          <div class="task-card__labels">
-            ${proj ? `
-              <span class="jira-label jira-label--project" title="Projeto: ${proj.name}">
-                <span class="jira-dot" style="background:${proj.color || '#07384D'}"></span>
-                <span>${proj.name}</span>
-              </span>
-            ` : ''}
-            ${epic ? `
-              <span class="jira-label jira-label--epic" title="Épico: ${epic.title}">
-                <span class="jira-dot" style="background:${epic.color || '#5ADCE8'}"></span>
-                <span>${epic.title}</span>
-              </span>
-            ` : ''}
+                 draggable="${editable}"
+                 ondragstart="if(canEdit()) event.dataTransfer.setData('text/plain', '${t.id}')"
+                 onclick="openTaskModal('${t.id}')">
+          <!-- Topo: Etiquetas Projeto + Épico e ID T-X -->
+          <div class="task-card__top">
+            <div class="task-card__labels">
+              ${proj ? `
+                <span class="jira-label jira-label--project" title="${proj.code} • ${proj.name}">
+                  <span class="jira-dot" style="background:${proj.color || '#07384D'}"></span>
+                  <span>${proj.code} • ${proj.name}</span>
+                </span>
+              ` : ''}
+              ${epic ? `
+                <span class="jira-label jira-label--epic" title="${epic.code} • ${epic.title}">
+                  <span class="jira-dot" style="background:${epic.color || '#5ADCE8'}"></span>
+                  <span>${epic.code} • ${epic.title}</span>
+                </span>
+              ` : ''}
+            </div>
+            <span class="code-badge code-badge--subtle">${t.code || 'T-?'}</span>
           </div>
 
-          <!-- Título limpo -->
+          <!-- Título -->
           <h4 class="task-card__title">${t.title}</h4>
 
-          <!-- Rodapé minimalista -->
+          <!-- Rodapé (sem Ferramenta) -->
           <div class="task-card__foot">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span class="t-micro">${t.tool}</span>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               ${t.priority === 'Alta' ? `<span style="font-size:10px;font-weight:700;color:var(--amber)">• Alta</span>` : ''}
-              ${isRec ? `<span style="font-size:10px;font-weight:700;color:var(--navy);background:var(--mint-page);padding:1px 5px;border-radius:4px">${RECURRENCE_LABELS[t.recurrence]}</span>` : ''}
+              ${recBadge ? `<span style="font-size:10px;font-weight:700;color:var(--navy);background:var(--mint-page);padding:1px 6px;border-radius:4px">${recBadge}</span>` : ''}
             </div>
 
-            <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
               ${t.due ? `<span class="t-micro">${t.due.slice(5).split('-').reverse().join('/')}</span>` : ''}
               <span class="avatar-sm" title="Responsável: ${member.name}">${getInitials(member.name)}</span>
             </div>
@@ -2568,11 +2889,12 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
           <table class="vulp-table">
             <thead>
               <tr>
+                <th style="width:72px">ID</th>
                 <th>Tarefa</th>
-                <th>Etiquetas (Projeto / Épico)</th>
-                <th>Responsável</th>
+                <th>Projeto / Épico</th>
+                <th>De quem é?</th>
+                <th>Quando</th>
                 <th>Status</th>
-                <th>Prazo</th>
               </tr>
             </thead>
             <tbody>
@@ -2580,16 +2902,18 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                 const member = getMember(t.assigneeId);
                 const proj = getProject(t.projectId);
                 const epic = getEpic(t.epicId);
+                const recBadge = formatRecurrenceBadge(t);
                 return `
-                  <tr style="cursor:pointer" onclick="openTaskDrawer('${t.id}')">
+                  <tr style="cursor:pointer" onclick="openTaskModal('${t.id}')">
+                    <td><span class="code-badge code-badge--subtle">${t.code || 'T-?'}</span></td>
                     <td>
                       <div style="font-weight:700">${t.title}</div>
-                      <div class="t-micro">${t.tool} • ${t.priority}</div>
+                      ${t.priority === 'Alta' ? `<span style="font-size:11px;font-weight:700;color:var(--amber)">Prioridade Alta</span>` : ''}
                     </td>
                     <td>
                       <div style="display:flex;gap:5px;flex-wrap:wrap">
-                        ${proj ? `<span class="jira-label jira-label--project"><span class="jira-dot" style="background:${proj.color || '#07384D'}"></span>${proj.name}</span>` : ''}
-                        ${epic ? `<span class="jira-label jira-label--epic"><span class="jira-dot" style="background:${epic.color || '#5ADCE8'}"></span>${epic.title}</span>` : ''}
+                        ${proj ? `<span class="jira-label jira-label--project"><span class="jira-dot" style="background:${proj.color || '#07384D'}"></span>${proj.code} • ${proj.name}</span>` : ''}
+                        ${epic ? `<span class="jira-label jira-label--epic"><span class="jira-dot" style="background:${epic.color || '#5ADCE8'}"></span>${epic.code} • ${epic.title}</span>` : ''}
                       </div>
                     </td>
                     <td>
@@ -2598,8 +2922,11 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                         <span>${member.name}</span>
                       </div>
                     </td>
+                    <td>
+                      <div>${t.due ? t.due.split('-').reverse().join('/') : '—'}</div>
+                      ${recBadge ? `<div class="t-micro">${recBadge}</div>` : ''}
+                    </td>
                     <td><span class="tag tag--mint">${STATUS_META[t.status].label}</span></td>
-                    <td>${t.due ? t.due.split('-').reverse().join('/') : '—'}</td>
                   </tr>
                 `;
               }).join('')}
@@ -2610,7 +2937,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       ABA 2: PROJETOS EM CASCATA (ÁRVORE JIRA BACKLOG: PROJETO -> ÉPICOS -> TAREFAS)
+       ABA 2: PROJETOS (IDs P-1 / E-1 / T-1 + EXCLUIR PROJETO E ÉPICO)
        ========================================================================== */
     function toggleProjectCollapse(projId) {
       if (collapsedProjects.has(projId)) collapsedProjects.delete(projId);
@@ -2641,10 +2968,11 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const q = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
       const projectsList = filterProj === 'ALL' ? state.projects : state.projects.filter(p => p.id === filterProj);
       const container = document.getElementById('cascade-tree-container');
-      const viewer = isViewer();
+      const editable = canEdit();
+      const admin = isAdmin();
 
       if (!projectsList.length) {
-        container.innerHTML = `<div class="t-cap" style="text-align:center;padding:36px;background:var(--surface-subtle);border-radius:12px">Nenhum projeto cadastrado.</div>`;
+        container.innerHTML = `<div class="t-cap" style="text-align:center;padding:36px;background:var(--surface-subtle);border-radius:12px">Nenhum projeto cadastrado. Use <strong>+ Projeto</strong> no cabeçalho para criar.</div>`;
         return;
       }
 
@@ -2654,7 +2982,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         const owner = getMember(proj.ownerId);
         const isProjCollapsed = collapsedProjects.has(proj.id);
         const pEpics = state.epics.filter(e => e.projectId === proj.id);
-        const orphanTasks = state.tasks.filter(t => t.projectId === proj.id && !t.epicId && (!q || t.title.toLowerCase().includes(q)));
+        const orphanTasks = state.tasks.filter(t => t.projectId === proj.id && !t.epicId && (!q || `${t.code} ${t.title}`.toLowerCase().includes(q)));
 
         return `
           <div class="cascade-project ${isProjCollapsed ? 'is-collapsed' : ''}" style="border-left:5px solid ${pColor}">
@@ -2662,7 +2990,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
             <div class="cascade-project__header" onclick="toggleProjectCollapse('${proj.id}')">
               <div class="cascade-project__left">
                 <span class="chevron-icon">▼</span>
-                <span class="jira-dot" style="background:${pColor};width:10px;height:10px"></span>
+                <span class="code-badge">${proj.code || 'P-?'}</span>
                 <div>
                   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                     <span class="t-h2">${proj.name}</span>
@@ -2673,15 +3001,20 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                 </div>
               </div>
 
-              <div style="display:flex;align-items:center;gap:12px" onclick="event.stopPropagation()">
-                <div style="display:flex;align-items:center;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" onclick="event.stopPropagation()">
+                <div style="display:flex;align-items:center;gap:6px;margin-right:4px">
                   <div class="progress-mini"><div class="progress-mini__fill" style="width:${st.pct}%;background:${pColor}"></div></div>
                   <span class="t-micro" style="font-weight:700">${st.pct}% (${st.done}/${st.total})</span>
                 </div>
-                ${!viewer ? `
+                ${editable ? `
                   <button class="btn btn--xs btn--secondary" onclick="openProjectModal('${proj.id}')">Editar</button>
                   <button class="btn btn--xs btn--soft" onclick="openEpicModal(null, '${proj.id}')">+ Épico</button>
-                  <button class="btn btn--xs btn--primary" onclick="openTaskDrawer(null, '${proj.id}')">+ Tarefa</button>
+                  <button class="btn btn--xs btn--primary" onclick="openTaskModal(null, '${proj.id}}')">+ Tarefa</button>
+                ` : ''}
+                ${admin ? `
+                  <button class="icon-btn icon-btn--danger" onclick="deleteProjectById('${proj.id}', false)" title="Excluir projeto">
+                    <svg class="va-icon" width="14" height="14"><use href="#va-close"/></svg>
+                  </button>
                 ` : ''}
               </div>
             </div>
@@ -2693,7 +3026,7 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                 const eSt = getEpicStats(epic.id);
                 const eOwner = getMember(epic.ownerId);
                 const isEpicCollapsed = collapsedEpics.has(epic.id);
-                const eTasks = state.tasks.filter(t => t.epicId === epic.id && (!q || t.title.toLowerCase().includes(q)));
+                const eTasks = state.tasks.filter(t => t.epicId === epic.id && (!q || `${t.code} ${t.title}`.toLowerCase().includes(q)));
 
                 return `
                   <!-- NÍVEL 2: ÉPICO -->
@@ -2703,16 +3036,21 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
                         <span class="chevron-icon">▼</span>
                         <span class="jira-label jira-label--epic">
                           <span class="jira-dot" style="background:${eColor}"></span>
-                          <span>ÉPICO</span>
+                          <span>${epic.code || 'E-?'}</span>
                         </span>
                         <span class="t-h3">${epic.title}</span>
                         <span class="t-micro">• ${eOwner.name} • ${eSt.done}/${eSt.total} tarefas (${eSt.pct}%)</span>
                       </div>
 
                       <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
-                        ${!viewer ? `
+                        ${editable ? `
                           <button class="btn btn--xs btn--ghost" onclick="openEpicModal('${epic.id}')">Editar</button>
-                          <button class="btn btn--xs btn--secondary" onclick="openTaskDrawer(null, '${proj.id}', '${epic.id}')">+ Tarefa</button>
+                          <button class="btn btn--xs btn--secondary" onclick="openTaskModal(null, '${proj.id}', '${epic.id}')">+ Tarefa</button>
+                        ` : ''}
+                        ${admin ? `
+                          <button class="icon-btn icon-btn--danger" onclick="deleteEpicById('${epic.id}', false)" title="Excluir épico">
+                            <svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg>
+                          </button>
                         ` : ''}
                       </div>
                     </div>
@@ -2748,23 +3086,23 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
 
     function renderCascadeTaskLineHTML(t) {
       const member = getMember(t.assigneeId);
-      const isRec = t.recurrence && t.recurrence !== 'none';
-      const viewer = isViewer();
+      const recBadge = formatRecurrenceBadge(t);
+      const editable = canEdit();
 
       return `
-        <div class="jira-task-row" onclick="openTaskDrawer('${t.id}')">
+        <div class="jira-task-row" onclick="openTaskModal('${t.id}')">
           <div class="jira-task-row__left">
             <span style="width:8px;height:8px;border-radius:50%;background:${STATUS_META[t.status].color};border:1px solid var(--navy);flex-shrink:0"></span>
+            <span class="code-badge code-badge--subtle">${t.code || 'T-?'}</span>
             <span style="font-weight:700;color:var(--navy)">${t.title}</span>
-            <span class="t-micro">${t.tool}</span>
             ${t.priority === 'Alta' ? `<span class="tag tag--amber" style="font-size:10px;padding:1px 6px">Alta</span>` : ''}
-            ${isRec ? `<span class="tag tag--mint" style="font-size:10px;padding:1px 6px">${RECURRENCE_LABELS[t.recurrence]}</span>` : ''}
+            ${recBadge ? `<span class="tag tag--mint" style="font-size:10px;padding:1px 6px">${recBadge}</span>` : ''}
           </div>
 
           <div class="jira-task-row__right" onclick="event.stopPropagation()">
             ${t.due ? `<span class="t-micro">${t.due.slice(5).split('-').reverse().join('/')}</span>` : ''}
             <span class="avatar-sm" title="${member.name}">${getInitials(member.name)}</span>
-            ${viewer ? `<span class="tag tag--mint">${STATUS_META[t.status].label}</span>` : `
+            ${!editable ? `<span class="tag tag--mint">${STATUS_META[t.status].label}</span>` : `
               <select class="filter-select" style="height:26px;font-size:11px;padding:0 8px" onchange="changeTaskStatus('${t.id}', this.value)">
                 ${Object.entries(STATUS_META).map(([k, v]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${v.label}</option>`).join('')}
               </select>
@@ -2775,15 +3113,96 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       DRAWER LATERAL DE TAREFA (ATRELAR ETIQUETAS PROJETO & ÉPICO)
+       POP-UP MODAL DE TAREFA (CRIAR & EDITAR)
        ========================================================================== */
-    function onDrawerProjectChange(preselectedEpicId = null) {
-      const projId = document.getElementById('drawer-project').value;
-      const epicSel = document.getElementById('drawer-epic');
+    function setTaskRepeatMode(mode) {
+      currentRepeatMode = mode;
+      document.getElementById('btn-when-single').classList.toggle('is-active', mode === 'single');
+      document.getElementById('btn-when-period').classList.toggle('is-active', mode === 'period');
+      document.getElementById('when-single-box').style.display = (mode === 'single') ? 'block' : 'none';
+      document.getElementById('when-period-box').style.display = (mode === 'period') ? 'flex' : 'none';
+
+      if (mode === 'period') {
+        const singleVal = document.getElementById('task-due-single').value || new Date().toISOString().split('T')[0];
+        const startEl = document.getElementById('task-repeat-start');
+        const endEl = document.getElementById('task-repeat-end');
+        if (!startEl.value) startEl.value = singleVal;
+        if (!endEl.value) {
+          const d = new Date(startEl.value + 'T12:00:00');
+          d.setDate(d.getDate() + 7);
+          endEl.value = d.toISOString().split('T')[0];
+        }
+        updateRecurrencePreview();
+      }
+    }
+
+    function toggleWeekdayPill(btn) {
+      btn.classList.toggle('is-selected');
+      updateRecurrencePreview();
+    }
+
+    function applyRepeatPreset(preset) {
+      const pills = document.querySelectorAll('#task-weekdays-row .weekday-pill');
+      pills.forEach(p => {
+        const day = Number(p.getAttribute('data-day'));
+        if (preset === 'all') p.classList.add('is-selected');
+        if (preset === 'weekdays') p.classList.toggle('is-selected', day >= 1 && day <= 5);
+      });
+      updateRecurrencePreview();
+    }
+
+    function getSelectedWeekdays() {
+      return Array.from(document.querySelectorAll('#task-weekdays-row .weekday-pill.is-selected'))
+        .map(el => Number(el.getAttribute('data-day')));
+    }
+
+    function setSelectedWeekdays(days) {
+      const set = new Set(days);
+      document.querySelectorAll('#task-weekdays-row .weekday-pill').forEach(el => {
+        const d = Number(el.getAttribute('data-day'));
+        el.classList.toggle('is-selected', set.has(d));
+      });
+    }
+
+    function updateRecurrencePreview() {
+      const startIso = document.getElementById('task-repeat-start').value;
+      const endIso = document.getElementById('task-repeat-end').value;
+      const days = getSelectedWeekdays();
+      const box = document.getElementById('recurrence-preview-text');
+
+      if (!days.length) {
+        box.textContent = 'Selecione pelo menos um dia da semana acima.';
+        return;
+      }
+      if (!startIso) {
+        box.textContent = 'Escolha a data inicial (De) para calcular as repetições.';
+        return;
+      }
+      if (!endIso) {
+        box.textContent = `Repete semanalmente nos dias marcados a partir de ${formatShortDateBR(startIso)} (sem data final).`;
+        return;
+      }
+      const matches = computeMatchingDates(startIso, endIso, days);
+      if (!matches.length) {
+        box.textContent = 'Nenhum dia selecionado cai entre as datas escolhidas.';
+        return;
+      }
+      const firstStr = formatShortDateBR(matches[0]);
+      const lastStr = formatShortDateBR(matches[matches.length - 1]);
+      if (matches.length === 1) {
+        box.textContent = `Vai aparecer 1 vez, em ${firstStr}. Depois disso some sozinha.`;
+      } else {
+        box.textContent = `Vai aparecer ${matches.length} vezes, de ${firstStr} a ${lastStr}. Depois disso some sozinha.`;
+      }
+    }
+
+    function onTaskProjectChange(preselectedEpicId = null) {
+      const projId = document.getElementById('task-project').value;
+      const epicSel = document.getElementById('task-epic');
       const availableEpics = projId ? state.epics.filter(e => e.projectId === projId) : state.epics;
 
       epicSel.innerHTML = '<option value="">Sem épico</option>' +
-        availableEpics.map(e => `<option value="${e.id}">${e.title}</option>`).join('');
+        availableEpics.map(e => `<option value="${e.id}">${e.code} • ${e.title}</option>`).join('');
 
       if (preselectedEpicId && availableEpics.some(e => e.id === preselectedEpicId)) {
         epicSel.value = preselectedEpicId;
@@ -2792,70 +3211,81 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       }
     }
 
-    function openTaskDrawer(taskId = null, preselectedProjectId = null, preselectedEpicId = null) {
-      if (!taskId && !guardMemberAction()) return;
+    function openTaskModal(taskId = null, preselectedProjectId = null, preselectedEpicId = null) {
+      if (!taskId && !guardEditorAction()) return;
 
-      const projSel = document.getElementById('drawer-project');
-      const assSel = document.getElementById('drawer-assignee');
+      const projSel = document.getElementById('task-project');
+      const assSel = document.getElementById('task-assignee');
       const teamMembers = state.team.filter(m => m.accessLevel !== 'viewer');
 
       projSel.innerHTML = '<option value="">Sem projeto</option>' +
-        state.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-      assSel.innerHTML = (teamMembers.length ? teamMembers : state.team).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
+      assSel.innerHTML = '<option value="team_all">Juntos (Toda a equipe)</option>' +
+        (teamMembers.length ? teamMembers : state.team).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+
+      const todayIso = new Date().toISOString().split('T')[0];
 
       if (taskId) {
         const t = state.tasks.find(x => x.id === taskId);
         if (!t) return;
-        document.getElementById('drawer-heading').textContent = 'Editar tarefa';
-        document.getElementById('drawer-subtitle').textContent = 'Atrele projeto, épico e detalhes abaixo';
-        document.getElementById('drawer-task-id').value = t.id;
-        document.getElementById('drawer-title').value = t.title;
+        document.getElementById('task-modal-code').textContent = t.code || 'T-?';
+        document.getElementById('task-modal-heading').textContent = isViewer() ? 'Detalhes da tarefa' : 'Editar tarefa';
+        document.getElementById('task-modal-id').value = t.id;
+        document.getElementById('task-title').value = t.title;
         projSel.value = t.projectId || '';
-        onDrawerProjectChange(t.epicId || '');
-        assSel.value = t.assigneeId || (teamMembers[0]?.id || '');
-        document.getElementById('drawer-status').value = t.status || 'todo';
-        document.getElementById('drawer-priority').value = t.priority || 'Média';
-        document.getElementById('drawer-tool').value = t.tool || 'Jira';
-        document.getElementById('drawer-due').value = t.due || '';
-        document.getElementById('drawer-recurrence').value = t.recurrence || 'none';
-        document.getElementById('drawer-desc').value = t.description || '';
-        document.getElementById('drawer-delete-btn').style.display = 'inline-flex';
+        onTaskProjectChange(t.epicId || '');
+        assSel.value = t.assigneeId || 'team_all';
+        document.getElementById('task-status').value = t.status || 'todo';
+        document.getElementById('task-priority').value = t.priority || 'Média';
+        document.getElementById('task-desc').value = t.description || '';
+        document.getElementById('task-status-wrap').style.display = 'flex';
+        document.getElementById('task-delete-btn').style.display = 'inline-flex';
+        document.getElementById('task-save-btn').textContent = 'Salvar alterações';
+
+        const spec = parseRecurrenceSpec(t.recurrence, t.due || todayIso);
+        document.getElementById('task-due-single').value = t.due || todayIso;
+        document.getElementById('task-repeat-start').value = t.due || todayIso;
+        document.getElementById('task-repeat-end').value = spec.end || '';
+        setSelectedWeekdays(spec.days);
+        setTaskRepeatMode(spec.mode);
       } else {
-        document.getElementById('drawer-heading').textContent = 'Nova tarefa';
-        document.getElementById('drawer-subtitle').textContent = 'Defina o título e atrele as etiquetas';
-        document.getElementById('drawer-task-id').value = '';
-        document.getElementById('drawer-title').value = '';
+        document.getElementById('task-modal-code').textContent = getNextCode(state.tasks, 'T');
+        document.getElementById('task-modal-heading').textContent = 'Nova tarefa';
+        document.getElementById('task-modal-id').value = '';
+        document.getElementById('task-title').value = '';
         const defaultProj = preselectedProjectId || (document.getElementById('filter-project')?.value !== 'ALL' ? document.getElementById('filter-project').value : (state.projects[0]?.id || ''));
         projSel.value = defaultProj;
         const defaultEpic = preselectedEpicId || (document.getElementById('filter-epic')?.value !== 'ALL' ? document.getElementById('filter-epic').value : '');
-        onDrawerProjectChange(defaultEpic);
-        assSel.value = currentSession?.userId && teamMembers.some(m => m.id === currentSession.userId) ? currentSession.userId : (teamMembers[0]?.id || '');
-        document.getElementById('drawer-status').value = 'todo';
-        document.getElementById('drawer-priority').value = 'Média';
-        document.getElementById('drawer-tool').value = 'Jira';
-        document.getElementById('drawer-due').value = new Date().toISOString().split('T')[0];
-        document.getElementById('drawer-recurrence').value = 'none';
-        document.getElementById('drawer-desc').value = '';
-        document.getElementById('drawer-delete-btn').style.display = 'none';
+        onTaskProjectChange(defaultEpic);
+        assSel.value = currentSession?.userId && teamMembers.some(m => m.id === currentSession.userId) ? currentSession.userId : 'team_all';
+        document.getElementById('task-status').value = 'todo';
+        document.getElementById('task-priority').value = 'Média';
+        document.getElementById('task-desc').value = '';
+        document.getElementById('task-status-wrap').style.display = 'none';
+        document.getElementById('task-delete-btn').style.display = 'none';
+        document.getElementById('task-save-btn').textContent = 'Adicionar';
+
+        document.getElementById('task-due-single').value = todayIso;
+        document.getElementById('task-repeat-start').value = todayIso;
+        const nextWeek = new Date(todayIso + 'T12:00:00');
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        document.getElementById('task-repeat-end').value = nextWeek.toISOString().split('T')[0];
+        setSelectedWeekdays([1, 2, 3, 4, 5, 6, 0]);
+        setTaskRepeatMode('single');
       }
 
-      document.getElementById('task-drawer-overlay').classList.add('is-open');
-      document.getElementById('task-drawer').classList.add('is-open');
-    }
-
-    function closeTaskDrawer() {
-      document.getElementById('task-drawer-overlay').classList.remove('is-open');
-      document.getElementById('task-drawer').classList.remove('is-open');
+      document.getElementById('task-modal').classList.add('is-open');
     }
 
     function toDbTask(t) {
       return {
         id: t.id,
+        code: t.code || '',
         title: t.title,
         project_id: t.projectId || null,
         epic_id: t.epicId || null,
         assignee_id: t.assigneeId || null,
-        tool: t.tool,
+        tool: '',
         priority: t.priority,
         status: t.status,
         color: t.color || '#07384D',
@@ -2866,29 +3296,49 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       };
     }
 
-    async function saveTaskFromDrawer() {
-      if (!guardMemberAction()) return;
-      const title = document.getElementById('drawer-title').value.trim();
+    async function saveTaskFromModal() {
+      if (!guardEditorAction()) return;
+      const title = document.getElementById('task-title').value.trim();
       if (!title) {
         showToast('Informe o título da tarefa.');
         return;
       }
-      const id = document.getElementById('drawer-task-id').value;
-      const projectId = document.getElementById('drawer-project').value;
-      const epicId = document.getElementById('drawer-epic').value;
+      const id = document.getElementById('task-modal-id').value;
+      const projectId = document.getElementById('task-project').value;
+      const epicId = document.getElementById('task-epic').value;
       const inheritedColor = getEpic(epicId)?.color || getProject(projectId)?.color || '#07384D';
+
+      let due = '';
+      let recurrence = 'none';
+
+      if (currentRepeatMode === 'single') {
+        due = document.getElementById('task-due-single').value;
+        recurrence = 'none';
+      } else {
+        due = document.getElementById('task-repeat-start').value;
+        const endIso = document.getElementById('task-repeat-end').value;
+        const days = getSelectedWeekdays();
+        if (!days.length) {
+          showToast('Selecione ao menos um dia da semana.');
+          return;
+        }
+        if (endIso && due && endIso < due) {
+          showToast('A data final (Até) não pode ser anterior à data inicial.');
+          return;
+        }
+        recurrence = `period|${endIso || ''}|${days.join(',')}`;
+      }
 
       const payload = {
         title,
         projectId,
         epicId,
-        assigneeId: document.getElementById('drawer-assignee').value,
-        status: document.getElementById('drawer-status').value,
-        priority: document.getElementById('drawer-priority').value,
-        tool: document.getElementById('drawer-tool').value,
-        due: document.getElementById('drawer-due').value,
-        recurrence: document.getElementById('drawer-recurrence').value,
-        description: document.getElementById('drawer-desc').value.trim(),
+        assigneeId: document.getElementById('task-assignee').value,
+        status: document.getElementById('task-status').value,
+        priority: document.getElementById('task-priority').value,
+        due,
+        recurrence,
+        description: document.getElementById('task-desc').value.trim(),
         color: inheritedColor
       };
 
@@ -2899,25 +3349,26 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
           state.tasks[idx] = { ...state.tasks[idx], ...payload };
           savedObj = state.tasks[idx];
         }
-        showToast('Tarefa atualizada.');
+        showToast(`${savedObj.code} atualizada.`);
       } else {
-        savedObj = { id: 't_' + Date.now(), cycleCount: 1, ...payload };
+        const code = getNextCode(state.tasks, 'T');
+        savedObj = { id: 't_' + Date.now(), code, cycleCount: 1, ...payload };
         state.tasks.unshift(savedObj);
-        showToast('Tarefa criada.');
+        showToast(`Tarefa ${code} criada.`);
       }
 
-      await dbUpsert('vulp_tasks', toDbTask(savedObj));
-      closeTaskDrawer();
+      await safeDbUpsert('vulp_tasks', toDbTask(savedObj));
+      closeModal('task-modal');
       refreshCurrentView();
     }
 
-    async function deleteTaskFromDrawer() {
-      if (!guardMemberAction()) return;
-      const id = document.getElementById('drawer-task-id').value;
+    async function deleteTaskFromModal() {
+      if (!guardEditorAction()) return;
+      const id = document.getElementById('task-modal-id').value;
       if (!id || !confirm('Excluir esta tarefa?')) return;
       state.tasks = state.tasks.filter(t => t.id !== id);
-      await dbDelete('vulp_tasks', id);
-      closeTaskDrawer();
+      await safeDbDelete('vulp_tasks', id);
+      closeModal('task-modal');
       refreshCurrentView();
       showToast('Tarefa excluída.');
     }
@@ -2925,32 +3376,39 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     function handleDrop(e, newStatus) {
       e.preventDefault();
       e.currentTarget.classList.remove('drag-over');
-      if (!guardMemberAction()) return;
+      if (!guardEditorAction()) return;
       const taskId = e.dataTransfer.getData('text/plain');
       if (taskId) changeTaskStatus(taskId, newStatus);
     }
 
     async function changeTaskStatus(taskId, newStatus) {
-      if (!guardMemberAction()) return;
+      if (!guardEditorAction()) return;
       const task = state.tasks.find(t => t.id === taskId);
       if (!task) return;
       const oldStatus = task.status;
       task.status = newStatus;
-      await dbUpsert('vulp_tasks', toDbTask(task));
+      await safeDbUpsert('vulp_tasks', toDbTask(task));
 
-      if (newStatus === 'done' && oldStatus !== 'done' && task.recurrence && task.recurrence !== 'none') {
-        const nextDue = addDaysToDate(task.due, task.recurrence);
-        const nextCycle = (task.cycleCount || 1) + 1;
-        const nextTask = {
-          ...JSON.parse(JSON.stringify(task)),
-          id: 't_' + Date.now(),
-          status: 'todo',
-          due: nextDue,
-          cycleCount: nextCycle
-        };
-        state.tasks.unshift(nextTask);
-        await dbUpsert('vulp_tasks', toDbTask(nextTask));
-        showToast(`Concluída! Próximo ciclo (#${nextCycle}) criado para ${nextDue.split('-').reverse().join('/')}.`);
+      const spec = parseRecurrenceSpec(task.recurrence, task.due);
+      if (newStatus === 'done' && oldStatus !== 'done' && spec.mode === 'period') {
+        const nextDue = findNextOccurrenceDate(task.due, spec.end, spec.days);
+        if (nextDue) {
+          const nextCycle = (task.cycleCount || 1) + 1;
+          const nextCode = getNextCode(state.tasks, 'T');
+          const nextTask = {
+            ...JSON.parse(JSON.stringify(task)),
+            id: 't_' + Date.now(),
+            code: nextCode,
+            status: 'todo',
+            due: nextDue,
+            cycleCount: nextCycle
+          };
+          state.tasks.unshift(nextTask);
+          await safeDbUpsert('vulp_tasks', toDbTask(nextTask));
+          showToast(`Concluída! Próxima ocorrência (${nextCode}) agendada para ${formatShortDateBR(nextDue)}.`);
+        } else {
+          showToast(`Concluída! Período encerrado — não aparecerá mais.`);
+        }
       } else {
         showToast(`Movida para "${STATUS_META[newStatus].label}".`);
       }
@@ -2958,41 +3416,143 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
     }
 
     /* ==========================================================================
-       MODAIS DE PROJETO E ÉPICO
+       GERENCIADOR DE FRENTES DE PROJETO
+       ========================================================================== */
+    function populateProjectCategorySelect(selectedCat = null) {
+      const sel = document.getElementById('project-category');
+      if (!sel) return;
+      const list = [...state.categories];
+      if (selectedCat && !list.includes(selectedCat)) list.push(selectedCat);
+      sel.innerHTML = list.map(c => `<option value="${c}">${c}</option>`).join('');
+      if (selectedCat) sel.value = selectedCat;
+    }
+
+    function openCategoriesModal() {
+      if (!guardAdminAction()) return;
+      renderCategoriesList();
+      document.getElementById('new-category-input').value = '';
+      document.getElementById('categories-modal').classList.add('is-open');
+    }
+
+    function renderCategoriesList() {
+      const box = document.getElementById('categories-list-box');
+      box.innerHTML = state.categories.map((cat, idx) => {
+        const inUseCount = state.projects.filter(p => p.category === cat).length;
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:var(--surface-subtle);border:1px solid var(--line);border-radius:8px">
+            <div>
+              <div style="font-weight:700;color:var(--navy)">${cat}</div>
+              <div class="t-micro">${inUseCount} projeto(s) vinculado(s)</div>
+            </div>
+            <div style="display:flex;gap:4px">
+              <button type="button" class="btn btn--xs btn--secondary" onclick="renameProjectCategory(${idx})">Renomear</button>
+              <button type="button" class="icon-btn icon-btn--danger" onclick="deleteProjectCategory(${idx})" title="Excluir frente">
+                <svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function addProjectCategory() {
+      if (!guardAdminAction()) return;
+      const input = document.getElementById('new-category-input');
+      const val = input.value.trim();
+      if (!val) { showToast('Digite o nome da frente.'); return; }
+      if (state.categories.some(c => c.toLowerCase() === val.toLowerCase())) {
+        showToast('Essa frente já existe.');
+        return;
+      }
+      state.categories.push(val);
+      input.value = '';
+      saveLocalCache();
+      populateProjectCategorySelect(val);
+      renderCategoriesList();
+      if (sbConnected && sbClient) {
+        await sbClient.from('vulp_categories').upsert({ id: 'cat_' + Date.now(), name: val });
+      }
+      showToast(`Frente "${val}" cadastrada.`);
+    }
+
+    async function renameProjectCategory(idx) {
+      if (!guardAdminAction()) return;
+      const oldName = state.categories[idx];
+      const nextName = prompt('Novo nome da frente:', oldName);
+      if (!nextName || !nextName.trim() || nextName.trim() === oldName) return;
+      const clean = nextName.trim();
+      state.categories[idx] = clean;
+      state.projects.forEach(p => { if (p.category === oldName) p.category = clean; });
+      saveLocalCache();
+      populateProjectCategorySelect(clean);
+      renderCategoriesList();
+      refreshCurrentView();
+      if (sbConnected) await pushLocalDataToSupabase(true);
+      showToast('Frente renomeada.');
+    }
+
+    async function deleteProjectCategory(idx) {
+      if (!guardAdminAction()) return;
+      if (state.categories.length <= 1) {
+        showToast('Mantenha pelo menos uma frente cadastrada.');
+        return;
+      }
+      const cat = state.categories[idx];
+      const inUse = state.projects.filter(p => p.category === cat).length;
+      if (inUse > 0) {
+        showToast(`Existem ${inUse} projeto(s) usando "${cat}". Altere-os antes de excluir.`);
+        return;
+      }
+      state.categories.splice(idx, 1);
+      saveLocalCache();
+      populateProjectCategorySelect();
+      renderCategoriesList();
+      if (sbConnected && sbClient) {
+        await sbClient.from('vulp_categories').delete().eq('name', cat);
+      }
+      showToast('Frente excluída.');
+    }
+
+    /* ==========================================================================
+       MODAIS DE PROJETO E ÉPICO (COM EXCLUIR PROJETO E EXCLUIR ÉPICO)
        ========================================================================== */
     function openProjectModal(projectId = null) {
-      if (!guardMemberAction()) return;
+      if (!guardEditorAction()) return;
       const ownerSel = document.getElementById('project-owner');
       const teamMembers = state.team.filter(m => m.accessLevel !== 'viewer');
       ownerSel.innerHTML = (teamMembers.length ? teamMembers : state.team).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
 
       if (projectId) {
         const p = getProject(projectId);
+        document.getElementById('project-modal-code').textContent = p.code || 'P-?';
         document.getElementById('project-modal-title').textContent = 'Editar projeto';
         document.getElementById('project-id').value = p.id;
         document.getElementById('project-name').value = p.name;
         ownerSel.value = p.ownerId;
-        document.getElementById('project-category').value = p.category;
+        populateProjectCategorySelect(p.category);
         document.getElementById('project-status').value = p.status;
         document.getElementById('project-deadline').value = p.deadline || '';
         document.getElementById('project-desc').value = p.description || '';
+        document.getElementById('project-delete-btn').style.display = isAdmin() ? 'inline-flex' : 'none';
         renderColorSwatches('project-color-swatches', 'project-color', p.color || '#07384D');
       } else {
+        document.getElementById('project-modal-code').textContent = getNextCode(state.projects, 'P');
         document.getElementById('project-modal-title').textContent = 'Novo projeto';
         document.getElementById('project-id').value = '';
         document.getElementById('project-name').value = '';
         ownerSel.value = teamMembers[0]?.id || '';
-        document.getElementById('project-category').value = 'Engenharia e Automação';
+        populateProjectCategorySelect(state.categories[0]);
         document.getElementById('project-status').value = 'Em andamento';
         document.getElementById('project-deadline').value = '';
         document.getElementById('project-desc').value = '';
+        document.getElementById('project-delete-btn').style.display = 'none';
         renderColorSwatches('project-color-swatches', 'project-color', '#07384D');
       }
       document.getElementById('project-modal').classList.add('is-open');
     }
 
     async function saveProject() {
-      if (!guardMemberAction()) return;
+      if (!guardEditorAction()) return;
       const name = document.getElementById('project-name').value.trim();
       if (!name) { showToast('Informe o nome do projeto.'); return; }
       const id = document.getElementById('project-id').value;
@@ -3010,15 +3570,16 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (id) {
         const idx = state.projects.findIndex(p => p.id === id);
         if (idx >= 0) { state.projects[idx] = { ...state.projects[idx], ...payload }; savedProj = state.projects[idx]; }
-        showToast('Projeto atualizado.');
+        showToast(`Projeto ${savedProj.code} atualizado.`);
       } else {
-        savedProj = { id: 'p_' + Date.now(), ...payload };
-        state.projects.unshift(savedProj);
-        showToast('Projeto criado.');
+        const code = getNextCode(state.projects, 'P');
+        savedProj = { id: 'p_' + Date.now(), code, ...payload };
+        state.projects.push(savedProj);
+        showToast(`Projeto ${code} criado.`);
       }
 
-      await dbUpsert('vulp_projects', {
-        id: savedProj.id, name: savedProj.name, owner_id: savedProj.ownerId || null,
+      await safeDbUpsert('vulp_projects', {
+        id: savedProj.id, code: savedProj.code, name: savedProj.name, owner_id: savedProj.ownerId || null,
         category: savedProj.category, status: savedProj.status, color: savedProj.color,
         deadline: savedProj.deadline || null, description: savedProj.description || ''
       });
@@ -3027,18 +3588,38 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       refreshCurrentView();
     }
 
+    async function deleteProjectById(projectId, fromModal = false) {
+      if (!guardAdminAction()) return;
+      const proj = getProject(projectId);
+      if (!proj) return;
+      const epicCount = state.epics.filter(e => e.projectId === projectId).length;
+      const taskCount = state.tasks.filter(t => t.projectId === projectId).length;
+      if (!confirm(`Excluir o projeto "${proj.code} • ${proj.name}"? Isso também removerá ${epicCount} épico(s) e ${taskCount} tarefa(s) vinculados.`)) return;
+
+      state.projects = state.projects.filter(p => p.id !== projectId);
+      state.epics = state.epics.filter(e => e.projectId !== projectId);
+      state.tasks = state.tasks.filter(t => t.projectId !== projectId);
+
+      await safeDbDelete('vulp_projects', projectId);
+      if (fromModal) closeModal('project-modal');
+      populateSelectOptions();
+      refreshCurrentView();
+      showToast(`Projeto ${proj.code} excluído.`);
+    }
+
     function openEpicModal(epicId = null, preselectedProjectId = null) {
-      if (!guardMemberAction()) return;
+      if (!guardEditorAction()) return;
       if (!state.projects.length) { showToast('Crie um projeto primeiro.'); return; }
       const projSel = document.getElementById('epic-project');
       const ownerSel = document.getElementById('epic-owner');
       const teamMembers = state.team.filter(m => m.accessLevel !== 'viewer');
 
-      projSel.innerHTML = state.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      projSel.innerHTML = state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
       ownerSel.innerHTML = (teamMembers.length ? teamMembers : state.team).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
 
       if (epicId) {
         const e = getEpic(epicId);
+        document.getElementById('epic-modal-code').textContent = e.code || 'E-?';
         document.getElementById('epic-modal-title').textContent = 'Editar épico';
         document.getElementById('epic-id').value = e.id;
         projSel.value = e.projectId;
@@ -3046,8 +3627,10 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         ownerSel.value = e.ownerId || '';
         document.getElementById('epic-deadline').value = e.deadline || '';
         document.getElementById('epic-desc').value = e.description || '';
+        document.getElementById('epic-delete-btn').style.display = isAdmin() ? 'inline-flex' : 'none';
         renderColorSwatches('epic-color-swatches', 'epic-color', e.color || '#5ADCE8');
       } else {
+        document.getElementById('epic-modal-code').textContent = getNextCode(state.epics, 'E');
         document.getElementById('epic-modal-title').textContent = 'Novo épico';
         document.getElementById('epic-id').value = '';
         projSel.value = preselectedProjectId || state.projects[0].id;
@@ -3055,13 +3638,14 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
         ownerSel.value = teamMembers[0]?.id || '';
         document.getElementById('epic-deadline').value = '';
         document.getElementById('epic-desc').value = '';
+        document.getElementById('epic-delete-btn').style.display = 'none';
         renderColorSwatches('epic-color-swatches', 'epic-color', '#5ADCE8');
       }
       document.getElementById('epic-modal').classList.add('is-open');
     }
 
     async function saveEpic() {
-      if (!guardMemberAction()) return;
+      if (!guardEditorAction()) return;
       const title = document.getElementById('epic-title').value.trim();
       const projectId = document.getElementById('epic-project').value;
       if (!title || !projectId) { showToast('Informe o projeto e o nome do épico.'); return; }
@@ -3079,15 +3663,16 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (id) {
         const idx = state.epics.findIndex(e => e.id === id);
         if (idx >= 0) { state.epics[idx] = { ...state.epics[idx], ...payload }; savedEpic = state.epics[idx]; }
-        showToast('Épico atualizado.');
+        showToast(`Épico ${savedEpic.code} atualizado.`);
       } else {
-        savedEpic = { id: 'e_' + Date.now(), ...payload };
-        state.epics.unshift(savedEpic);
-        showToast('Épico criado.');
+        const code = getNextCode(state.epics, 'E');
+        savedEpic = { id: 'e_' + Date.now(), code, ...payload };
+        state.epics.push(savedEpic);
+        showToast(`Épico ${code} criado.`);
       }
 
-      await dbUpsert('vulp_epics', {
-        id: savedEpic.id, project_id: savedEpic.projectId, title: savedEpic.title,
+      await safeDbUpsert('vulp_epics', {
+        id: savedEpic.id, code: savedEpic.code, project_id: savedEpic.projectId, title: savedEpic.title,
         owner_id: savedEpic.ownerId || null, status: savedEpic.status, color: savedEpic.color,
         deadline: savedEpic.deadline || null, description: savedEpic.description || ''
       });
@@ -3096,10 +3681,29 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       refreshCurrentView();
     }
 
+    async function deleteEpicById(epicId, fromModal = false) {
+      if (!guardAdminAction()) return;
+      const epic = getEpic(epicId);
+      if (!epic) return;
+      const linkedTasks = state.tasks.filter(t => t.epicId === epicId);
+      if (!confirm(`Excluir o épico "${epic.code} • ${epic.title}"? As ${linkedTasks.length} tarefa(s) vinculadas permanecerão no projeto sem épico.`)) return;
+
+      state.epics = state.epics.filter(e => e.id !== epicId);
+      for (const t of linkedTasks) {
+        t.epicId = '';
+        await safeDbUpsert('vulp_tasks', toDbTask(t));
+      }
+      await safeDbDelete('vulp_epics', epicId);
+      if (fromModal) closeModal('epic-modal');
+      populateSelectOptions();
+      refreshCurrentView();
+      showToast(`Épico ${epic.code} excluído.`);
+    }
+
     function closeModal(id) { document.getElementById(id).classList.remove('is-open'); }
 
     /* ==========================================================================
-       DOCUMENTAÇÃO MARKDOWN
+       DOCUMENTAÇÃO MARKDOWN (UPLOAD DE ARQUIVOS + DRAG & DROP + NOVO DOC)
        ========================================================================== */
     function parseMarkdown(md) {
       if (!md) return '<p class="t-cap">Documento vazio.</p>';
@@ -3124,8 +3728,9 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       const docsList = filter === 'ALL' ? state.docs : state.docs.filter(d => d.projectId === filter);
       const doc = docsList.find(d => d.id === activeGlobalDocId) || docsList[0] || null;
       if (doc) activeGlobalDocId = doc.id;
-      const viewer = isViewer();
-      const effectiveMode = viewer ? 'preview' : mdViewMode;
+      const editable = canEdit();
+      const admin = isAdmin();
+      const effectiveMode = !editable ? 'preview' : mdViewMode;
 
       document.getElementById('global-wiki-container').innerHTML = `
         <div class="md-workspace">
@@ -3135,41 +3740,112 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
               return `
                 <button class="md-doc-btn ${doc && doc.id === d.id ? 'is-active' : ''}" onclick="activeGlobalDocId='${d.id}'; renderGlobalWiki()">
                   <span style="font-size:12px">${d.title}</span>
-                  <span class="t-micro">${proj ? proj.name : 'Geral'} • ${d.updatedAt}</span>
+                  <span class="t-micro">${proj ? proj.code + ' • ' + proj.name : 'Geral'} • ${d.updatedAt}</span>
                 </button>
               `;
-            }).join('') : `<div class="t-micro" style="padding:12px">Nenhum documento.</div>`}
+            }).join('') : `<div class="t-micro" style="padding:12px">Nenhum documento. Clique em <strong>Subir arquivo (.md / .txt)</strong> ou arraste arquivos aqui.</div>`}
           </div>
 
           <div class="md-editor-box">
             ${doc ? `
               <div class="md-toolbar">
-                ${viewer ? `<span class="t-h3">${doc.title}</span>` : `
-                  <input type="text" class="field__input" style="font-weight:700;max-width:320px;height:32px" value="${doc.title}" onchange="updateDocTitle('${doc.id}', this.value)" />
+                ${!editable ? `<span class="t-h3">${doc.title}</span>` : `
+                  <input type="text" class="field__input" style="font-weight:700;max-width:340px;height:32px" value="${doc.title}" onchange="updateDocTitle('${doc.id}', this.value)" />
                 `}
                 <div style="display:flex;gap:6px;align-items:center">
-                  ${!viewer ? `
+                  ${editable ? `
                     <div class="segmented-group">
                       <button class="segmented-btn ${effectiveMode === 'split' ? 'is-active' : ''}" onclick="mdViewMode='split'; renderGlobalWiki()">Dividido</button>
                       <button class="segmented-btn ${effectiveMode === 'preview' ? 'is-active' : ''}" onclick="mdViewMode='preview'; renderGlobalWiki()">Leitura</button>
                     </div>
                   ` : ''}
                   <button class="btn btn--xs btn--secondary" onclick="downloadMarkdownFile('${doc.id}')">Baixar .md</button>
-                  ${!viewer ? `<button class="icon-btn icon-btn--danger" onclick="deleteMarkdownDoc('${doc.id}')" title="Excluir"><svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg></button>` : ''}
+                  ${admin ? `<button class="icon-btn icon-btn--danger" onclick="deleteMarkdownDoc('${doc.id}')" title="Excluir documento"><svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg></button>` : ''}
                 </div>
               </div>
               <div class="md-split ${effectiveMode !== 'split' ? 'md-split--single' : ''}">
                 ${effectiveMode !== 'preview' ? `<textarea class="md-textarea" oninput="liveUpdateMarkdown('${doc.id}', this.value)">${doc.content}</textarea>` : ''}
                 <div id="md-preview-box" class="md-preview">${parseMarkdown(doc.content)}</div>
               </div>
-            ` : `<div class="t-cap" style="text-align:center;padding:40px">Crie um documento Markdown para começar.</div>`}
+            ` : `<div class="t-cap" style="text-align:center;padding:48px 20px">Envie um arquivo <strong>.md</strong> / <strong>.txt</strong> pelo botão acima (ou arraste para esta área) ou clique em <strong>+ Novo documento .md</strong>.</div>`}
           </div>
         </div>
       `;
     }
 
+    function handleMarkdownDragOver(event) {
+      if (!canEdit()) return;
+      event.preventDefault();
+      const ws = document.querySelector('#global-wiki-container .md-workspace');
+      if (ws) ws.classList.add('is-dragover');
+    }
+
+    function handleMarkdownDragLeave(event) {
+      const ws = document.querySelector('#global-wiki-container .md-workspace');
+      if (ws) ws.classList.remove('is-dragover');
+    }
+
+    async function handleMarkdownFileUpload(event) {
+      if (!guardEditorAction()) return;
+      const files = Array.from(event.target.files || []);
+      await ingestUploadedDocFiles(files);
+      event.target.value = '';
+    }
+
+    async function handleMarkdownDrop(event) {
+      event.preventDefault();
+      handleMarkdownDragLeave(event);
+      if (!guardEditorAction()) return;
+      const files = Array.from(event.dataTransfer?.files || []);
+      if (files.length) await ingestUploadedDocFiles(files);
+    }
+
+    async function ingestUploadedDocFiles(files) {
+      if (!files.length) return;
+      const filterProj = document.getElementById('wiki-project-filter')?.value;
+      const targetProj = (filterProj && filterProj !== 'ALL') ? filterProj : (state.projects[0]?.id || '');
+      const today = new Date().toISOString().split('T')[0];
+
+      let uploadedCount = 0;
+      for (const file of files) {
+        const text = await readFileAsText(file);
+        const cleanName = file.name.endsWith('.md') || file.name.endsWith('.txt') ? file.name : (file.name + '.md');
+        const newDoc = {
+          id: 'd_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+          projectId: targetProj,
+          title: cleanName,
+          updatedAt: today,
+          authorId: currentSession?.userId || 'u1',
+          content: text
+        };
+        state.docs.unshift(newDoc);
+        activeGlobalDocId = newDoc.id;
+        await safeDbUpsert('vulp_docs', {
+          id: newDoc.id,
+          project_id: newDoc.projectId || null,
+          title: newDoc.title,
+          content: newDoc.content,
+          author_id: newDoc.authorId || null,
+          updated_at: newDoc.updatedAt
+        });
+        uploadedCount++;
+      }
+
+      renderGlobalWiki();
+      showToast(uploadedCount === 1 ? 'Documento enviado com sucesso.' : `${uploadedCount} documentos enviados com sucesso.`);
+    }
+
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result || '');
+        reader.onerror = err => reject(err);
+        reader.readAsText(file, 'UTF-8');
+      });
+    }
+
     function liveUpdateMarkdown(docId, value) {
-      if (!guardMemberAction()) return;
+      if (!guardEditorAction()) return;
       const doc = state.docs.find(d => d.id === docId);
       if (!doc) return;
       doc.content = value;
@@ -3179,29 +3855,42 @@ Reduzir o tempo médio de diagnóstico técnico na operação da Vulp Air.
       if (prev) prev.innerHTML = parseMarkdown(value);
       clearTimeout(mdDebounceTimer);
       mdDebounceTimer = setTimeout(() => {
-        dbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
+        safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
       }, 800);
     }
 
     async function updateDocTitle(docId, newTitle) {
-      if (!guardMemberAction()) return;
+      if (!guardEditorAction()) return;
       const doc = state.docs.find(d => d.id === docId);
       if (!doc || !newTitle.trim()) return;
       doc.title = newTitle.trim().endsWith('.md') ? newTitle.trim() : newTitle.trim() + '.md';
-      await dbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
+      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
       renderGlobalWiki();
     }
 
-    async function createNewDocInWiki() {
-      if (!guardMemberAction()) return;
+    function openNewDocModal() {
+      if (!guardEditorAction()) return;
+      const sel = document.getElementById('new-doc-project-select');
+      sel.innerHTML = '<option value="">Geral (sem projeto)</option>' +
+        state.projects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
       const filterProj = document.getElementById('wiki-project-filter')?.value;
-      const targetProj = (filterProj && filterProj !== 'ALL') ? filterProj : (state.projects[0]?.id || '');
-      const name = prompt('Nome do arquivo Markdown:', 'Playbook_VulpAir.md');
-      if (!name) return;
-      const cleanName = name.trim().endsWith('.md') ? name.trim() : name.trim() + '.md';
+      sel.value = (filterProj && filterProj !== 'ALL') ? filterProj : (state.projects[0]?.id || '');
+      document.getElementById('new-doc-title-input').value = '';
+      document.getElementById('new-doc-modal').classList.add('is-open');
+    }
+
+    async function confirmCreateNewDoc() {
+      if (!guardEditorAction()) return;
+      const rawName = document.getElementById('new-doc-title-input').value.trim();
+      if (!rawName) { showToast('Informe o nome do documento.'); return; }
+      const cleanName = rawName.endsWith('.md') ? rawName : rawName + '.md';
+      const targetProj = document.getElementById('new-doc-project-select').value;
       const newDoc = {
-        id: 'd_' + Date.now(), projectId: targetProj, title: cleanName,
-        updatedAt: new Date().toISOString().split('T')[0], authorId: currentSession?.userId || 'u1',
+        id: 'd_' + Date.now(),
+        projectId: targetProj,
+        title: cleanName,
+        updatedAt: new Date().toISOString().split('T')[0],
+        authorId: currentSession?.userId || 'u1',
         content: `# ${cleanName.replace('.md', '').replace(/_/g, ' ')}
 
 ## Visão geral
@@ -3211,15 +3900,18 @@ Documentação padronizada Vulp Air.
       };
       state.docs.unshift(newDoc);
       activeGlobalDocId = newDoc.id;
-      await dbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId || null, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId, updated_at: newDoc.updatedAt });
+      await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId || null, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId, updated_at: newDoc.updatedAt });
+      closeModal('new-doc-modal');
       renderGlobalWiki();
+      showToast('Documento criado.');
     }
 
     async function deleteMarkdownDoc(docId) {
-      if (!guardMemberAction() || !confirm('Excluir documento?')) return;
+      if (!guardAdminAction() || !confirm('Excluir documento?')) return;
       state.docs = state.docs.filter(d => d.id !== docId);
-      await dbDelete('vulp_docs', docId);
+      await safeDbDelete('vulp_docs', docId);
       renderGlobalWiki();
+      showToast('Documento excluído.');
     }
 
     function downloadMarkdownFile(docId) {
@@ -3233,33 +3925,47 @@ Documentação padronizada Vulp Air.
     }
 
     /* ==========================================================================
-       EQUIPE E ACESSOS
+       EQUIPE E ACESSOS (ADMIN MASTER, PADRÃO, VISUALIZADOR + SENHAS)
        ========================================================================== */
     function renderTeam() {
-      const viewer = isViewer();
+      const admin = isAdmin();
       document.getElementById('team-grid').innerHTML = state.team.map(m => {
-        const isMember = (m.accessLevel || 'member') !== 'viewer';
+        const lvl = m.accessLevel || 'member';
+        const isSelf = currentSession && currentSession.userId === m.id;
         const activeCount = state.tasks.filter(t => t.assigneeId === m.id && t.status !== 'done').length;
+        const tagClass = lvl === 'admin' ? 'tag--lime-pill' : (lvl === 'viewer' ? 'tag--muted' : 'tag--teal');
         return `
           <div class="team-card">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
               <div style="display:flex;align-items:center;gap:10px">
                 <div class="avatar-sm" style="width:32px;height:32px;font-size:11px">${getInitials(m.name)}</div>
                 <div>
-                  <div class="t-h3">${m.name}</div>
+                  <div class="t-h3">${m.name} ${isSelf ? '<span class="t-micro">(você)</span>' : ''}</div>
                   <div class="t-micro">${m.role} ${m.email ? '• ' + m.email : ''}</div>
                 </div>
               </div>
-              <span class="tag ${isMember ? 'tag--navy' : 'tag--muted'}">${isMember ? 'Time' : 'Visualizador'}</span>
+              <span class="tag ${tagClass}">${getRoleLabel(lvl)}</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--line)">
-              <span class="t-micro">${isMember ? activeCount + ' tarefas ativas' : 'Somente leitura'}</span>
-              ${!viewer ? `
-                <div style="display:flex;gap:4px">
-                  <button class="btn btn--xs btn--secondary" onclick="toggleMemberAccessLevel('${m.id}')">Alterar nível</button>
-                  <button class="icon-btn icon-btn--danger" onclick="removeTeamMember('${m.id}')" title="Remover"><svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg></button>
-                </div>
-              ` : ''}
+
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--line);gap:6px;flex-wrap:wrap">
+              <span class="t-micro">${lvl !== 'viewer' ? activeCount + ' tarefas ativas' : 'Somente leitura'}</span>
+              <div style="display:flex;gap:6px;align-items:center">
+                ${admin ? `
+                  <select class="filter-select" style="height:26px;font-size:11px;padding:0 6px" onchange="changeMemberAccessLevel('${m.id}', this.value)">
+                    <option value="admin" ${lvl === 'admin' ? 'selected' : ''}>Admin Master</option>
+                    <option value="member" ${lvl === 'member' ? 'selected' : ''}>Padrão</option>
+                    <option value="viewer" ${lvl === 'viewer' ? 'selected' : ''}>Visualizador</option>
+                  </select>
+                ` : ''}
+                ${(admin || isSelf) ? `
+                  <button class="btn btn--xs btn--secondary" onclick="openPasswordModal('${m.id}')">Senha</button>
+                ` : ''}
+                ${(admin && !isSelf) ? `
+                  <button class="icon-btn icon-btn--danger" onclick="removeTeamMember('${m.id}')" title="Remover usuário">
+                    <svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg>
+                  </button>
+                ` : ''}
+              </div>
             </div>
           </div>
         `;
@@ -3267,41 +3973,93 @@ Documentação padronizada Vulp Air.
     }
 
     async function addTeamMember() {
-      if (!guardMemberAction()) return;
+      if (!guardAdminAction()) return;
       const name = document.getElementById('new-member-name').value.trim();
-      if (!name) { showToast('Informe o nome.'); return; }
+      const pwd = document.getElementById('new-member-pin').value.trim();
+      if (!name) { showToast('Informe o nome do usuário.'); return; }
+      if (!pwd) { showToast('Defina uma senha obrigatória para este usuário.'); return; }
+
       const member = {
-        id: 'u_' + Date.now(), name,
+        id: 'u_' + Date.now(),
+        name,
         email: document.getElementById('new-member-email').value.trim(),
         role: document.getElementById('new-member-role').value.trim() || 'Especialista Vulp Air',
         accessLevel: document.getElementById('new-member-access').value,
-        accessPin: document.getElementById('new-member-pin').value.trim()
+        accessPin: pwd
       };
       state.team.push(member);
       document.getElementById('new-member-name').value = '';
       document.getElementById('new-member-email').value = '';
       document.getElementById('new-member-role').value = '';
       document.getElementById('new-member-pin').value = '';
-      await dbUpsert('vulp_team', { id: member.id, name: member.name, email: member.email, role: member.role, access_level: member.accessLevel, access_pin: member.accessPin });
+      await safeDbUpsert('vulp_team', { id: member.id, name: member.name, email: member.email, role: member.role, access_level: member.accessLevel, access_pin: member.accessPin });
       populateSelectOptions();
       renderTeam();
-      showToast('Usuário adicionado.');
+      showToast(`Usuário "${member.name}" cadastrado.`);
     }
 
-    async function toggleMemberAccessLevel(id) {
-      if (!guardMemberAction()) return;
+    async function changeMemberAccessLevel(id, newLevel) {
+      if (!guardAdminAction()) return;
       const m = state.team.find(x => x.id === id);
       if (!m) return;
-      m.accessLevel = m.accessLevel === 'viewer' ? 'member' : 'viewer';
-      await dbUpsert('vulp_team', { id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel, access_pin: m.accessPin || '' });
+      if (m.accessLevel === 'admin' && newLevel !== 'admin') {
+        const adminCount = state.team.filter(x => x.accessLevel === 'admin').length;
+        if (adminCount <= 1) {
+          showToast('Deve existir pelo menos um Admin Master.');
+          renderTeam();
+          return;
+        }
+      }
+      m.accessLevel = newLevel;
+      await safeDbUpsert('vulp_team', { id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel, access_pin: m.accessPin || 'vulp2026' });
+      if (currentSession && currentSession.userId === id) {
+        currentSession.mode = newLevel;
+        applySessionPermissions();
+      }
       renderTeam();
+      showToast(`Perfil de ${m.name} atualizado para ${getRoleLabel(newLevel)}.`);
+    }
+
+    function openPasswordModal(userId) {
+      if (!isAdmin() && (!currentSession || currentSession.userId !== userId)) {
+        showToast('Sem permissão para alterar esta senha.');
+        return;
+      }
+      const m = state.team.find(x => x.id === userId);
+      if (!m) return;
+      document.getElementById('password-user-id').value = m.id;
+      document.getElementById('password-modal-title').textContent = `Senha • ${m.name}`;
+      document.getElementById('password-new-input').value = '';
+      document.getElementById('password-modal').classList.add('is-open');
+    }
+
+    async function saveUserPassword() {
+      const uid = document.getElementById('password-user-id').value;
+      if (!isAdmin() && (!currentSession || currentSession.userId !== uid)) return;
+      const newPwd = document.getElementById('password-new-input').value.trim();
+      if (!newPwd) { showToast('Digite a nova senha.'); return; }
+      const m = state.team.find(x => x.id === uid);
+      if (!m) return;
+      m.accessPin = newPwd;
+      await safeDbUpsert('vulp_team', { id: m.id, name: m.name, email: m.email || '', role: m.role, access_level: m.accessLevel, access_pin: m.accessPin });
+      closeModal('password-modal');
+      showToast(`Senha de ${m.name} atualizada.`);
     }
 
     async function removeTeamMember(id) {
-      if (!guardMemberAction() || state.team.length <= 1 || !confirm('Remover usuário?')) return;
+      if (!guardAdminAction()) return;
+      const m = state.team.find(x => x.id === id);
+      if (!m) return;
+      if (m.accessLevel === 'admin' && state.team.filter(x => x.accessLevel === 'admin').length <= 1) {
+        showToast('Não é possível remover o único Admin Master.');
+        return;
+      }
+      if (!confirm(`Remover o usuário "${m.name}"?`)) return;
       state.team = state.team.filter(m => m.id !== id);
-      await dbDelete('vulp_team', id);
+      await safeDbDelete('vulp_team', id);
+      populateSelectOptions();
       renderTeam();
+      showToast('Usuário removido.');
     }
 
     function exportJSON() {
@@ -3313,7 +4071,7 @@ Documentação padronizada Vulp Air.
     }
 
     function importJSON(event) {
-      if (!guardMemberAction()) return;
+      if (!guardAdminAction()) return;
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -3321,10 +4079,10 @@ Documentação padronizada Vulp Air.
         try {
           const parsed = JSON.parse(e.target.result);
           if (parsed.tasks && parsed.projects) {
-            if (!parsed.epics) parsed.epics = [];
-            state = parsed;
+            state = ensureCodesAndDefaults(parsed);
             saveLocalCache();
             if (sbConnected) await pushLocalDataToSupabase(true);
+            populateSelectOptions();
             refreshCurrentView();
             showToast('Backup importado.');
           }
