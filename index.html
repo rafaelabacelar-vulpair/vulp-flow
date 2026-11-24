@@ -1476,7 +1476,7 @@
         </div>
 
         <div class="topbar-right">
-          <input type="search" id="global-search" class="field__input" style="height:32px;width:230px" placeholder="Buscar título ou ID (T-1, P-1)..." oninput="refreshCurrentView()" />
+          <input type="search" id="global-search" class="field__input" style="height:32px;width:230px" placeholder="Buscar por título ou ID..." oninput="refreshCurrentView()" />
           <div class="editor-only" style="display:flex;gap:8px">
             <button class="btn btn--sm btn--secondary non-guest-only" onclick="openProjectModal()">+ Projeto</button>
             <button class="btn btn--sm btn--secondary" onclick="openEpicModal()">+ Épico</button>
@@ -1580,15 +1580,15 @@
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:10px;align-items:end">
               <div class="field">
                 <label class="field__label">Nome</label>
-                <input type="text" id="new-member-name" class="field__input" placeholder="Ex: Carlos Silva" />
+                <input type="text" id="new-member-name" class="field__input" placeholder="" />
               </div>
               <div class="field">
                 <label class="field__label">E-mail</label>
-                <input type="email" id="new-member-email" class="field__input" placeholder="carlos@vulpair.com.br" />
+                <input type="email" id="new-member-email" class="field__input" placeholder="" />
               </div>
               <div class="field">
                 <label class="field__label">Cargo / Função</label>
-                <input type="text" id="new-member-role" class="field__input" placeholder="Ex: Coordenador Técnico" />
+                <input type="text" id="new-member-role" class="field__input" placeholder="" />
               </div>
               <div class="field">
                 <label class="field__label">Área</label>
@@ -1708,7 +1708,7 @@
 
       <div class="field">
         <label class="field__label">Título da atividade</label>
-        <input type="text" id="task-title" class="field__input" style="font-weight:700" placeholder="Ex: Checklist preventivo PMOC ou Configurar webhook" />
+        <input type="text" id="task-title" class="field__input" style="font-weight:700" placeholder="" />
       </div>
 
       <!-- Tipo de Vínculo: Projeto vs Operacional / Rotina sem projeto -->
@@ -1871,7 +1871,7 @@
       <input type="hidden" id="project-id" />
       <div class="field">
         <label class="field__label">Nome do projeto</label>
-        <input type="text" id="project-name" class="field__input" placeholder="Ex: Automação Jira e Claude AI" />
+        <input type="text" id="project-name" class="field__input" placeholder="" />
       </div>
       <div class="modal-grid-2">
         <div class="field">
@@ -1960,7 +1960,7 @@
       </div>
       <div class="field">
         <label class="field__label">Nome do épico</label>
-        <input type="text" id="epic-title" class="field__input" placeholder="Ex: Motor de Triagem Inteligente" />
+        <input type="text" id="epic-title" class="field__input" placeholder="" />
       </div>
       <div class="modal-grid-2">
         <div class="field">
@@ -2004,7 +2004,7 @@
       </div>
       <div class="field">
         <label class="field__label">Título da página</label>
-        <input type="text" id="new-doc-title-input" class="field__input" placeholder="Ex: Playbook de Atendimento PMOC 24x7" onkeydown="if(event.key==='Enter') confirmCreateNewDoc()" />
+        <input type="text" id="new-doc-title-input" class="field__input" placeholder="" onkeydown="if(event.key==='Enter') confirmCreateNewDoc()" />
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('new-doc-modal')">Cancelar</button>
@@ -5737,3 +5737,4 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
   </script>
 </body>
 </html>
+
