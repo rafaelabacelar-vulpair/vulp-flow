@@ -2354,6 +2354,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_categories
 do $$ begin alter publication supabase_realtime add table public.vulp_projects; exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.vulp_epics; exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.vulp_tasks; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.vulp_docs; exception when duplicate_object then null; end $$;
+
 create table if not exists public.vulp_statuses (
   id text primary key,
   label text not null,
@@ -2368,7 +2370,6 @@ alter table public.vulp_statuses enable row level security;
 drop policy if exists "vulp_statuses_all" on public.vulp_statuses;
 create policy "vulp_statuses_all" on public.vulp_statuses for all using (true) with check (true);
 do $$ begin alter publication supabase_realtime add table public.vulp_statuses; exception when duplicate_object then null; end $$;`;
-do $$ begin alter publication supabase_realtime add table public.vulp_docs; exception when duplicate_object then null; end $$;`;
 
     /* ==========================================================================
        ESTADO, CREDENCIAIS EMBUTIDAS & PERSISTÊNCIA
@@ -3054,20 +3055,19 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       try {
         sbClient = window.supabase.createClient(url, key);
         const [teamRes, projRes, epicRes, taskRes, docRes, catRes, statRes] = await Promise.all([
-          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true }),
           sbClient.from('vulp_team').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_projects').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_epics').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false }),
-          sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true })
+          sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true }),
+          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true })
         ]);
         if (teamRes.error) throw teamRes.error;
         if (projRes.error) throw projRes.error;
         if (epicRes.error) throw epicRes.error;
         if (taskRes.error) throw taskRes.error;
         if (docRes.error) throw docRes.error;
-        if (statRes && statRes.error) throw statRes.error;
 
         localStorage.setItem(SB_CREDS_KEY, JSON.stringify({ url, key }));
         sbConnected = true;
@@ -3143,6 +3143,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           due: r.due || '',
           recurrence: r.recurrence || 'none',
           cycleCount: r.cycle_count || 1,
+          position: r.position !== undefined ? r.position : (localT?.position || 0),
           description: r.description || ''
         };
       });
@@ -3167,13 +3168,13 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       if (!sbConnected || !sbClient) return;
       try {
         const [teamRes, projRes, epicRes, taskRes, docRes, catRes, statRes] = await Promise.all([
-          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true }),
           sbClient.from('vulp_team').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_projects').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_epics').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false }),
-          sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true })
+          sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true }),
+          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true })
         ]);
         if (!teamRes.error && !projRes.error && !epicRes.error && !taskRes.error && !docRes.error) {
           const catRows = (!catRes.error && Array.isArray(catRes.data)) ? catRes.data : null;
@@ -4034,7 +4035,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
             <span class="avatar-sm" title="${member.name}">${getInitials(member.name)}</span>
             ${!editable ? `<span class="tag tag--mint">${getStatusMeta(t.status).label}</span>` : `
               <select class="filter-select" style="height:26px;font-size:11px;padding:0 8px" onchange="changeTaskStatus('${t.id}', this.value)">
-                ${state.statuses.map(s => `<option value="${s.id}" ${t.status === s.id ? 'selected' : ''}>${s.label}</option>`).join('')}
+                ${[...state.statuses].sort((a,b)=>(a.position||0)-(b.position||0)).map(s => `<option value="${s.id}" ${t.status === s.id ? 'selected' : ''}>${s.label}</option>`).join('')}
               </select>
             `}
           </div>
@@ -4228,6 +4229,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
       assSel.innerHTML = '<option value="team_all">Juntos (Toda a equipe)</option>' +
         assignableUsers.map(m => `<option value="${m.id}">${m.name} — ${m.area || getRoleLabel(m.accessLevel)}</option>`).join('');
 
+      const statusSel = document.getElementById('task-status');
+      const sortedStatuses = [...state.statuses].sort((a, b) => (a.position || 0) - (b.position || 0));
+      statusSel.innerHTML = sortedStatuses.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+
       const todayIso = new Date().toISOString().split('T')[0];
 
       if (taskId) {
@@ -4248,7 +4253,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         }
 
         assSel.value = t.assigneeId || 'u_rafaela';
-        document.getElementById('task-status').value = t.status || 'todo';
+        document.getElementById('task-status').value = state.statuses.some(s => s.id === t.status) ? t.status : (sortedStatuses[0]?.id || 'todo');
         document.getElementById('task-priority').value = t.priority || 'Média';
         document.getElementById('task-desc').value = t.description || '';
         document.getElementById('task-status-wrap').style.display = 'flex';
@@ -4427,6 +4432,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
           code,
           createdBy: currentSession?.userId || 'u_rafaela',
           cycleCount: 1,
+          position: 0,
           ...payload
         };
         state.tasks.unshift(savedObj);
@@ -4518,17 +4524,6 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
     }
     
     async function processTaskStatusChange(task, oldStatus, newStatus) {
-      if (!guardEditorAction()) return;
-      const task = state.tasks.find(t => t.id === taskId);
-      if (!task) return;
-      const oldStatus = task.status;
-      task.status = newStatus;
-      await safeDbUpsert('vulp_tasks', toDbTask(task));
-
-      } else {
-        showToast(`Movida para "${getStatusMeta(newStatus).label}".`);
-      }
-      // This function replaces the old inline block in changeTaskStatus
       const spec = parseRecurrenceSpec(task.recurrence, task.due);
       if (newStatus === 'done' && oldStatus !== 'done' && spec.mode === 'period') {
         const nextDue = findNextOccurrenceDate(task.due, spec.end, spec.freq, spec.days);
@@ -4539,9 +4534,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
             ...JSON.parse(JSON.stringify(task)),
             id: 't_' + Date.now(),
             code: nextCode,
-            status: 'todo',
+            status: state.statuses[0]?.id || 'todo',
             due: nextDue,
-            cycleCount: nextCycle
+            cycleCount: nextCycle,
+            position: 0
           };
           state.tasks.unshift(nextTask);
           await safeDbUpsert('vulp_tasks', toDbTask(nextTask));
@@ -4549,7 +4545,12 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
         } else {
           showToast(`Concluída! Período encerrado — não aparecerá mais.`);
         }
+      } else if (oldStatus !== newStatus) {
+        showToast(`Movida para "${getStatusMeta(newStatus).label}".`);
+      } else {
+        showToast('Ordem atualizada.');
       }
+    }
 
     /* ==========================================================================
        GERENCIADOR DE ÁREAS / FRENTES
@@ -4558,7 +4559,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_docs; exce
        GERENCIAR FASES (STATUSES)
        ========================================================================== */
     function openStatusesModal() {
-      if (!guardAdminAction()) return;
+      if (!guardEditorAction() || isProjectGuest()) return;
       renderStatusesList();
       document.getElementById('statuses-modal').classList.add('is-open');
     }
