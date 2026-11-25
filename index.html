@@ -1683,11 +1683,11 @@
               </div>
             </div>
 
-            <!-- Seletor de Projetos Específicos (visível quando Perfil = Acesso por Projeto) -->
-            <div id="new-member-projects-box" style="display:none;background:var(--mint-page);border:1px solid var(--line);border-radius:8px;padding:12px;flex-direction:column;gap:8px">
+            <!-- Seletor de Projetos Específicos (visível para Acesso por Projeto, Gestor ou Liderado) -->
+            <div id="new-member-projects-box" style="display:flex;background:var(--mint-page);border:1px solid var(--line);border-radius:8px;padding:12px;flex-direction:column;gap:8px">
               <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-                <span class="field__label" style="color:var(--navy);margin:0">Selecione os projetos que este usuário poderá acessar:</span>
-                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+                <span class="field__label" id="new-member-projects-label" style="color:var(--navy);margin:0">Projetos extras para acompanhamento (visíveis na aba Projetos e Documentos, sem poluir o Kanban dele):</span>
+                <label id="new-member-guest-edit-wrap" style="font-size:12px;display:none;align-items:center;gap:6px;cursor:pointer">
                   <input type="checkbox" id="new-member-guest-edit" checked />
                   <span>Permitir criar/editar tarefas e documentos nestes projetos</span>
                 </label>
@@ -2152,8 +2152,8 @@
 
       <div id="edit-user-projects-box" style="display:none;background:var(--mint-page);border:1px solid var(--line);border-radius:8px;padding:12px;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-          <span class="field__label" style="color:var(--navy);margin:0">Projetos permitidos para este usuário:</span>
-          <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+          <span class="field__label" id="edit-user-projects-label" style="color:var(--navy);margin:0">Projetos extras para acompanhamento (aba Projetos e Documentos):</span>
+          <label id="edit-user-guest-edit-wrap" style="font-size:12px;display:none;align-items:center;gap:6px;cursor:pointer">
             <input type="checkbox" id="edit-user-guest-edit" />
             <span>Pode editar tarefas/docs nestes projetos</span>
           </label>
@@ -2826,18 +2826,19 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       return result;
     }
 
-    // Filtra os projetos visíveis para o usuário logado
+    // Filtra os projetos visíveis para o usuário logado (inclui projetos compartilhados em allowedProjects)
     function getVisibleProjectsForCurrentUser() {
       const u = getCurrentUserObj();
       if (!u) return [];
       if (u.accessLevel === 'admin' || u.accessLevel === 'viewer') return state.projects;
+      const sharedSet = new Set(parseAllowedProjects(u.allowedProjects));
       if (u.accessLevel === 'project_guest') {
-        const allowed = new Set(parseAllowedProjects(u.allowedProjects));
-        return state.projects.filter(p => allowed.has(p.id));
+        return state.projects.filter(p => sharedSet.has(p.id));
       }
       if (u.accessLevel === 'manager') {
         const subs = getSubordinateIds(u.id);
         return state.projects.filter(p =>
+          sharedSet.has(p.id) ||
           p.category === u.area ||
           p.ownerId === u.id ||
           subs.has(p.ownerId) ||
@@ -2846,13 +2847,16 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       }
       // member (Liderado)
       return state.projects.filter(p =>
+        sharedSet.has(p.id) ||
         p.category === u.area ||
         p.ownerId === u.id ||
         state.tasks.some(t => t.projectId === p.id && (t.assigneeId === u.id || t.assigneeId === 'team_all'))
       );
     }
 
-    // Filtra as tarefas visíveis para o usuário logado
+    // Filtra as tarefas visíveis no Kanban/Tabela:
+    // Projetos apenas compartilhados para acompanhamento (allowedProjects) NÃO jogam tarefas de outros times no Kanban do gestor/membro,
+    // mas aparecem completos na aba Projetos e na aba Documentos!
     function getVisibleTasksForCurrentUser() {
       const u = getCurrentUserObj();
       if (!u) return [];
@@ -2863,28 +2867,36 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         return state.tasks.filter(t => t.projectId && allowed.has(t.projectId));
       }
 
-      const visibleProjIds = new Set(getVisibleProjectsForCurrentUser().map(p => p.id));
-
       if (u.accessLevel === 'manager') {
-        // Gestor vê TUDO dos seus liderados, tudo da sua área, tarefas dos seus projetos e tarefas que ele delegou para outros times
+        // Gestor vê no Kanban: suas próprias tarefas, tarefas dos seus liderados, tarefas da sua área, tarefas delegadas por ele e tarefas de projetos que ele próprio lidera
         const subs = getSubordinateIds(u.id);
+        const ownedProjIds = new Set(
+          state.projects.filter(p => p.ownerId === u.id || p.category === u.area || subs.has(p.ownerId)).map(p => p.id)
+        );
         return state.tasks.filter(t =>
           t.assigneeId === u.id ||
           subs.has(t.assigneeId) ||
           t.createdBy === u.id ||
           t.area === u.area ||
           t.assigneeId === 'team_all' ||
-          (t.projectId && visibleProjIds.has(t.projectId))
+          (t.projectId && ownedProjIds.has(t.projectId))
         );
       }
 
-      // member (Liderado): vê tarefas da sua área, tarefas atribuídas a ele (inclusive delegadas por gestores de outras áreas), equipe ou dos seus projetos
+      // member (Liderado): vê tarefas da sua área, tarefas atribuídas a ele, delegadas por ele, equipe ou de projetos que ele lidera/atua
+      const memberProjIds = new Set(
+        state.projects.filter(p =>
+          p.category === u.area ||
+          p.ownerId === u.id ||
+          state.tasks.some(t => t.projectId === p.id && (t.assigneeId === u.id || t.assigneeId === 'team_all'))
+        ).map(p => p.id)
+      );
       return state.tasks.filter(t =>
         t.assigneeId === u.id ||
         t.createdBy === u.id ||
         t.assigneeId === 'team_all' ||
         t.area === u.area ||
-        (t.projectId && visibleProjIds.has(t.projectId))
+        (t.projectId && memberProjIds.has(t.projectId))
       );
     }
 
@@ -5885,8 +5897,18 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
        ========================================================================== */
     function onNewMemberAccessChange() {
       const lvl = document.getElementById('new-member-access').value;
-      document.getElementById('new-member-projects-box').style.display = (lvl === 'project_guest') ? 'flex' : 'none';
+      const showProjects = (lvl === 'project_guest' || lvl === 'manager' || lvl === 'member');
+      document.getElementById('new-member-projects-box').style.display = showProjects ? 'flex' : 'none';
       document.getElementById('new-member-manager-wrap').style.display = (lvl === 'project_guest' || lvl === 'admin') ? 'none' : 'flex';
+      const lbl = document.getElementById('new-member-projects-label');
+      const editWrap = document.getElementById('new-member-guest-edit-wrap');
+      if (lvl === 'project_guest') {
+        if (lbl) lbl.textContent = 'Selecione os projetos que este usuário poderá acessar:';
+        if (editWrap) editWrap.style.display = 'inline-flex';
+      } else {
+        if (lbl) lbl.textContent = 'Projetos extras para acompanhamento (visíveis na aba Projetos e Documentos, sem poluir o Kanban dele):';
+        if (editWrap) editWrap.style.display = 'none';
+      }
     }
 
     function renderTeam() {
@@ -5993,12 +6015,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       const mgrObj = m.managerId ? state.team.find(x => x.id === m.managerId) : null;
 
       let scopeDetailHtml = '';
+      const allowed = parseAllowedProjects(m.allowedProjects);
+      const projLabels = allowed.map(pid => getProject(pid)).filter(Boolean).map(p => `${p.code} • ${p.name}`).join(', ');
       if (lvl === 'project_guest') {
-        const allowed = parseAllowedProjects(m.allowedProjects);
-        const projLabels = allowed.map(pid => getProject(pid)).filter(Boolean).map(p => `${p.code} • ${p.name}`).join(', ');
         scopeDetailHtml = `<div class="t-micro" style="color:var(--navy)"><strong>Projetos:</strong> ${projLabels || 'Nenhum selecionado'} (${m.guestCanEdit ? 'Edição' : 'Leitura'})</div>`;
-      } else if (mgrObj) {
-        scopeDetailHtml = `<div class="t-micro">Gestor: <strong>${mgrObj.name}</strong></div>`;
+      } else {
+        const parts = [];
+        if (mgrObj) parts.push(`Gestor: <strong>${mgrObj.name}</strong>`);
+        if (projLabels) parts.push(`Acompanha projetos: <strong>${projLabels}</strong>`);
+        if (parts.length) scopeDetailHtml = `<div class="t-micro" style="color:var(--navy)">${parts.join(' • ')}</div>`;
       }
 
       return `
@@ -6039,7 +6064,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (!pwd) { showToast('Defina uma senha obrigatória para este usuário.'); return; }
 
       const lvl = document.getElementById('new-member-access').value;
-      const allowedProjects = lvl === 'project_guest'
+      const allowedProjects = (lvl === 'project_guest' || lvl === 'manager' || lvl === 'member')
         ? Array.from(document.querySelectorAll('.new-member-proj-cb:checked')).map(cb => cb.value)
         : [];
 
@@ -6114,8 +6139,18 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
     function onEditUserAccessChange() {
       const lvl = document.getElementById('edit-user-access').value;
-      document.getElementById('edit-user-projects-box').style.display = (lvl === 'project_guest') ? 'flex' : 'none';
+      const showProjects = (lvl === 'project_guest' || lvl === 'manager' || lvl === 'member');
+      document.getElementById('edit-user-projects-box').style.display = showProjects ? 'flex' : 'none';
       document.getElementById('edit-user-manager-wrap').style.display = (lvl === 'project_guest' || lvl === 'admin') ? 'none' : 'flex';
+      const lbl = document.getElementById('edit-user-projects-label');
+      const editWrap = document.getElementById('edit-user-guest-edit-wrap');
+      if (lvl === 'project_guest') {
+        if (lbl) lbl.textContent = 'Projetos permitidos para este usuário:';
+        if (editWrap) editWrap.style.display = 'inline-flex';
+      } else {
+        if (lbl) lbl.textContent = 'Projetos extras para acompanhamento (aba Projetos e Documentos, sem poluir o Kanban dele):';
+        if (editWrap) editWrap.style.display = 'none';
+      }
     }
 
     async function saveEditedUser() {
@@ -6128,7 +6163,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (!name) { showToast('Informe o nome.'); return; }
 
       const lvl = m.id === 'u_rafaela' ? 'admin' : document.getElementById('edit-user-access').value;
-      const allowedProjects = lvl === 'project_guest'
+      const allowedProjects = (lvl === 'project_guest' || lvl === 'manager' || lvl === 'member')
         ? Array.from(document.querySelectorAll('.edit-user-proj-cb:checked')).map(cb => cb.value)
         : [];
 
@@ -6237,3 +6272,4 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
   </script>
 </body>
 </html>
+
