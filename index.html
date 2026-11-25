@@ -3273,6 +3273,18 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (!url || !key) return;
       try {
         sbClient = window.supabase.createClient(url, key);
+        let hasStatusesTable = false;
+        try {
+          const schemaResp = await fetch(url.replace(/\/$/, '') + '/rest/v1/', {
+            headers: { apikey: key, Authorization: 'Bearer ' + key }
+          });
+          if (schemaResp.ok) {
+            const spec = await schemaResp.json();
+            hasStatusesTable = Boolean(spec && spec.paths && spec.paths['/vulp_statuses']);
+          }
+        } catch (e) {}
+        window._sbHasStatusesTable = hasStatusesTable;
+
         const [teamRes, projRes, epicRes, taskRes, docRes, catRes, statRes] = await Promise.all([
           sbClient.from('vulp_team').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_projects').select('*').order('created_at', { ascending: true }),
@@ -3280,7 +3292,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false }),
           sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true }),
-          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true }).then(r => r, () => ({ error: true, data: null }))
+          hasStatusesTable
+            ? sbClient.from('vulp_statuses').select('*').order('position', { ascending: true })
+            : Promise.resolve({ error: null, data: null })
         ]);
         if (teamRes.error) throw teamRes.error;
         if (projRes.error) throw projRes.error;
@@ -3341,10 +3355,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         const localExisting = state.team.find(x => x.id === r.id);
         const defMode = (r.guest_can_edit === false) ? 'view' : 'edit';
         let resolvedAllowed = [];
-        if (r.allowed_projects !== undefined && r.allowed_projects !== null) {
-          resolvedAllowed = parseProjectAccessList(r.allowed_projects, defMode);
-        } else if (fallbackPermByUser.has(r.id)) {
+        const dbParsed = (r.allowed_projects !== undefined && r.allowed_projects !== null)
+          ? parseProjectAccessList(r.allowed_projects, defMode)
+          : [];
+        if (dbParsed.length > 0) {
+          resolvedAllowed = dbParsed;
+        } else if (fallbackPermByUser.has(r.id) && fallbackPermByUser.get(r.id).length > 0) {
           resolvedAllowed = fallbackPermByUser.get(r.id);
+        } else if (r.allowed_projects !== undefined && r.allowed_projects !== null) {
+          resolvedAllowed = dbParsed;
         } else if (localExisting?.allowedProjects) {
           resolvedAllowed = parseProjectAccessList(localExisting.allowedProjects, defMode);
         }
@@ -3424,7 +3443,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false }),
           sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true }),
-          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true }).then(r => r, () => ({ error: true, data: null }))
+          window._sbHasStatusesTable
+            ? sbClient.from('vulp_statuses').select('*').order('position', { ascending: true })
+            : Promise.resolve({ error: null, data: null })
         ]);
         if (!teamRes.error && !projRes.error && !epicRes.error && !taskRes.error && !docRes.error) {
           const catRows = (!catRes.error && Array.isArray(catRes.data)) ? catRes.data : null;
@@ -3453,6 +3474,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
     async function safeDbUpsert(table, row) {
       saveLocalCache();
       if (!sbConnected || !sbClient) return { ok: true, localOnly: true };
+      if (table === 'vulp_statuses' && !window._sbHasStatusesTable) return { ok: true, localOnly: true };
       let payload = { ...row };
       for (let attempt = 0; attempt < 6; attempt++) {
         const res = await sbClient.from(table).upsert(payload);
@@ -3513,6 +3535,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         await syncRafaelaAndPurgeFictitiousInDb();
         for (const m of state.team) {
           await safeDbUpsert('vulp_team', toDbTeamMember(m));
+      if (sbConnected && sbClient) {
+        try {
+          await sbClient.from('vulp_categories').upsert({
+            id: '__perm_' + m.id,
+            name: '__VULP_PERM__:' + m.id + ':' + JSON.stringify(m.allowedProjects || [])
+          });
+        } catch (e) {}
+      }
         }
         for (let i = 0; i < state.categories.length; i++) {
           if (!String(state.categories[i]).startsWith('__VULP_PERM__:')) {
@@ -6348,6 +6378,11 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (!pwd) { showToast('Defina uma senha obrigatória para este usuário.'); return; }
 
       const lvl = document.getElementById('new-member-access').value;
+      if ((lvl === 'project_guest' || lvl === 'manager' || lvl === 'member') && newMemberProjectPerms.length === 0) {
+        const pendingPid = document.getElementById('new-member-proj-picker')?.value;
+        const pendingMode = document.getElementById('new-member-proj-perm')?.value === 'edit' ? 'edit' : 'view';
+        if (pendingPid) newMemberProjectPerms.push({ id: pendingPid, mode: pendingMode });
+      }
       const allowedProjects = (lvl === 'project_guest' || lvl === 'manager' || lvl === 'member')
         ? newMemberProjectPerms.map(x => ({ ...x }))
         : [];
@@ -6379,6 +6414,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       renderProjectPermPicker('new');
 
       await safeDbUpsert('vulp_team', toDbTeamMember(member));
+      if (sbConnected && sbClient) {
+        try {
+          await sbClient.from('vulp_categories').upsert({
+            id: '__perm_' + member.id,
+            name: '__VULP_PERM__:' + member.id + ':' + JSON.stringify(member.allowedProjects || [])
+          });
+        } catch (e) {}
+      }
       populateSelectOptions();
       renderTeam();
       showToast(`Usuário "${member.name}" adicionado.`);
@@ -6438,6 +6481,11 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (!name) { showToast('Informe o nome.'); return; }
 
       const lvl = m.id === 'u_rafaela' ? 'admin' : document.getElementById('edit-user-access').value;
+      if ((lvl === 'project_guest' || lvl === 'manager' || lvl === 'member') && editUserProjectPerms.length === 0) {
+        const pendingPid = document.getElementById('edit-user-proj-picker')?.value;
+        const pendingMode = document.getElementById('edit-user-proj-perm')?.value === 'edit' ? 'edit' : 'view';
+        if (pendingPid) editUserProjectPerms.push({ id: pendingPid, mode: pendingMode });
+      }
       const allowedProjects = (lvl === 'project_guest' || lvl === 'manager' || lvl === 'member')
         ? editUserProjectPerms.map(x => ({ ...x }))
         : [];
