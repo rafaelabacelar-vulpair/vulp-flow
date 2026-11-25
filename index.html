@@ -634,6 +634,61 @@
       background: var(--mint-page);
       border: 1.5px dashed var(--navy);
     }
+    .kanban-col.is-collapsed {
+      min-height: auto;
+      padding: 10px 8px;
+      align-items: center;
+      cursor: pointer;
+    }
+    .kanban-col.is-collapsed .kanban-col__head {
+      flex-direction: column;
+      border-bottom: none;
+      padding: 0;
+      gap: 12px;
+      align-items: center;
+    }
+    .kanban-col.is-collapsed .kanban-col__title {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space: nowrap;
+      padding: 4px 0;
+    }
+    .kanban-col.is-collapsed .kanban-tasks-container {
+      display: none !important;
+    }
+
+    /* Seção de comentários do documento */
+    .conf-comments-section {
+      border-top: 1px solid var(--line);
+      background: var(--surface-subtle);
+      padding: 22px 36px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .conf-comment-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: var(--shadow-xs);
+    }
+    .conf-comment-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .conf-comment-body {
+      font-size: 13px;
+      line-height: 19px;
+      color: var(--navy);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
     .kanban-col__head {
       display: flex;
       align-items: center;
@@ -2031,16 +2086,16 @@
        MODAL: IMPORTAR ARQUIVO MARKDOWN VINCULADO A PROJETO
        ========================================================================== -->
   <div class="modal-backdrop modal-backdrop--top" id="import-doc-modal">
-    <div class="modal-panel" style="max-width:460px">
+    <div class="modal-panel" style="max-width:480px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 class="t-h2">Vincular arquivo importado a um projeto</h3>
+        <h3 class="t-h2">Importar documento no projeto</h3>
         <button class="icon-btn" onclick="closeModal('import-doc-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
       </div>
-      <p class="t-cap" id="import-doc-files-summary" style="margin:0"></p>
       <div class="field">
         <label class="field__label">Projeto vinculado (obrigatório)</label>
         <select id="import-doc-project-select" class="field__input"></select>
       </div>
+      <div id="import-doc-names-container" style="display:flex;flex-direction:column;gap:10px"></div>
       <div class="modal-footer">
         <button type="button" class="btn btn--sm btn--secondary" onclick="cancelImportDocFiles()">Cancelar</button>
         <button type="button" class="btn btn--sm btn--primary" onclick="confirmImportDocFiles()">Importar no projeto</button>
@@ -2314,10 +2369,12 @@ create table if not exists public.vulp_docs (
   project_id text not null,
   title text not null,
   content text not null default '',
+  comments text not null default '[]',
   author_id text,
   updated_at text not null default to_char(now(), 'YYYY-MM-DD'),
   created_at timestamptz not null default now()
 );
+alter table public.vulp_docs add column if not exists comments text not null default '[]';
 alter table public.vulp_docs drop constraint if exists vulp_docs_project_id_fkey;
 alter table public.vulp_docs drop constraint if exists vulp_docs_author_id_fkey;
 
@@ -2562,10 +2619,22 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
     let taskDisplayMode = 'kanban';
     let collapsedProjects = new Set();
     let collapsedEpics = new Set();
+    let collapsedKanbanCols = new Set();
     let activeGlobalDocId = null;
     let currentTaskScope = 'project';
     let currentRepeatMode = 'single';
     let currentRepeatEndMode = 'infinite';
+
+    function parseDocComments(raw) {
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === 'string' && raw.trim()) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+      return [];
+    }
 
     function parseAllowedProjects(raw) {
       if (Array.isArray(raw)) return raw;
@@ -2629,6 +2698,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       });
       const fallbackProjId = st.projects[0]?.id || '';
       st.docs.forEach(d => {
+        if (!Array.isArray(d.comments)) {
+          d.comments = parseDocComments(d.comments);
+        }
         if (!d.authorId || FICTITIOUS_USER_IDS.has(d.authorId)) d.authorId = 'u_rafaela';
         if ((!d.projectId || !st.projects.some(p => p.id === d.projectId)) && fallbackProjId) {
           d.projectId = fallbackProjId;
@@ -3147,10 +3219,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           description: r.description || ''
         };
       });
-      state.docs = docRows.map(r => ({
-        id: r.id, projectId: r.project_id || '', title: r.title, content: r.content || '',
-        authorId: r.author_id || '', updatedAt: r.updated_at || ''
-      }));
+      state.docs = docRows.map(r => {
+        const localDoc = state.docs.find(x => x.id === r.id);
+        const dbComments = r.comments !== undefined ? parseDocComments(r.comments) : (localDoc?.comments || []);
+        return {
+          id: r.id, projectId: r.project_id || '', title: r.title, content: r.content || '',
+          comments: dbComments,
+          authorId: r.author_id || '', updatedAt: r.updated_at || ''
+        };
+      });
 
       ensureCodesAndDefaults(state);
       saveLocalCache();
@@ -3272,7 +3349,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           await safeDbUpsert('vulp_tasks', toDbTask(t));
         }
         for (const d of state.docs) {
-          await safeDbUpsert('vulp_docs', { id: d.id, project_id: d.projectId || null, title: d.title, content: d.content || '', author_id: d.authorId || null, updated_at: d.updatedAt || '' });
+          await safeDbUpsert('vulp_docs', { id: d.id, project_id: d.projectId || null, title: d.title, content: d.content || '', comments: JSON.stringify(d.comments || []), author_id: d.authorId || null, updated_at: d.updatedAt || '' });
         }
         if (!silent) showToast('Dados sincronizados.');
       } catch (err) {
@@ -3629,6 +3706,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       renderTasks();
     }
 
+    function toggleKanbanColCollapse(statusId) {
+      if (collapsedKanbanCols.has(statusId)) {
+        collapsedKanbanCols.delete(statusId);
+      } else {
+        collapsedKanbanCols.add(statusId);
+      }
+      renderTasks();
+    }
+
     function getFilteredTasks() {
       const q = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
       const dateF = document.getElementById('filter-date')?.value || 'ALL';
@@ -3709,12 +3795,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       }
 
       const cols = [...state.statuses].sort((a,b) => (a.position||0) - (b.position||0));
-      container.innerHTML = `<div class="kanban-grid" style="grid-template-columns: repeat(${cols.length}, minmax(280px, 1fr)); overflow-x: auto;">
+      const gridColsTemplate = cols.map(c => collapsedKanbanCols.has(c.id) ? '52px' : 'minmax(270px, 1fr)').join(' ');
+      container.innerHTML = `<div class="kanban-grid" style="grid-template-columns: ${gridColsTemplate}; overflow-x: auto;">
         ${cols.map(meta => {
           const status = meta.id;
+          const isCollapsed = collapsedKanbanCols.has(status);
           const colTasks = tasks.filter(t => t.status === status).sort((a,b) => (a.position||0) - (b.position||0));
           return `
-            <div class="kanban-col"
+            <div class="kanban-col ${isCollapsed ? 'is-collapsed' : ''}"
+                 ${isCollapsed ? `onclick="toggleKanbanColCollapse('${status}')" title="Clique para expandir a fase ${meta.label}"` : ''}
                  ondragover="if(canEdit()){event.preventDefault(); this.classList.add('drag-over');}"
                  ondragleave="this.classList.remove('drag-over')"
                  ondrop="handleDrop(event, '${status}')">
@@ -3723,7 +3812,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                   <span style="width:8px;height:8px;border-radius:50%;background:${meta.color};border:1px solid var(--navy)"></span>
                   <span>${meta.label}</span>
                 </div>
-                <span class="tag tag--mint">${colTasks.length}</span>
+                <div style="display:flex;align-items:center;gap:4px">
+                  <span class="tag tag--mint">${colTasks.length}</span>
+                  <button type="button" class="icon-btn" style="width:22px;height:22px;font-size:11px"
+                          onclick="event.stopPropagation(); toggleKanbanColCollapse('${status}')"
+                          title="${isCollapsed ? 'Expandir coluna' : 'Minimizar coluna'}">
+                    ${isCollapsed ? '▸' : '—'}
+                  </button>
+                </div>
               </div>
               <div class="kanban-tasks-container" style="display:flex;flex-direction:column;gap:8px;min-height:100px;">
                 ${colTasks.length ? colTasks.map(t => renderKanbanCardHTML(t)).join('') :
@@ -5292,9 +5388,6 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                   <button type="button" class="btn btn--xs btn--soft" onclick="triggerConfImageUpload()" title="Inserir imagem do computador">
                     + Imagem
                   </button>
-                  <button type="button" class="btn btn--xs btn--secondary" onclick="formatCurrentDocMarkdown()" title="Converter texto Markdown colado em tabelas e títulos">
-                    Formatar MD
-                  </button>
                   <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
                     <span class="t-micro" id="conf-save-status">Salvo</span>
                     <button type="button" class="btn btn--xs btn--secondary" onclick="downloadDocHtml('${doc.id}')">Exportar</button>
@@ -5332,6 +5425,46 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                    onpaste="handleConfluencePaste(event, '${doc.id}')"
                    ondragover="if(canEdit()) event.preventDefault()"
                    ondrop="handleConfluenceDropImage(event, '${doc.id}')">${bodyHtml}</div>
+
+              <div class="conf-comments-section">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <svg class="va-icon" width="16" height="16" style="color:var(--navy)"><use href="#va-chat"/></svg>
+                    <h3 class="t-h3">Comentários (${(doc.comments || []).length})</h3>
+                  </div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <textarea id="conf-new-comment-input" class="field__input" rows="2" placeholder="Escreva um comentário ou observação sobre este documento..."></textarea>
+                  <div style="display:flex;justify-content:flex-end">
+                    <button type="button" class="btn btn--sm btn--primary" onclick="addDocComment('${doc.id}')">Comentar</button>
+                  </div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  ${(doc.comments && doc.comments.length) ? doc.comments.map(c => {
+                    const cAuthor = getMember(c.authorId);
+                    const canDeleteComment = isAdmin() || (currentSession && currentSession.userId === c.authorId);
+                    return `
+                      <div class="conf-comment-card">
+                        <div class="conf-comment-header">
+                          <div style="display:flex;align-items:center;gap:8px">
+                            <span class="avatar-sm">${getInitials(cAuthor.name)}</span>
+                            <span style="font-weight:700;font-size:12px;color:var(--navy)">${escapeHtmlText(cAuthor.name)}</span>
+                            <span class="t-micro">• ${escapeHtmlText(c.createdAt || '')}</span>
+                          </div>
+                          ${canDeleteComment ? `
+                            <button type="button" class="icon-btn icon-btn--danger" style="width:22px;height:22px" onclick="deleteDocComment('${doc.id}', '${c.id}')" title="Excluir comentário">
+                              <svg class="va-icon" width="12" height="12"><use href="#va-close"/></svg>
+                            </button>
+                          ` : ''}
+                        </div>
+                        <div class="conf-comment-body">${escapeHtmlText(c.text)}</div>
+                      </div>
+                    `;
+                  }).join('') : `<div class="t-micro" style="padding:8px 0">Nenhum comentário ainda. Seja o primeiro a comentar!</div>`}
+                </div>
+              </div>
             ` : `
               <div style="text-align:center;padding:64px 24px;display:flex;flex-direction:column;align-items:center;gap:12px">
                 <h3 class="t-h2">Nenhuma página selecionada</h3>
@@ -5501,7 +5634,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (!doc || !newTitle.trim()) return;
       doc.title = newTitle.trim();
       doc.updatedAt = new Date().toISOString().split('T')[0];
-      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
+      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, comments: JSON.stringify(doc.comments || []), author_id: doc.authorId || null, updated_at: doc.updatedAt });
       renderGlobalWiki();
     }
 
@@ -5518,7 +5651,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (!doc) return;
       doc.projectId = newProjId;
       doc.updatedAt = new Date().toISOString().split('T')[0];
-      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId, title: doc.title, content: doc.content, author_id: doc.authorId || null, updated_at: doc.updatedAt });
+      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId, title: doc.title, content: doc.content, comments: JSON.stringify(doc.comments || []), author_id: doc.authorId || null, updated_at: doc.updatedAt });
       renderGlobalWiki();
       showToast('Projeto do documento atualizado.');
     }
@@ -5560,7 +5693,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       };
       state.docs.unshift(newDoc);
       activeGlobalDocId = newDoc.id;
-      await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId, updated_at: newDoc.updatedAt });
+      await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId, title: newDoc.title, content: newDoc.content, comments: '[]', author_id: newDoc.authorId, updated_at: newDoc.updatedAt });
       closeModal('new-doc-modal');
       if (currentView !== 'docs') {
         switchView('docs');
@@ -5584,6 +5717,62 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (inp) inp.click();
     }
 
+    async function addDocComment(docId) {
+      const doc = state.docs.find(d => d.id === docId);
+      const input = document.getElementById('conf-new-comment-input');
+      if (!doc || !input) return;
+      const text = input.value.trim();
+      if (!text) {
+        showToast('Digite um comentário antes de enviar.');
+        return;
+      }
+      if (!Array.isArray(doc.comments)) doc.comments = [];
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      doc.comments.push({
+        id: 'c_' + Date.now(),
+        authorId: currentSession?.userId || 'u_rafaela',
+        text,
+        createdAt: dateStr
+      });
+      input.value = '';
+      await safeDbUpsert('vulp_docs', {
+        id: doc.id,
+        project_id: doc.projectId || null,
+        title: doc.title,
+        content: doc.content,
+        comments: JSON.stringify(doc.comments),
+        author_id: doc.authorId || null,
+        updated_at: doc.updatedAt
+      });
+      renderGlobalWiki();
+      showToast('Comentário adicionado.');
+    }
+
+    async function deleteDocComment(docId, commentId) {
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc || !Array.isArray(doc.comments)) return;
+      const comment = doc.comments.find(c => c.id === commentId);
+      if (!comment) return;
+      if (!isAdmin() && (!currentSession || currentSession.userId !== comment.authorId)) {
+        showToast('Sem permissão para excluir este comentário.');
+        return;
+      }
+      if (!confirm('Excluir este comentário?')) return;
+      doc.comments = doc.comments.filter(c => c.id !== commentId);
+      await safeDbUpsert('vulp_docs', {
+        id: doc.id,
+        project_id: doc.projectId || null,
+        title: doc.title,
+        content: doc.content,
+        comments: JSON.stringify(doc.comments),
+        author_id: doc.authorId || null,
+        updated_at: doc.updatedAt
+      });
+      renderGlobalWiki();
+      showToast('Comentário excluído.');
+    }
+
     async function handleMarkdownFileUpload(event) {
       if (!guardEditorAction()) return;
       const files = Array.from(event.target.files || []);
@@ -5599,10 +5788,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       sel.innerHTML = visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
       const filterProj = document.getElementById('wiki-project-filter')?.value;
       sel.value = (filterProj && filterProj !== 'ALL') ? filterProj : visProjects[0].id;
-      document.getElementById('import-doc-files-summary').textContent =
-        files.length === 1
-          ? `Arquivo selecionado: "${files[0].name}". Escolha abaixo a qual projeto ele será vinculado:`
-          : `${files.length} arquivos selecionados. Escolha abaixo a qual projeto eles serão vinculados:`;
+
+      const namesContainer = document.getElementById('import-doc-names-container');
+      namesContainer.innerHTML = files.map((_, idx) => `
+        <div class="field">
+          <label class="field__label">${files.length === 1 ? 'Nome do documento (como vai aparecer)' : `Nome do documento ${idx + 1} (como vai aparecer)`}</label>
+          <input type="text" class="field__input import-doc-custom-name" data-idx="${idx}" value="" placeholder="Digite o nome de exibição do documento..." />
+        </div>
+      `).join('');
+
       document.getElementById('import-doc-modal').classList.add('is-open');
     }
 
@@ -5618,27 +5812,36 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         showToast('Selecione o projeto vinculado.');
         return;
       }
+      const nameInputs = Array.from(document.querySelectorAll('.import-doc-custom-name'));
+      const customNames = nameInputs.map(inp => inp.value.trim());
+      if (customNames.some(n => !n)) {
+        showToast('Informe o nome de exibição para o documento.');
+        return;
+      }
+
       const files = [...pendingImportDocFiles];
       pendingImportDocFiles = [];
       closeModal('import-doc-modal');
       if (!files.length) return;
 
       const today = new Date().toISOString().split('T')[0];
-      for (const file of files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const text = await readFileAsText(file);
-        const cleanTitle = file.name.replace(/\.(md|markdown|txt|html)$/i, '');
-        const htmlBody = convertLegacyMarkdownToHtml(text, cleanTitle);
+        const chosenTitle = customNames[i];
+        const htmlBody = convertLegacyMarkdownToHtml(text, chosenTitle);
         const newDoc = {
           id: 'd_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
           projectId: targetProj,
-          title: cleanTitle,
+          title: chosenTitle,
+          comments: [],
           updatedAt: today,
           authorId: currentSession?.userId || 'u_rafaela',
           content: htmlBody
         };
         state.docs.unshift(newDoc);
         activeGlobalDocId = newDoc.id;
-        await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId, title: newDoc.title, content: newDoc.content, author_id: newDoc.authorId || null, updated_at: newDoc.updatedAt });
+        await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId, title: newDoc.title, content: newDoc.content, comments: '[]', author_id: newDoc.authorId || null, updated_at: newDoc.updatedAt });
       }
       const filterEl = document.getElementById('wiki-project-filter');
       if (filterEl && filterEl.value !== 'ALL' && filterEl.value !== targetProj) {
