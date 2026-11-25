@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vulp Flow — Vulp Air</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2307384D'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='bold' font-size='16' fill='%235ADCE8' text-anchor='middle'%3EV%3C/text%3E%3C/svg%3E" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* ==========================================================================
@@ -1272,24 +1273,68 @@
       border-color: var(--navy);
     }
 
-    .project-check-grid {
+    .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 10px;
+    }
+
+    /* Seletor elegante de projetos com nível de permissão (Visualizar vs Contribuir) */
+    .project-picker-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .project-pills-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+      min-height: 28px;
+    }
+    .project-perm-pill {
+      display: inline-flex;
+      align-items: center;
       gap: 6px;
-      max-height: 150px;
-      overflow-y: auto;
-      padding: 8px;
       background: var(--white);
       border: 1px solid var(--line);
-      border-radius: 8px;
-    }
-    .project-check-item {
-      display: flex;
-      align-items: center;
-      gap: 7px;
+      border-radius: var(--radius-pill);
+      padding: 4px 8px 4px 10px;
       font-size: 12px;
       color: var(--navy);
+      box-shadow: var(--shadow-xs);
+    }
+    .project-perm-pill__mode {
+      font-family: var(--font-main);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      border: none;
       cursor: pointer;
+      transition: all .12s ease;
+    }
+    .project-perm-pill__mode--edit {
+      background: var(--teal);
+      color: var(--navy);
+    }
+    .project-perm-pill__mode--view {
+      background: var(--surface-subtle);
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+    .project-perm-pill__remove {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+    .project-perm-pill__remove:hover {
+      color: var(--amber);
     }
 
     /* Login Gate */
@@ -1683,16 +1728,20 @@
               </div>
             </div>
 
-            <!-- Seletor de Projetos Específicos (visível para Acesso por Projeto, Gestor ou Liderado) -->
-            <div id="new-member-projects-box" style="display:flex;background:var(--mint-page);border:1px solid var(--line);border-radius:8px;padding:12px;flex-direction:column;gap:8px">
-              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-                <span class="field__label" id="new-member-projects-label" style="color:var(--navy);margin:0">Projetos extras para acompanhamento (visíveis na aba Projetos e Documentos, sem poluir o Kanban dele):</span>
-                <label id="new-member-guest-edit-wrap" style="font-size:12px;display:none;align-items:center;gap:6px;cursor:pointer">
-                  <input type="checkbox" id="new-member-guest-edit" checked />
-                  <span>Permitir criar/editar tarefas e documentos nestes projetos</span>
-                </label>
+            <!-- Seletor de Projetos Específicos com Permissão Individual (Visualizar vs Contribuir) -->
+            <div id="new-member-projects-box" style="display:flex;background:var(--mint-page);border:1px solid var(--line);border-radius:8px;padding:12px;flex-direction:column;gap:9px">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+                <span class="field__label" id="new-member-projects-label" style="color:var(--navy);margin:0">Projetos vinculados / extras (defina se pode apenas visualizar ou contribuir):</span>
               </div>
-              <div class="project-check-grid" id="new-member-projects-list"></div>
+              <div class="project-picker-bar">
+                <select id="new-member-proj-picker" class="field__input" style="height:32px;font-size:12px;flex:1;min-width:200px"></select>
+                <select id="new-member-proj-perm" class="field__input" style="height:32px;font-size:12px;width:165px">
+                  <option value="view">Somente visualizar</option>
+                  <option value="edit">Pode contribuir</option>
+                </select>
+                <button type="button" class="btn btn--sm btn--secondary" onclick="addProjectPermSelection('new')">+ Adicionar</button>
+              </div>
+              <div class="project-pills-wrap" id="new-member-projects-list"></div>
             </div>
 
             <div style="display:flex;justify-content:flex-end">
@@ -2150,15 +2199,17 @@
         </div>
       </div>
 
-      <div id="edit-user-projects-box" style="display:none;background:var(--mint-page);border:1px solid var(--line);border-radius:8px;padding:12px;flex-direction:column;gap:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-          <span class="field__label" id="edit-user-projects-label" style="color:var(--navy);margin:0">Projetos extras para acompanhamento (aba Projetos e Documentos):</span>
-          <label id="edit-user-guest-edit-wrap" style="font-size:12px;display:none;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="edit-user-guest-edit" />
-            <span>Pode editar tarefas/docs nestes projetos</span>
-          </label>
+      <div id="edit-user-projects-box" style="display:none;background:var(--mint-page);border:1px solid var(--line);border-radius:8px;padding:12px;flex-direction:column;gap:9px">
+        <span class="field__label" id="edit-user-projects-label" style="color:var(--navy);margin:0">Projetos vinculados / extras (clique no selo para alternar Visualizar / Contribuir):</span>
+        <div class="project-picker-bar">
+          <select id="edit-user-proj-picker" class="field__input" style="height:32px;font-size:12px;flex:1;min-width:190px"></select>
+          <select id="edit-user-proj-perm" class="field__input" style="height:32px;font-size:12px;width:160px">
+            <option value="view">Somente visualizar</option>
+            <option value="edit">Pode contribuir</option>
+          </select>
+          <button type="button" class="btn btn--sm btn--secondary" onclick="addProjectPermSelection('edit')">+ Adicionar</button>
         </div>
-        <div class="project-check-grid" id="edit-user-projects-list"></div>
+        <div class="project-pills-wrap" id="edit-user-projects-list"></div>
       </div>
 
       <div class="modal-footer">
@@ -2636,17 +2687,90 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       return [];
     }
 
-    function parseAllowedProjects(raw) {
-      if (Array.isArray(raw)) return raw;
-      if (typeof raw === 'string' && raw.trim()) {
+    function parseProjectAccessList(raw, defaultMode = 'edit') {
+      let arr = [];
+      if (Array.isArray(raw)) {
+        arr = raw;
+      } else if (typeof raw === 'string' && raw.trim()) {
         try {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed)) arr = parsed;
         } catch (e) {
-          return raw.split(',').map(s => s.trim()).filter(Boolean);
+          arr = raw.split(',').map(s => s.trim()).filter(Boolean);
         }
       }
-      return [];
+      const seen = new Set();
+      const result = [];
+      for (const item of arr) {
+        if (typeof item === 'string' && item.trim()) {
+          const id = item.trim();
+          if (!seen.has(id)) {
+            seen.add(id);
+            result.push({ id, mode: defaultMode === 'view' ? 'view' : 'edit' });
+          }
+        } else if (item && typeof item === 'object' && item.id) {
+          const id = String(item.id).trim();
+          if (id && !seen.has(id)) {
+            seen.add(id);
+            result.push({ id, mode: item.mode === 'view' ? 'view' : 'edit' });
+          }
+        }
+      }
+      return result;
+    }
+
+    function parseAllowedProjects(raw, defaultMode = 'edit') {
+      return parseProjectAccessList(raw, defaultMode).map(x => x.id);
+    }
+
+    function getUserProjectAccessMap(userObj) {
+      const map = new Map();
+      if (!userObj) return map;
+      const defMode = userObj.guestCanEdit === false ? 'view' : 'edit';
+      for (const item of parseProjectAccessList(userObj.allowedProjects, defMode)) {
+        map.set(item.id, item.mode);
+      }
+      return map;
+    }
+
+    function canEditInProject(projectId) {
+      const u = getCurrentUserObj();
+      if (!u) return false;
+      if (u.accessLevel === 'admin') return true;
+      if (u.accessLevel === 'viewer') return false;
+      if (!projectId) {
+        return u.accessLevel !== 'project_guest';
+      }
+      const proj = getProject(projectId);
+      const accessMap = getUserProjectAccessMap(u);
+
+      if (u.accessLevel === 'project_guest') {
+        return accessMap.get(projectId) === 'edit';
+      }
+
+      if (u.accessLevel === 'manager') {
+        const subs = getSubordinateIds(u.id);
+        const isNativeManagerProj = proj && (
+          proj.category === u.area ||
+          proj.ownerId === u.id ||
+          subs.has(proj.ownerId) ||
+          state.tasks.some(t => t.projectId === projectId && (t.assigneeId === u.id || subs.has(t.assigneeId) || t.createdBy === u.id))
+        );
+        if (isNativeManagerProj) return true;
+        return accessMap.get(projectId) === 'edit';
+      }
+
+      const isNativeMemberProj = proj && (
+        proj.category === u.area ||
+        proj.ownerId === u.id ||
+        state.tasks.some(t => t.projectId === projectId && (t.assigneeId === u.id || t.assigneeId === 'team_all'))
+      );
+      if (isNativeMemberProj) return true;
+      return accessMap.get(projectId) === 'edit';
+    }
+
+    function getEditableProjectsForCurrentUser() {
+      return getVisibleProjectsForCurrentUser().filter(p => canEditInProject(p.id));
     }
 
     function ensureCodesAndDefaults(st) {
@@ -2681,8 +2805,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         if (!m.accessPin || !m.accessPin.trim()) m.accessPin = 'vulp2026';
         if (!['admin', 'manager', 'member', 'project_guest', 'viewer'].includes(m.accessLevel)) m.accessLevel = 'member';
         if (!m.area) m.area = st.categories[0] || 'Operações e PMOC';
-        m.allowedProjects = parseAllowedProjects(m.allowedProjects);
         if (typeof m.guestCanEdit !== 'boolean') m.guestCanEdit = true;
+        m.allowedProjects = parseProjectAccessList(m.allowedProjects, m.guestCanEdit ? 'edit' : 'view');
       });
 
       st.projects.forEach(p => { if (!p.ownerId || FICTITIOUS_USER_IDS.has(p.ownerId)) p.ownerId = 'u_rafaela'; });
@@ -2791,7 +2915,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       const u = getCurrentUserObj();
       if (!u) return true;
       if (u.accessLevel === 'viewer') return true;
-      if (u.accessLevel === 'project_guest' && !u.guestCanEdit) return true;
+      if (u.accessLevel === 'project_guest') {
+        return getEditableProjectsForCurrentUser().length === 0;
+      }
       return false;
     }
 
@@ -3029,10 +3155,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
       if (u.accessLevel === 'project_guest') {
         const projs = getVisibleProjectsForCurrentUser();
-        const names = projs.length ? projs.map(p => `${p.code} (${p.name})`).join(', ') : 'Nenhum projeto vinculado';
+        const accessMap = getUserProjectAccessMap(u);
+        const names = projs.length
+          ? projs.map(p => `${p.code} (${p.name} — ${accessMap.get(p.id) === 'edit' ? 'Contribui' : 'Visualiza'})`).join(', ')
+          : 'Nenhum projeto vinculado';
+        const anyEdit = getEditableProjectsForCurrentUser().length > 0;
         banner.style.display = 'flex';
-        bannerText.innerHTML = `<strong>Acesso Compartilhado por Projeto:</strong> Visualizando apenas <strong>${names}</strong>.`;
-        bannerBadge.textContent = u.guestCanEdit ? 'EDIÇÃO NO PROJETO' : 'SOMENTE LEITURA';
+        bannerText.innerHTML = `<strong>Acesso Compartilhado por Projeto:</strong> <strong>${names}</strong>.`;
+        bannerBadge.textContent = anyEdit ? 'CONTRIBUIDOR' : 'SOMENTE LEITURA';
       } else if (u.accessLevel === 'viewer') {
         banner.style.display = 'flex';
         bannerText.innerHTML = `<strong>Modo Visualizador:</strong> Acompanhamento em tempo real (somente leitura).`;
@@ -3145,7 +3275,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false }),
           sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true }),
-          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true })
+          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true }).then(r => r, () => ({ error: true, data: null }))
         ]);
         if (teamRes.error) throw teamRes.error;
         if (projRes.error) throw projRes.error;
@@ -3197,8 +3327,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           area: r.area || localExisting?.area || 'Operações e PMOC',
           managerId: r.manager_id !== undefined ? (r.manager_id || '') : (localExisting?.managerId || ''),
           accessLevel: r.access_level || 'member',
-          allowedProjects: r.allowed_projects !== undefined ? parseAllowedProjects(r.allowed_projects) : (localExisting?.allowedProjects || []),
           guestCanEdit: r.guest_can_edit !== undefined ? Boolean(r.guest_can_edit) : (localExisting?.guestCanEdit !== undefined ? localExisting.guestCanEdit : true),
+          allowedProjects: r.allowed_projects !== undefined ? parseProjectAccessList(r.allowed_projects, (r.guest_can_edit === false) ? 'view' : 'edit') : (localExisting?.allowedProjects || []),
           accessPin: (r.access_pin && r.access_pin.trim()) ? r.access_pin : 'vulp2026'
         };
       });
@@ -3263,7 +3393,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           sbClient.from('vulp_tasks').select('*').order('created_at', { ascending: true }),
           sbClient.from('vulp_docs').select('*').order('created_at', { ascending: false }),
           sbClient.from('vulp_categories').select('*').order('created_at', { ascending: true }),
-          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true })
+          sbClient.from('vulp_statuses').select('*').order('position', { ascending: true }).then(r => r, () => ({ error: true, data: null }))
         ]);
         if (!teamRes.error && !projRes.error && !epicRes.error && !taskRes.error && !docRes.error) {
           const catRows = (!catRes.error && Array.isArray(catRes.data)) ? catRes.data : null;
@@ -3332,7 +3462,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         area: m.area || 'Operações e PMOC',
         manager_id: m.managerId || null,
         access_level: m.accessLevel || 'member',
-        allowed_projects: JSON.stringify(parseAllowedProjects(m.allowedProjects)),
+        allowed_projects: JSON.stringify(parseProjectAccessList(m.allowedProjects, m.guestCanEdit === false ? 'view' : 'edit')),
         guest_can_edit: m.guestCanEdit !== undefined ? Boolean(m.guestCanEdit) : true,
         access_pin: m.accessPin || 'vulp2026'
       };
@@ -4016,12 +4146,12 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                   <div class="progress-mini"><div class="progress-mini__fill" style="width:${st.pct}%;background:${pColor}"></div></div>
                   <span class="t-micro" style="font-weight:700">${st.pct}% (${st.done}/${st.total})</span>
                 </div>
-                ${editable ? `
+                ${canEditInProject(proj.id) ? `
                   <button class="btn btn--xs btn--secondary non-guest-only" onclick="openProjectModal('${proj.id}')">Editar</button>
                   <button class="btn btn--xs btn--secondary" onclick="openNewDocModal('${proj.id}')">+ Doc</button>
                   <button class="btn btn--xs btn--soft" onclick="openEpicModal(null, '${proj.id}')">+ Épico</button>
                   <button class="btn btn--xs btn--primary" onclick="openTaskModal(null, '${proj.id}')">+ Tarefa</button>
-                ` : ''}
+                ` : `<span class="tag tag--muted" style="font-size:10px">Somente visualização</span>`}
                 ${admin ? `
                   <button class="icon-btn icon-btn--danger" onclick="deleteProjectById('${proj.id}', false)" title="Excluir projeto">
                     <svg class="va-icon" width="14" height="14"><use href="#va-close"/></svg>
@@ -4052,7 +4182,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                       </div>
 
                       <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
-                        ${editable ? `
+                        ${canEditInProject(proj.id) ? `
                           <button class="btn btn--xs btn--ghost" onclick="openEpicModal('${epic.id}')">Editar</button>
                           <button class="btn btn--xs btn--secondary" onclick="openTaskModal(null, '${proj.id}', '${epic.id}')">+ Tarefa</button>
                         ` : ''}
@@ -4118,7 +4248,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
     function renderCascadeTaskLineHTML(t) {
       const member = getMember(t.assigneeId);
       const recBadge = formatRecurrenceBadge(t);
-      const editable = canEdit();
+      const editable = canEditInProject(t.projectId);
 
       return `
         <div class="jira-task-row" onclick="openTaskModal('${t.id}')">
@@ -6376,4 +6506,3 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
   </script>
 </body>
 </html>
-
