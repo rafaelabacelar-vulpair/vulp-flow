@@ -2993,11 +2993,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         return state.tasks.filter(t => t.projectId && allowed.has(t.projectId));
       }
 
+      const accessMap = getUserProjectAccessMap(u);
+      const contribProjIds = new Set(
+        Array.from(accessMap.entries()).filter(([, mode]) => mode === 'edit').map(([pid]) => pid)
+      );
+
       if (u.accessLevel === 'manager') {
-        // Gestor vê no Kanban: suas próprias tarefas, tarefas dos seus liderados, tarefas da sua área, tarefas delegadas por ele e tarefas de projetos que ele próprio lidera
         const subs = getSubordinateIds(u.id);
         const ownedProjIds = new Set(
-          state.projects.filter(p => p.ownerId === u.id || p.category === u.area || subs.has(p.ownerId)).map(p => p.id)
+          state.projects.filter(p => p.ownerId === u.id || p.category === u.area || subs.has(p.ownerId) || contribProjIds.has(p.id)).map(p => p.id)
         );
         return state.tasks.filter(t =>
           t.assigneeId === u.id ||
@@ -3009,9 +3013,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         );
       }
 
-      // member (Liderado): vê tarefas da sua área, tarefas atribuídas a ele, delegadas por ele, equipe ou de projetos que ele lidera/atua
+      // member (Liderado): vê tarefas da sua área, atribuídas/delegadas, equipe ou projetos em que é Contribuinte
       const memberProjIds = new Set(
         state.projects.filter(p =>
+          contribProjIds.has(p.id) ||
           p.category === u.area ||
           p.ownerId === u.id ||
           state.tasks.some(t => t.projectId === p.id && (t.assigneeId === u.id || t.assigneeId === 'team_all'))
@@ -3314,11 +3319,35 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (statRows && statRows.length) {
         state.statuses = statRows.map(r => ({ id: r.id, label: r.label, color: r.color, position: r.position }));
       }
+      const fallbackPermByUser = new Map();
       if (catRows && catRows.length) {
-        state.categories = catRows.map(c => c.name);
+        const realCats = [];
+        for (const c of catRows) {
+          if (typeof c.name === 'string' && c.name.startsWith('__VULP_PERM__:')) {
+            const rest = c.name.slice('__VULP_PERM__:'.length);
+            const sep = rest.indexOf(':');
+            if (sep > 0) {
+              const uid = rest.slice(0, sep);
+              const jsonStr = rest.slice(sep + 1);
+              fallbackPermByUser.set(uid, parseProjectAccessList(jsonStr, 'edit'));
+            }
+          } else if (c.name) {
+            realCats.push(c.name);
+          }
+        }
+        if (realCats.length) state.categories = realCats;
       }
       state.team = teamRows.map(r => {
         const localExisting = state.team.find(x => x.id === r.id);
+        const defMode = (r.guest_can_edit === false) ? 'view' : 'edit';
+        let resolvedAllowed = [];
+        if (r.allowed_projects !== undefined && r.allowed_projects !== null) {
+          resolvedAllowed = parseProjectAccessList(r.allowed_projects, defMode);
+        } else if (fallbackPermByUser.has(r.id)) {
+          resolvedAllowed = fallbackPermByUser.get(r.id);
+        } else if (localExisting?.allowedProjects) {
+          resolvedAllowed = parseProjectAccessList(localExisting.allowedProjects, defMode);
+        }
         return {
           id: r.id,
           name: r.name,
@@ -3327,8 +3356,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           area: r.area || localExisting?.area || 'Operações e PMOC',
           managerId: r.manager_id !== undefined ? (r.manager_id || '') : (localExisting?.managerId || ''),
           accessLevel: r.access_level || 'member',
-          guestCanEdit: r.guest_can_edit !== undefined ? Boolean(r.guest_can_edit) : (localExisting?.guestCanEdit !== undefined ? localExisting.guestCanEdit : true),
-          allowedProjects: r.allowed_projects !== undefined ? parseProjectAccessList(r.allowed_projects, (r.guest_can_edit === false) ? 'view' : 'edit') : (localExisting?.allowedProjects || []),
+          guestCanEdit: r.guest_can_edit !== undefined && r.guest_can_edit !== null
+            ? Boolean(r.guest_can_edit)
+            : (resolvedAllowed.length ? resolvedAllowed.some(x => x.mode === 'edit') : (localExisting?.guestCanEdit !== undefined ? localExisting.guestCanEdit : true)),
+          allowedProjects: resolvedAllowed,
           accessPin: (r.access_pin && r.access_pin.trim()) ? r.access_pin : 'vulp2026'
         };
       });
@@ -3429,6 +3460,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         const msg = res.error.message || '';
         const colMatch = msg.match(/Could not find the '([^']+)' column/);
         if (colMatch && colMatch[1] in payload) {
+          if (table === 'vulp_team' && colMatch[1] === 'allowed_projects' && row.id) {
+            try {
+              await sbClient.from('vulp_categories').upsert({
+                id: '__perm_' + row.id,
+                name: '__VULP_PERM__:' + row.id + ':' + (row.allowed_projects || '[]')
+              });
+            } catch (e) {}
+          }
           delete payload[colMatch[1]];
           continue;
         }
@@ -3476,7 +3515,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           await safeDbUpsert('vulp_team', toDbTeamMember(m));
         }
         for (let i = 0; i < state.categories.length; i++) {
-          await sbClient.from('vulp_categories').upsert({ id: 'cat_' + i, name: state.categories[i] });
+          if (!String(state.categories[i]).startsWith('__VULP_PERM__:')) {
+            await sbClient.from('vulp_categories').upsert({ id: 'cat_' + i, name: state.categories[i] });
+          }
         }
         for (const s of state.statuses) {
           await safeDbUpsert('vulp_statuses', { id: s.id, label: s.label, color: s.color, position: s.position });
