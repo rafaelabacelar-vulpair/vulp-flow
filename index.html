@@ -3509,15 +3509,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         newMgrSel.innerHTML = '<option value="">Sem gestor (reporta à diretoria)</option>' +
           managers.map(m => `<option value="${m.id}">${m.name} (${m.area})</option>`).join('');
       }
-      const newProjList = document.getElementById('new-member-projects-list');
-      if (newProjList) {
-        newProjList.innerHTML = state.projects.map(p => `
-          <label class="project-check-item">
-            <input type="checkbox" class="new-member-proj-cb" value="${p.id}" />
-            <span><strong>${p.code}</strong> • ${p.name}</span>
-          </label>
-        `).join('');
-      }
+      renderProjectPermPicker('new');
     }
 
     function onFilterProjectChange() {
@@ -4314,10 +4306,30 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       }
     }
 
+    function setTaskModalReadonlyState(readonly) {
+      const modal = document.getElementById('task-modal');
+      modal.querySelectorAll('input, select, textarea').forEach(el => {
+        el.disabled = readonly;
+      });
+      modal.querySelectorAll('.segmented-btn, .weekday-pill, .btn--soft').forEach(btn => {
+        btn.disabled = readonly;
+      });
+      const footer = modal.querySelector('.modal-footer');
+      if (footer) footer.style.display = readonly ? 'none' : 'flex';
+    }
+
     function openTaskModal(taskId = null, preselectedProjectId = null, preselectedEpicId = null) {
       if (!taskId && !guardEditorAction()) return;
+      if (!taskId && preselectedProjectId && !canEditInProject(preselectedProjectId)) {
+        showToast('Você tem acesso apenas de visualização neste projeto.');
+        return;
+      }
 
-      const visProjects = getVisibleProjectsForCurrentUser();
+      const existingTask = taskId ? state.tasks.find(x => x.id === taskId) : null;
+      const taskEditable = existingTask ? canEditInProject(existingTask.projectId) : true;
+      const editableProjects = getEditableProjectsForCurrentUser();
+      const visProjects = taskEditable ? editableProjects : getVisibleProjectsForCurrentUser();
+
       const projSel = document.getElementById('task-project');
       const areaSel = document.getElementById('task-routine-area');
       const assSel = document.getElementById('task-assignee');
@@ -4325,7 +4337,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
       projSel.innerHTML = visProjects.length
         ? visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('')
-        : '<option value="">Nenhum projeto disponível</option>';
+        : '<option value="">Nenhum projeto com permissão de edição</option>';
 
       areaSel.innerHTML = state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
 
@@ -4347,7 +4359,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         const t = state.tasks.find(x => x.id === taskId);
         if (!t) return;
         document.getElementById('task-modal-code').textContent = t.code || 'T-?';
-        document.getElementById('task-modal-heading').textContent = isViewer() ? 'Detalhes da tarefa' : 'Editar tarefa';
+        document.getElementById('task-modal-heading').textContent = !taskEditable ? 'Detalhes da tarefa (somente visualização)' : 'Editar tarefa';
         document.getElementById('task-modal-id').value = t.id;
         document.getElementById('task-title').value = t.title;
 
@@ -4419,6 +4431,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         setTaskRepeatMode('single');
       }
 
+      setTaskModalReadonlyState(!taskEditable);
       document.getElementById('task-modal').classList.add('is-open');
     }
 
@@ -4462,6 +4475,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         epicId = document.getElementById('task-epic').value;
         if (!projectId) {
           showToast('Selecione um projeto ou mude para "Operacional / Rotina (sem projeto)".');
+          return;
+        }
+        if (!canEditInProject(projectId)) {
+          showToast('Você tem permissão apenas de visualização neste projeto.');
           return;
         }
         area = getProject(projectId)?.category || '';
@@ -4555,6 +4572,11 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
     async function deleteTaskFromModal() {
       if (!guardEditorAction()) return;
       const id = document.getElementById('task-modal-id').value;
+      const existing = state.tasks.find(t => t.id === id);
+      if (existing && !canEditInProject(existing.projectId)) {
+        showToast('Sem permissão para excluir tarefas deste projeto.');
+        return;
+      }
       if (!id || !confirm('Excluir esta tarefa?')) return;
       state.tasks = state.tasks.filter(t => t.id !== id);
       await safeDbDelete('vulp_tasks', id);
@@ -4587,6 +4609,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       const afterElement = getDragAfterElement(container, e.clientY);
       const task = state.tasks.find(t => t.id === taskId);
       if (!task) return;
+      if (!canEditInProject(task.projectId)) {
+        showToast('Você tem permissão apenas de visualização neste projeto.');
+        return;
+      }
       
       const oldStatus = task.status;
       task.status = newStatus;
@@ -4619,6 +4645,11 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (!guardEditorAction()) return;
       const task = state.tasks.find(t => t.id === taskId);
       if (!task) return;
+      if (!canEditInProject(task.projectId)) {
+        showToast('Você tem permissão apenas de visualização neste projeto.');
+        renderCascadeView();
+        return;
+      }
       if (task.status === newStatus) return;
       const oldStatus = task.status;
       task.status = newStatus;
@@ -4947,8 +4978,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
     function openEpicModal(epicId = null, preselectedProjectId = null) {
       if (!guardEditorAction()) return;
-      const visProjects = getVisibleProjectsForCurrentUser();
-      if (!visProjects.length) { showToast('Nenhum projeto disponível.'); return; }
+      const visProjects = getEditableProjectsForCurrentUser();
+      if (!visProjects.length) { showToast('Nenhum projeto com permissão de contribuição disponível.'); return; }
       const projSel = document.getElementById('epic-project');
       const ownerSel = document.getElementById('epic-owner');
       const teamMembers = state.team.filter(m => m.accessLevel !== 'viewer' && m.accessLevel !== 'project_guest');
@@ -4988,6 +5019,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       const title = document.getElementById('epic-title').value.trim();
       const projectId = document.getElementById('epic-project').value;
       if (!title || !projectId) { showToast('Informe o projeto e o nome do épico.'); return; }
+      if (!canEditInProject(projectId)) { showToast('Sem permissão de contribuição neste projeto.'); return; }
       const id = document.getElementById('epic-id').value;
       const payload = {
         projectId, title,
@@ -5335,9 +5367,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       const doc = docsList.find(d => d.id === activeGlobalDocId) || docsList[0] || null;
       if (doc) activeGlobalDocId = doc.id;
 
-      const editable = canEdit();
+      const editable = doc ? canEditInProject(doc.projectId) : canEdit();
       const admin = isAdmin();
-      const visProjects = getVisibleProjectsForCurrentUser();
+      const visProjects = getEditableProjectsForCurrentUser();
       let bodyHtml = '';
       if (doc) {
         bodyHtml = convertLegacyMarkdownToHtml(doc.content, doc.title);
@@ -5408,7 +5440,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                 </div>
               ` : `
                 <div class="conf-toolbar" style="justify-content:space-between">
-                  <span class="tag tag--muted">Modo Leitura</span>
+                  <span class="tag tag--muted">Somente Visualização (você pode comentar abaixo)</span>
                   <button type="button" class="btn btn--xs btn--secondary" onclick="downloadDocHtml('${doc.id}')">Exportar página</button>
                 </div>
               `}
@@ -5615,8 +5647,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
     }
 
     function onConfluenceBodyInput(docId) {
-      if (!canEdit()) return;
       const doc = state.docs.find(d => d.id === docId);
+      if (!doc || !canEditInProject(doc.projectId)) return;
       const editor = document.getElementById('conf-editor-body');
       if (!doc || !editor) return;
       doc.content = editor.innerHTML;
@@ -5641,9 +5673,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
     }
 
     async function updateDocTitle(docId, newTitle) {
-      if (!guardEditorAction()) return;
       const doc = state.docs.find(d => d.id === docId);
       if (!doc || !newTitle.trim()) return;
+      if (!canEditInProject(doc.projectId)) { showToast('Sem permissão de edição neste projeto.'); renderGlobalWiki(); return; }
       doc.title = newTitle.trim();
       doc.updatedAt = new Date().toISOString().split('T')[0];
       await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, comments: JSON.stringify(doc.comments || []), author_id: doc.authorId || null, updated_at: doc.updatedAt });
@@ -5653,7 +5685,6 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
     let pendingImportDocFiles = [];
 
     async function updateDocProject(docId, newProjId) {
-      if (!guardEditorAction()) return;
       if (!newProjId) {
         showToast('Todo documento precisa estar vinculado a um projeto.');
         renderGlobalWiki();
@@ -5661,6 +5692,11 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       }
       const doc = state.docs.find(d => d.id === docId);
       if (!doc) return;
+      if (!canEditInProject(doc.projectId) || !canEditInProject(newProjId)) {
+        showToast('Sem permissão de contribuição neste projeto.');
+        renderGlobalWiki();
+        return;
+      }
       doc.projectId = newProjId;
       doc.updatedAt = new Date().toISOString().split('T')[0];
       await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId, title: doc.title, content: doc.content, comments: JSON.stringify(doc.comments || []), author_id: doc.authorId || null, updated_at: doc.updatedAt });
@@ -5670,9 +5706,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
     function openNewDocModal(preselectedProjId = null) {
       if (!guardEditorAction()) return;
-      const visProjects = getVisibleProjectsForCurrentUser();
+      const visProjects = getEditableProjectsForCurrentUser();
       if (!visProjects.length) {
-        showToast('Crie um projeto antes de criar um documento.');
+        showToast('Você não possui projetos com permissão de contribuição.');
         return;
       }
       const sel = document.getElementById('new-doc-project-select');
@@ -5689,6 +5725,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       const targetProj = document.getElementById('new-doc-project-select').value;
       if (!targetProj) {
         showToast('Selecione o projeto vinculado ao documento.');
+        return;
+      }
+      if (!canEditInProject(targetProj)) {
+        showToast('Sem permissão de contribuição neste projeto.');
         return;
       }
       if (!rawName) {
@@ -5720,9 +5760,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
     function triggerDocFileUpload() {
       if (!guardEditorAction()) return;
-      const visProjects = getVisibleProjectsForCurrentUser();
+      const visProjects = getEditableProjectsForCurrentUser();
       if (!visProjects.length) {
-        showToast('Crie um projeto antes de importar um documento.');
+        showToast('Você não possui projetos com permissão de contribuição.');
         return;
       }
       const inp = document.getElementById('md-file-upload-input');
@@ -5895,34 +5935,102 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
     /* ==========================================================================
        EQUIPE & ESTRUTURA ORGANIZACIONAL (ÁREA -> GESTOR -> LIDERADOS + PROJETO ESPECÍFICO)
        ========================================================================== */
+    let newMemberProjectPerms = []; // [{ id, mode: 'view' | 'edit' }]
+    let editUserProjectPerms = [];  // [{ id, mode: 'view' | 'edit' }]
+
+    function renderProjectPermPicker(ctx) {
+      const list = ctx === 'new' ? newMemberProjectPerms : editUserProjectPerms;
+      const pickerSel = document.getElementById(ctx === 'new' ? 'new-member-proj-picker' : 'edit-user-proj-picker');
+      const pillsWrap = document.getElementById(ctx === 'new' ? 'new-member-projects-list' : 'edit-user-projects-list');
+      if (!pickerSel || !pillsWrap) return;
+
+      const selectedIds = new Set(list.map(x => x.id));
+      const available = state.projects.filter(p => !selectedIds.has(p.id));
+
+      pickerSel.innerHTML = available.length
+        ? available.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('')
+        : '<option value="">Todos os projetos já foram adicionados</option>';
+
+      if (!list.length) {
+        pillsWrap.innerHTML = `<span class="t-micro">Nenhum projeto selecionado acima.</span>`;
+        return;
+      }
+
+      pillsWrap.innerHTML = list.map(item => {
+        const proj = getProject(item.id);
+        if (!proj) return '';
+        const isEdit = item.mode === 'edit';
+        return `
+          <div class="project-perm-pill">
+            <span><strong>${proj.code}</strong> • ${escapeHtmlText(proj.name)}</span>
+            <button type="button"
+                    class="project-perm-pill__mode ${isEdit ? 'project-perm-pill__mode--edit' : 'project-perm-pill__mode--view'}"
+                    onclick="toggleProjectPermMode('${ctx}', '${item.id}')"
+                    title="Clique para alternar entre Somente visualizar e Pode contribuir">
+              ${isEdit ? 'Pode contribuir' : 'Somente visualizar'}
+            </button>
+            <button type="button" class="project-perm-pill__remove" onclick="removeProjectPermSelection('${ctx}', '${item.id}')" title="Remover projeto">×</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addProjectPermSelection(ctx) {
+      const pickerSel = document.getElementById(ctx === 'new' ? 'new-member-proj-picker' : 'edit-user-proj-picker');
+      const permSel = document.getElementById(ctx === 'new' ? 'new-member-proj-perm' : 'edit-user-proj-perm');
+      const pid = pickerSel?.value;
+      const mode = permSel?.value === 'edit' ? 'edit' : 'view';
+      if (!pid) {
+        showToast('Nenhum projeto disponível para adicionar.');
+        return;
+      }
+      const list = ctx === 'new' ? newMemberProjectPerms : editUserProjectPerms;
+      if (!list.some(x => x.id === pid)) {
+        list.push({ id: pid, mode });
+      }
+      renderProjectPermPicker(ctx);
+    }
+
+    function toggleProjectPermMode(ctx, pid) {
+      const list = ctx === 'new' ? newMemberProjectPerms : editUserProjectPerms;
+      const item = list.find(x => x.id === pid);
+      if (item) {
+        item.mode = item.mode === 'edit' ? 'view' : 'edit';
+        renderProjectPermPicker(ctx);
+      }
+    }
+
+    function removeProjectPermSelection(ctx, pid) {
+      if (ctx === 'new') {
+        newMemberProjectPerms = newMemberProjectPerms.filter(x => x.id !== pid);
+      } else {
+        editUserProjectPerms = editUserProjectPerms.filter(x => x.id !== pid);
+      }
+      renderProjectPermPicker(ctx);
+    }
+
     function onNewMemberAccessChange() {
       const lvl = document.getElementById('new-member-access').value;
       const showProjects = (lvl === 'project_guest' || lvl === 'manager' || lvl === 'member');
       document.getElementById('new-member-projects-box').style.display = showProjects ? 'flex' : 'none';
       document.getElementById('new-member-manager-wrap').style.display = (lvl === 'project_guest' || lvl === 'admin') ? 'none' : 'flex';
       const lbl = document.getElementById('new-member-projects-label');
-      const editWrap = document.getElementById('new-member-guest-edit-wrap');
       if (lvl === 'project_guest') {
-        if (lbl) lbl.textContent = 'Selecione os projetos que este usuário poderá acessar:';
-        if (editWrap) editWrap.style.display = 'inline-flex';
+        if (lbl) lbl.textContent = 'Projetos permitidos para este usuário (escolha Visualizar ou Contribuir):';
       } else {
-        if (lbl) lbl.textContent = 'Projetos extras para acompanhamento (visíveis na aba Projetos e Documentos, sem poluir o Kanban dele):';
-        if (editWrap) editWrap.style.display = 'none';
+        if (lbl) lbl.textContent = 'Projetos extras para acompanhamento (escolha se pode apenas visualizar ou também contribuir):';
       }
+      renderProjectPermPicker('new');
     }
 
     function renderTeam() {
       const admin = isAdmin();
       const container = document.getElementById('org-structure-container');
 
-      // 1. Bloco Admin Master
       const admins = state.team.filter(m => m.accessLevel === 'admin');
-      // 2. Usuários com Acesso por Projeto(s) Específico(s)
       const projectGuests = state.team.filter(m => m.accessLevel === 'project_guest');
-      // 3. Visualizadores Gerais
       const generalViewers = state.team.filter(m => m.accessLevel === 'viewer');
 
-      // 4. Estrutura por Área (Gestores e seus Liderados)
       const areaBlocksHtml = state.categories.map(areaName => {
         const areaUsers = state.team.filter(m => m.area === areaName && (m.accessLevel === 'manager' || m.accessLevel === 'member'));
         const managers = areaUsers.filter(m => m.accessLevel === 'manager');
@@ -5970,7 +6078,6 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       }).join('');
 
       container.innerHTML = `
-        <!-- Administração Geral -->
         <div class="org-area-block">
           <div class="org-area-head">
             <div style="display:flex;align-items:center;gap:8px">
@@ -5985,10 +6092,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           </div>
         </div>
 
-        <!-- Organograma por Área -> Gestor -> Liderados -->
         ${areaBlocksHtml}
 
-        <!-- Perfis de Acesso por Projeto(s) Específico(s) -->
         ${(projectGuests.length || generalViewers.length) ? `
           <div class="org-area-block">
             <div class="org-area-head">
@@ -6015,14 +6120,22 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       const mgrObj = m.managerId ? state.team.find(x => x.id === m.managerId) : null;
 
       let scopeDetailHtml = '';
-      const allowed = parseAllowedProjects(m.allowedProjects);
-      const projLabels = allowed.map(pid => getProject(pid)).filter(Boolean).map(p => `${p.code} • ${p.name}`).join(', ');
+      const accessList = parseProjectAccessList(m.allowedProjects, m.guestCanEdit === false ? 'view' : 'edit');
+      const projLabels = accessList
+        .map(item => {
+          const p = getProject(item.id);
+          if (!p) return null;
+          return `${p.code} • ${p.name} (${item.mode === 'edit' ? 'Contribui' : 'Visualiza'})`;
+        })
+        .filter(Boolean)
+        .join(', ');
+
       if (lvl === 'project_guest') {
-        scopeDetailHtml = `<div class="t-micro" style="color:var(--navy)"><strong>Projetos:</strong> ${projLabels || 'Nenhum selecionado'} (${m.guestCanEdit ? 'Edição' : 'Leitura'})</div>`;
+        scopeDetailHtml = `<div class="t-micro" style="color:var(--navy)"><strong>Projetos:</strong> ${projLabels || 'Nenhum selecionado'}</div>`;
       } else {
         const parts = [];
         if (mgrObj) parts.push(`Gestor: <strong>${mgrObj.name}</strong>`);
-        if (projLabels) parts.push(`Acompanha projetos: <strong>${projLabels}</strong>`);
+        if (projLabels) parts.push(`Projetos extras: <strong>${projLabels}</strong>`);
         if (parts.length) scopeDetailHtml = `<div class="t-micro" style="color:var(--navy)">${parts.join(' • ')}</div>`;
       }
 
@@ -6065,11 +6178,11 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
       const lvl = document.getElementById('new-member-access').value;
       const allowedProjects = (lvl === 'project_guest' || lvl === 'manager' || lvl === 'member')
-        ? Array.from(document.querySelectorAll('.new-member-proj-cb:checked')).map(cb => cb.value)
+        ? newMemberProjectPerms.map(x => ({ ...x }))
         : [];
 
       if (lvl === 'project_guest' && !allowedProjects.length) {
-        showToast('Selecione pelo menos um projeto para compartilhar com este usuário.');
+        showToast('Adicione pelo menos um projeto para compartilhar com este usuário.');
         return;
       }
 
@@ -6082,7 +6195,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         managerId: (lvl === 'project_guest' || lvl === 'admin') ? '' : (document.getElementById('new-member-manager').value || ''),
         accessLevel: lvl,
         allowedProjects,
-        guestCanEdit: document.getElementById('new-member-guest-edit').checked,
+        guestCanEdit: allowedProjects.some(x => x.mode === 'edit'),
         accessPin: pwd
       };
 
@@ -6091,7 +6204,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       document.getElementById('new-member-email').value = '';
       document.getElementById('new-member-role').value = '';
       document.getElementById('new-member-pin').value = '';
-      document.querySelectorAll('.new-member-proj-cb').forEach(cb => cb.checked = false);
+      newMemberProjectPerms = [];
+      renderProjectPermPicker('new');
 
       await safeDbUpsert('vulp_team', toDbTeamMember(member));
       populateSelectOptions();
@@ -6124,15 +6238,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         managers.map(x => `<option value="${x.id}">${x.name} (${x.area})</option>`).join('');
       mgrSel.value = m.managerId || '';
 
-      const allowedSet = new Set(parseAllowedProjects(m.allowedProjects));
-      document.getElementById('edit-user-guest-edit').checked = m.guestCanEdit !== false;
-      document.getElementById('edit-user-projects-list').innerHTML = state.projects.map(p => `
-        <label class="project-check-item">
-          <input type="checkbox" class="edit-user-proj-cb" value="${p.id}" ${allowedSet.has(p.id) ? 'checked' : ''} />
-          <span><strong>${p.code}</strong> • ${p.name}</span>
-        </label>
-      `).join('');
-
+      editUserProjectPerms = parseProjectAccessList(m.allowedProjects, m.guestCanEdit === false ? 'view' : 'edit');
       onEditUserAccessChange();
       document.getElementById('edit-user-modal').classList.add('is-open');
     }
@@ -6143,14 +6249,12 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       document.getElementById('edit-user-projects-box').style.display = showProjects ? 'flex' : 'none';
       document.getElementById('edit-user-manager-wrap').style.display = (lvl === 'project_guest' || lvl === 'admin') ? 'none' : 'flex';
       const lbl = document.getElementById('edit-user-projects-label');
-      const editWrap = document.getElementById('edit-user-guest-edit-wrap');
       if (lvl === 'project_guest') {
-        if (lbl) lbl.textContent = 'Projetos permitidos para este usuário:';
-        if (editWrap) editWrap.style.display = 'inline-flex';
+        if (lbl) lbl.textContent = 'Projetos permitidos (clique no selo para alternar Visualizar / Contribuir):';
       } else {
-        if (lbl) lbl.textContent = 'Projetos extras para acompanhamento (aba Projetos e Documentos, sem poluir o Kanban dele):';
-        if (editWrap) editWrap.style.display = 'none';
+        if (lbl) lbl.textContent = 'Projetos extras para acompanhamento (clique no selo para alternar Visualizar / Contribuir):';
       }
+      renderProjectPermPicker('edit');
     }
 
     async function saveEditedUser() {
@@ -6164,11 +6268,11 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
       const lvl = m.id === 'u_rafaela' ? 'admin' : document.getElementById('edit-user-access').value;
       const allowedProjects = (lvl === 'project_guest' || lvl === 'manager' || lvl === 'member')
-        ? Array.from(document.querySelectorAll('.edit-user-proj-cb:checked')).map(cb => cb.value)
+        ? editUserProjectPerms.map(x => ({ ...x }))
         : [];
 
       if (lvl === 'project_guest' && !allowedProjects.length) {
-        showToast('Marque pelo menos um projeto para este perfil.');
+        showToast('Adicione pelo menos um projeto para este perfil.');
         return;
       }
 
@@ -6179,7 +6283,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       m.accessLevel = lvl;
       m.managerId = (lvl === 'project_guest' || lvl === 'admin') ? '' : (document.getElementById('edit-user-manager').value || '');
       m.allowedProjects = allowedProjects;
-      m.guestCanEdit = document.getElementById('edit-user-guest-edit').checked;
+      m.guestCanEdit = allowedProjects.some(x => x.mode === 'edit');
 
       await safeDbUpsert('vulp_team', toDbTeamMember(m));
       if (currentSession && currentSession.userId === m.id) {
