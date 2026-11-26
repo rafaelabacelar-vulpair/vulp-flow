@@ -386,6 +386,9 @@
     .sidebar-brand {
       display: flex;
       flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
       gap: 6px;
       padding-bottom: 14px;
       border-bottom: 1px solid var(--line-dark);
@@ -394,8 +397,9 @@
       height: 30px;
       width: auto;
       object-fit: contain;
-      object-position: left center;
+      object-position: center center;
       display: block;
+      margin: 0 auto;
     }
     .sidebar-brand__sub {
       font-size: 10px;
@@ -403,6 +407,7 @@
       text-transform: uppercase;
       color: var(--teal);
       font-weight: 700;
+      text-align: center;
     }
 
     .nav-group { display: flex; flex-direction: column; gap: 3px; }
@@ -657,6 +662,59 @@
     .kanban-col.is-collapsed .kanban-tasks-container {
       display: none !important;
     }
+
+    .doc-version-badge {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      line-height: 14px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: var(--radius-pill);
+      background: var(--mint-card);
+      color: var(--navy);
+      border: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+    .conf-page-item.is-active .doc-version-badge {
+      background: var(--lime);
+      color: var(--navy);
+      border-color: var(--lime);
+    }
+    .version-history-item {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      background: var(--surface-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color .15s, background-color .15s;
+    }
+    .version-history-item.is-selected {
+      border-color: var(--navy);
+      background: var(--mint-page);
+    }
+    .version-preview-box {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--white);
+      padding: 18px 22px;
+      max-height: 360px;
+      overflow-y: auto;
+      font-family: var(--font-main);
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--navy);
+    }
+    .version-preview-box h1 { font-size: 19px; line-height: 26px; color: var(--navy); margin: 14px 0 6px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+    .version-preview-box h2 { font-size: 16px; line-height: 22px; color: var(--navy); margin: 12px 0 5px; }
+    .version-preview-box h3 { font-size: 14px; line-height: 20px; color: var(--muted); margin: 10px 0 4px; }
+    .version-preview-box table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+    .version-preview-box th { background: var(--navy); color: var(--white); padding: 7px 10px; text-align: left; border: 1px solid var(--navy); }
+    .version-preview-box td { padding: 6px 10px; border: 1px solid var(--line); }
+    .version-preview-box img { max-width: 100%; height: auto; border-radius: 6px; }
 
     /* Seção de comentários do documento */
     .conf-comments-section {
@@ -2153,6 +2211,68 @@
   </div>
 
   <!-- ==========================================================================
+       MODAL: SUBIR NOVA VERSÃO DE DOCUMENTO EXISTENTE
+       ========================================================================== -->
+  <div class="modal-backdrop modal-backdrop--top" id="upload-version-modal">
+    <div class="modal-panel" style="max-width:480px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="code-badge" id="upload-version-next-badge">v2</span>
+          <h3 class="t-h2">Subir nova versão</h3>
+        </div>
+        <button class="icon-btn" onclick="closeModal('upload-version-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <p class="t-cap" style="margin:0">
+        Importe um arquivo atualizado (<strong>.md</strong>, <strong>.txt</strong> ou <strong>.html</strong>) para <strong id="upload-version-doc-title"></strong>. A versão atual será preservada automaticamente no histórico junto com os comentários e o vínculo com o projeto.
+      </p>
+      <input type="hidden" id="upload-version-doc-id" />
+      <div class="field">
+        <label class="field__label">Arquivo atualizado (.md, .txt ou .html)</label>
+        <input type="file" id="upload-version-file-input" class="field__input" style="padding:6px 10px;height:auto" accept=".md,.markdown,.txt,.html" />
+      </div>
+      <div class="field">
+        <label class="field__label">Nota da versão (opcional — o que mudou?)</label>
+        <input type="text" id="upload-version-note-input" class="field__input" placeholder="Ex: Atualização de regras fiscais, revisão da fase 2..." onkeydown="if(event.key==='Enter') confirmUploadNewDocVersion()" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('upload-version-modal')">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="confirmUploadNewDocVersion()">Publicar nova versão</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: HISTÓRICO DE VERSÕES DO DOCUMENTO (PRÉ-VISUALIZAR E RESTAURAR)
+       ========================================================================== -->
+  <div class="modal-backdrop modal-backdrop--top" id="doc-versions-modal">
+    <div class="modal-panel" style="max-width:860px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          <span class="code-badge" id="doc-versions-current-badge">v1</span>
+          <h3 class="t-h2" id="doc-versions-modal-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Histórico de versões</h3>
+        </div>
+        <button class="icon-btn" onclick="closeModal('doc-versions-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <p class="t-cap" style="margin:0">
+        Selecione qualquer versão abaixo para pré-visualizar seu conteúdo completo ou restaurá-la como versão vigente (com backup automático da versão atual).
+      </p>
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start" id="doc-versions-modal-body">
+        <div id="doc-versions-list" style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;padding-right:2px"></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--mint-page);padding:8px 12px;border-radius:8px;border:1px solid var(--line)" id="doc-versions-preview-bar">
+            <span class="t-micro" style="font-weight:700;color:var(--navy)" id="doc-versions-preview-label">Pré-visualização</span>
+            <div id="doc-versions-preview-actions"></div>
+          </div>
+          <div class="version-preview-box" id="doc-versions-preview-content"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('doc-versions-modal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        MODAL: EDITAR USUÁRIO (ÁREA, GESTOR, PERFIL, PROJETOS PERMITIDOS)
        ========================================================================== -->
   <div class="modal-backdrop modal-backdrop--top" id="edit-user-modal">
@@ -2421,11 +2541,13 @@ create table if not exists public.vulp_docs (
   title text not null,
   content text not null default '',
   comments text not null default '[]',
+  versions text not null default '[]',
   author_id text,
   updated_at text not null default to_char(now(), 'YYYY-MM-DD'),
   created_at timestamptz not null default now()
 );
 alter table public.vulp_docs add column if not exists comments text not null default '[]';
+alter table public.vulp_docs add column if not exists versions text not null default '[]';
 alter table public.vulp_docs drop constraint if exists vulp_docs_project_id_fkey;
 alter table public.vulp_docs drop constraint if exists vulp_docs_author_id_fkey;
 
@@ -2687,6 +2809,42 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       return [];
     }
 
+    function parseDocVersions(raw) {
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === 'string' && raw.trim()) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+      return [];
+    }
+
+    function getDocCurrentVersionNumber(doc) {
+      if (!doc) return 1;
+      const versions = parseDocVersions(doc.versions);
+      if (typeof doc.currentVersion === 'number' && doc.currentVersion >= 1) {
+        return doc.currentVersion;
+      }
+      if (!versions.length) return 1;
+      const maxArchived = versions.reduce((acc, v) => Math.max(acc, Number(v.version) || 0), 0);
+      return Math.max(maxArchived + 1, versions.length + 1);
+    }
+
+    function toDbDoc(doc) {
+      const versionsArr = parseDocVersions(doc.versions);
+      return {
+        id: doc.id,
+        project_id: doc.projectId || null,
+        title: doc.title,
+        content: doc.content || '',
+        comments: JSON.stringify(doc.comments || []),
+        versions: JSON.stringify(versionsArr),
+        author_id: doc.authorId || null,
+        updated_at: doc.updatedAt || ''
+      };
+    }
+
     function parseProjectAccessList(raw, defaultMode = 'edit') {
       let arr = [];
       if (Array.isArray(raw)) {
@@ -2829,6 +2987,10 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         if (!Array.isArray(d.comments)) {
           d.comments = parseDocComments(d.comments);
         }
+        if (!Array.isArray(d.versions)) {
+          d.versions = parseDocVersions(d.versions);
+        }
+        d.currentVersion = getDocCurrentVersionNumber(d);
         if (!d.authorId || FICTITIOUS_USER_IDS.has(d.authorId)) d.authorId = 'u_rafaela';
         if ((!d.projectId || !st.projects.some(p => p.id === d.projectId)) && fallbackProjId) {
           d.projectId = fallbackProjId;
@@ -3417,11 +3579,15 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       state.docs = docRows.map(r => {
         const localDoc = state.docs.find(x => x.id === r.id);
         const dbComments = r.comments !== undefined ? parseDocComments(r.comments) : (localDoc?.comments || []);
-        return {
+        const dbVersions = r.versions !== undefined ? parseDocVersions(r.versions) : (localDoc?.versions || []);
+        const hydrated = {
           id: r.id, projectId: r.project_id || '', title: r.title, content: r.content || '',
           comments: dbComments,
+          versions: dbVersions,
           authorId: r.author_id || '', updatedAt: r.updated_at || ''
         };
+        hydrated.currentVersion = getDocCurrentVersionNumber(hydrated);
+        return hydrated;
       });
 
       ensureCodesAndDefaults(state);
@@ -3565,7 +3731,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           await safeDbUpsert('vulp_tasks', toDbTask(t));
         }
         for (const d of state.docs) {
-          await safeDbUpsert('vulp_docs', { id: d.id, project_id: d.projectId || null, title: d.title, content: d.content || '', comments: JSON.stringify(d.comments || []), author_id: d.authorId || null, updated_at: d.updatedAt || '' });
+          await safeDbUpsert('vulp_docs', toDbDoc(d));
         }
         if (!silent) showToast('Dados sincronizados.');
       } catch (err) {
@@ -5589,23 +5755,21 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       const visProjects = getEditableProjectsForCurrentUser();
       let bodyHtml = '';
       if (doc) {
+        if (!Array.isArray(doc.versions)) doc.versions = parseDocVersions(doc.versions);
+        doc.currentVersion = getDocCurrentVersionNumber(doc);
         bodyHtml = convertLegacyMarkdownToHtml(doc.content, doc.title);
         if (bodyHtml !== doc.content) {
           doc.content = bodyHtml;
           saveLocalCache();
           if (sbConnected) {
-            safeDbUpsert('vulp_docs', {
-              id: doc.id,
-              project_id: doc.projectId || null,
-              title: doc.title,
-              content: doc.content,
-              author_id: doc.authorId || null,
-              updated_at: doc.updatedAt
-            });
+            safeDbUpsert('vulp_docs', toDbDoc(doc));
           }
         }
       }
       const authorName = doc ? getMember(doc.authorId).name : '';
+      const docVersions = doc ? parseDocVersions(doc.versions) : [];
+      const docVerNum = doc ? getDocCurrentVersionNumber(doc) : 1;
+      const totalVersionsCount = doc ? (docVersions.length + 1) : 1;
 
       document.getElementById('global-wiki-container').innerHTML = `
         <div class="conf-workspace">
@@ -5615,10 +5779,14 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
             </div>
             ${docsList.length ? docsList.map(d => {
               const proj = getProject(d.projectId);
-              const cleanTitle = d.title.replace(/\.(md|markdown|txt)$/i, '');
+              const cleanTitle = d.title.replace(/\.(md|markdown|txt|html)$/i, '');
+              const dVer = getDocCurrentVersionNumber(d);
               return `
                 <button class="conf-page-item ${doc && doc.id === d.id ? 'is-active' : ''}" onclick="activeGlobalDocId='${d.id}'; renderGlobalWiki()">
-                  <span style="font-size:12px;line-height:16px">${escapeHtmlText(cleanTitle)}</span>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%">
+                    <span style="font-size:12px;line-height:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtmlText(cleanTitle)}</span>
+                    <span class="doc-version-badge">v${dVer}</span>
+                  </div>
                   <span class="t-micro">${proj ? proj.code + ' • ' + proj.name : 'Sem projeto'} • ${d.updatedAt}</span>
                 </button>
               `;
@@ -5649,16 +5817,21 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                   <button type="button" class="btn btn--xs btn--soft" onclick="triggerConfImageUpload()" title="Inserir imagem do computador">
                     + Imagem
                   </button>
-                  <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+                  <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                     <span class="t-micro" id="conf-save-status">Salvo</span>
+                    <button type="button" class="btn btn--xs btn--teal" onclick="openUploadNewVersionModal('${doc.id}')" title="Importar arquivo atualizado mantendo histórico e comentários">Subir nova versão</button>
+                    <button type="button" class="btn btn--xs btn--secondary" onclick="openDocVersionsModal('${doc.id}')" title="Visualizar e restaurar versões anteriores">Versões (${totalVersionsCount})</button>
                     <button type="button" class="btn btn--xs btn--secondary" onclick="downloadDocHtml('${doc.id}')">Exportar</button>
                     ${admin ? `<button type="button" class="icon-btn icon-btn--danger" onclick="deleteMarkdownDoc('${doc.id}')" title="Excluir página"><svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg></button>` : ''}
                   </div>
                 </div>
               ` : `
-                <div class="conf-toolbar" style="justify-content:space-between">
+                <div class="conf-toolbar" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
                   <span class="tag tag--muted">Somente Visualização (você pode comentar abaixo)</span>
-                  <button type="button" class="btn btn--xs btn--secondary" onclick="downloadDocHtml('${doc.id}')">Exportar página</button>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <button type="button" class="btn btn--xs btn--secondary" onclick="openDocVersionsModal('${doc.id}')">Versões (${totalVersionsCount})</button>
+                    <button type="button" class="btn btn--xs btn--secondary" onclick="downloadDocHtml('${doc.id}')">Exportar página</button>
+                  </div>
                 </div>
               `}
 
@@ -5670,12 +5843,18 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                       ${visProjects.map(p => `<option value="${p.id}" ${doc.projectId === p.id ? 'selected' : ''}>${p.code} • ${p.name}</option>`).join('')}
                     </select>
                   ` : `<span class="tag tag--mint">${getProject(doc.projectId) ? getProject(doc.projectId).code + ' • ' + getProject(doc.projectId).name : 'Sem projeto'}</span>`}
+                  <span class="tag tag--lime-pill" style="font-family:var(--font-mono);font-size:11px">v${docVerNum}</span>
                   <span class="t-micro">Autor: <strong>${authorName}</strong> • Atualizado em ${doc.updatedAt}</span>
                 </div>
 
-                ${editable
-                  ? `<input type="text" class="conf-title-input" value="${escapeHtmlText(doc.title.replace(/\.(md|markdown|txt)$/i, ''))}" onchange="updateDocTitle('${doc.id}', this.value)" />`
-                  : `<h1 class="t-h1" style="font-size:24px;line-height:32px">${escapeHtmlText(doc.title.replace(/\.(md|markdown|txt)$/i, ''))}</h1>`}
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="flex:1;min-width:0">
+                    ${editable
+                      ? `<input type="text" class="conf-title-input" value="${escapeHtmlText(doc.title.replace(/\.(md|markdown|txt|html)$/i, ''))}" onchange="updateDocTitle('${doc.id}', this.value)" />`
+                      : `<h1 class="t-h1" style="font-size:24px;line-height:32px">${escapeHtmlText(doc.title.replace(/\.(md|markdown|txt|html)$/i, ''))}</h1>`}
+                  </div>
+                  <span class="code-badge" style="font-size:12px;padding:3px 9px">v${docVerNum}</span>
+                </div>
               </div>
 
               <div id="conf-editor-body"
@@ -5876,14 +6055,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
       clearTimeout(confSaveTimer);
       confSaveTimer = setTimeout(async () => {
-        await safeDbUpsert('vulp_docs', {
-          id: doc.id,
-          project_id: doc.projectId || null,
-          title: doc.title,
-          content: doc.content,
-          author_id: doc.authorId || null,
-          updated_at: doc.updatedAt
-        });
+        await safeDbUpsert('vulp_docs', toDbDoc(doc));
         const s2 = document.getElementById('conf-save-status');
         if (s2) s2.textContent = 'Salvo';
       }, 700);
@@ -5895,7 +6067,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       if (!canEditInProject(doc.projectId)) { showToast('Sem permissão de edição neste projeto.'); renderGlobalWiki(); return; }
       doc.title = newTitle.trim();
       doc.updatedAt = new Date().toISOString().split('T')[0];
-      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId || null, title: doc.title, content: doc.content, comments: JSON.stringify(doc.comments || []), author_id: doc.authorId || null, updated_at: doc.updatedAt });
+      await safeDbUpsert('vulp_docs', toDbDoc(doc));
       renderGlobalWiki();
     }
 
@@ -5916,7 +6088,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       }
       doc.projectId = newProjId;
       doc.updatedAt = new Date().toISOString().split('T')[0];
-      await safeDbUpsert('vulp_docs', { id: doc.id, project_id: doc.projectId, title: doc.title, content: doc.content, comments: JSON.stringify(doc.comments || []), author_id: doc.authorId || null, updated_at: doc.updatedAt });
+      await safeDbUpsert('vulp_docs', toDbDoc(doc));
       renderGlobalWiki();
       showToast('Projeto do documento atualizado.');
     }
@@ -5962,7 +6134,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       };
       state.docs.unshift(newDoc);
       activeGlobalDocId = newDoc.id;
-      await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId, title: newDoc.title, content: newDoc.content, comments: '[]', author_id: newDoc.authorId, updated_at: newDoc.updatedAt });
+      await safeDbUpsert('vulp_docs', toDbDoc(newDoc));
       closeModal('new-doc-modal');
       if (currentView !== 'docs') {
         switchView('docs');
@@ -6005,15 +6177,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         createdAt: dateStr
       });
       input.value = '';
-      await safeDbUpsert('vulp_docs', {
-        id: doc.id,
-        project_id: doc.projectId || null,
-        title: doc.title,
-        content: doc.content,
-        comments: JSON.stringify(doc.comments),
-        author_id: doc.authorId || null,
-        updated_at: doc.updatedAt
-      });
+      await safeDbUpsert('vulp_docs', toDbDoc(doc));
       renderGlobalWiki();
       showToast('Comentário adicionado.');
     }
@@ -6029,15 +6193,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       }
       if (!confirm('Excluir este comentário?')) return;
       doc.comments = doc.comments.filter(c => c.id !== commentId);
-      await safeDbUpsert('vulp_docs', {
-        id: doc.id,
-        project_id: doc.projectId || null,
-        title: doc.title,
-        content: doc.content,
-        comments: JSON.stringify(doc.comments),
-        author_id: doc.authorId || null,
-        updated_at: doc.updatedAt
-      });
+      await safeDbUpsert('vulp_docs', toDbDoc(doc));
       renderGlobalWiki();
       showToast('Comentário excluído.');
     }
@@ -6110,7 +6266,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         };
         state.docs.unshift(newDoc);
         activeGlobalDocId = newDoc.id;
-        await safeDbUpsert('vulp_docs', { id: newDoc.id, project_id: newDoc.projectId, title: newDoc.title, content: newDoc.content, comments: '[]', author_id: newDoc.authorId || null, updated_at: newDoc.updatedAt });
+        await safeDbUpsert('vulp_docs', toDbDoc(newDoc));
       }
       const filterEl = document.getElementById('wiki-project-filter');
       if (filterEl && filterEl.value !== 'ALL' && filterEl.value !== targetProj) {
@@ -6136,6 +6292,217 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       await safeDbDelete('vulp_docs', docId);
       renderGlobalWiki();
       showToast('Página excluída.');
+    }
+
+
+    /* ==========================================================================
+       VERSIONAMENTO DE DOCUMENTOS (SUBIR NOVA VERSÃO, HISTÓRICO, PREVIEW & RESTORE)
+       ========================================================================== */
+    let activeVersionPreviewKey = 'current';
+
+    function formatVersionTimestamp() {
+      const now = new Date();
+      return now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function openUploadNewVersionModal(docId) {
+      if (!guardEditorAction()) return;
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc) return;
+      if (!canEditInProject(doc.projectId)) {
+        showToast('Sem permissão de contribuição neste projeto.');
+        return;
+      }
+      const nextVer = getDocCurrentVersionNumber(doc) + 1;
+      document.getElementById('upload-version-doc-id').value = doc.id;
+      document.getElementById('upload-version-next-badge').textContent = 'v' + nextVer;
+      document.getElementById('upload-version-doc-title').textContent = doc.title.replace(/\.(md|markdown|txt|html)$/i, '');
+      document.getElementById('upload-version-file-input').value = '';
+      document.getElementById('upload-version-note-input').value = '';
+      document.getElementById('upload-version-modal').classList.add('is-open');
+    }
+
+    async function confirmUploadNewDocVersion() {
+      if (!guardEditorAction()) return;
+      const docId = document.getElementById('upload-version-doc-id').value;
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc) return;
+      if (!canEditInProject(doc.projectId)) {
+        showToast('Sem permissão de contribuição neste projeto.');
+        return;
+      }
+
+      const fileInput = document.getElementById('upload-version-file-input');
+      const file = fileInput.files?.[0];
+      if (!file) {
+        showToast('Selecione um arquivo (.md, .txt ou .html) para subir.');
+        return;
+      }
+
+      const note = document.getElementById('upload-version-note-input').value.trim();
+      const rawText = await readFileAsText(file);
+      const newHtmlBody = convertLegacyMarkdownToHtml(rawText, doc.title);
+
+      if (!Array.isArray(doc.versions)) doc.versions = parseDocVersions(doc.versions);
+      const prevVerNum = getDocCurrentVersionNumber(doc);
+      const editorEl = document.getElementById('conf-editor-body');
+      const currentSnapshotContent = (editorEl && activeGlobalDocId === doc.id) ? editorEl.innerHTML : (doc.content || '');
+
+      doc.versions.unshift({
+        id: 'ver_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        version: prevVerNum,
+        title: doc.title,
+        content: currentSnapshotContent,
+        note: note || `Versão anterior (v${prevVerNum}) arquivada ao subir "${file.name}"`,
+        authorId: doc.authorId || currentSession?.userId || 'u_rafaela',
+        savedAt: doc.updatedAt || formatVersionTimestamp(),
+        fileName: file.name
+      });
+
+      const nextVerNum = prevVerNum + 1;
+      doc.currentVersion = nextVerNum;
+      doc.content = newHtmlBody;
+      doc.authorId = currentSession?.userId || doc.authorId || 'u_rafaela';
+      doc.updatedAt = new Date().toISOString().split('T')[0];
+
+      await safeDbUpsert('vulp_docs', toDbDoc(doc));
+      closeModal('upload-version-modal');
+      renderGlobalWiki();
+      showToast(`Nova versão v${nextVerNum} publicada! Histórico e comentários mantidos.`);
+    }
+
+    function openDocVersionsModal(docId) {
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc) return;
+      if (!Array.isArray(doc.versions)) doc.versions = parseDocVersions(doc.versions);
+      const curVer = getDocCurrentVersionNumber(doc);
+
+      document.getElementById('doc-versions-current-badge').textContent = 'v' + curVer;
+      document.getElementById('doc-versions-modal-title').textContent = 'Versões — ' + doc.title.replace(/\.(md|markdown|txt|html)$/i, '');
+      activeVersionPreviewKey = doc.versions.length ? doc.versions[0].id : 'current';
+
+      renderDocVersionsModalContent(doc.id);
+      document.getElementById('doc-versions-modal').classList.add('is-open');
+    }
+
+    function selectDocVersionPreview(docId, versionKey) {
+      activeVersionPreviewKey = versionKey;
+      renderDocVersionsModalContent(docId);
+    }
+
+    function renderDocVersionsModalContent(docId) {
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc) return;
+      const versions = parseDocVersions(doc.versions);
+      const curVer = getDocCurrentVersionNumber(doc);
+      const editable = canEditInProject(doc.projectId);
+      const curAuthor = getMember(doc.authorId);
+
+      const allEntries = [
+        {
+          key: 'current',
+          isCurrent: true,
+          version: curVer,
+          title: doc.title,
+          content: doc.content,
+          note: 'Versão vigente atual',
+          authorId: doc.authorId,
+          savedAt: doc.updatedAt
+        },
+        ...versions.map(v => ({
+          key: v.id,
+          isCurrent: false,
+          version: v.version,
+          title: v.title || doc.title,
+          content: v.content || '',
+          note: v.note || 'Versão arquivada',
+          authorId: v.authorId,
+          savedAt: v.savedAt || ''
+        }))
+      ];
+
+      const selected = allEntries.find(e => e.key === activeVersionPreviewKey) || allEntries[0];
+
+      document.getElementById('doc-versions-list').innerHTML = allEntries.map(entry => {
+        const author = getMember(entry.authorId);
+        const isSelected = entry.key === selected.key;
+        return `
+          <div class="version-history-item ${isSelected ? 'is-selected' : ''}" style="cursor:pointer" onclick="selectDocVersionPreview('${doc.id}', '${entry.key}')">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="code-badge" style="font-size:10px">v${entry.version}</span>
+                ${entry.isCurrent ? `<span class="tag tag--teal" style="font-size:10px">ATUAL</span>` : ''}
+              </div>
+              <span class="t-micro">${escapeHtmlText(entry.savedAt)}</span>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--navy)">${escapeHtmlText(entry.note)}</div>
+            <div class="t-micro">Por: <strong>${escapeHtmlText(author.name)}</strong></div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('doc-versions-preview-label').innerHTML =
+        `Pré-visualizando <strong>v${selected.version}</strong> ${selected.isCurrent ? '(Versão atual)' : '• ' + escapeHtmlText(selected.savedAt)}`;
+
+      const actionsEl = document.getElementById('doc-versions-preview-actions');
+      if (!selected.isCurrent && editable) {
+        actionsEl.innerHTML = `
+          <button type="button" class="btn btn--xs btn--primary" onclick="restoreDocVersion('${doc.id}', '${selected.key}')">
+            Restaurar v${selected.version} (com backup)
+          </button>
+        `;
+      } else if (selected.isCurrent) {
+        actionsEl.innerHTML = `<span class="tag tag--mint" style="font-size:10px">Em uso no documento</span>`;
+      } else {
+        actionsEl.innerHTML = '';
+      }
+
+      document.getElementById('doc-versions-preview-content').innerHTML =
+        convertLegacyMarkdownToHtml(selected.content, selected.title);
+    }
+
+    async function restoreDocVersion(docId, versionId) {
+      if (!guardEditorAction()) return;
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc) return;
+      if (!canEditInProject(doc.projectId)) {
+        showToast('Sem permissão de contribuição neste projeto.');
+        return;
+      }
+
+      if (!Array.isArray(doc.versions)) doc.versions = parseDocVersions(doc.versions);
+      const targetVer = doc.versions.find(v => v.id === versionId);
+      if (!targetVer) return;
+
+      const curVer = getDocCurrentVersionNumber(doc);
+      if (!confirm(`Restaurar a versão v${targetVer.version}? A versão atual (v${curVer}) será salva automaticamente no histórico como backup.`)) {
+        return;
+      }
+
+      const editorEl = document.getElementById('conf-editor-body');
+      const currentSnapshotContent = (editorEl && activeGlobalDocId === doc.id) ? editorEl.innerHTML : (doc.content || '');
+
+      // Salva backup automático da versão vigente antes de restaurar
+      doc.versions.unshift({
+        id: 'ver_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        version: curVer,
+        title: doc.title,
+        content: currentSnapshotContent,
+        note: `Backup automático da v${curVer} antes de restaurar v${targetVer.version}`,
+        authorId: doc.authorId || currentSession?.userId || 'u_rafaela',
+        savedAt: doc.updatedAt || formatVersionTimestamp()
+      });
+
+      const nextVer = curVer + 1;
+      doc.currentVersion = nextVer;
+      doc.content = targetVer.content || '';
+      doc.authorId = currentSession?.userId || doc.authorId || 'u_rafaela';
+      doc.updatedAt = new Date().toISOString().split('T')[0];
+
+      await safeDbUpsert('vulp_docs', toDbDoc(doc));
+      closeModal('doc-versions-modal');
+      renderGlobalWiki();
+      showToast(`Versão v${targetVer.version} restaurada como v${nextVer} (backup v${curVer} salvo).`);
     }
 
     function downloadDocHtml(docId) {
