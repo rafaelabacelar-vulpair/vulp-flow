@@ -663,6 +663,75 @@
       display: none !important;
     }
 
+    .doc-link-badge {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      line-height: 13px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      background: var(--teal);
+      color: var(--navy);
+      letter-spacing: 0.03em;
+      flex-shrink: 0;
+    }
+    .conf-page-item.is-active .doc-link-badge {
+      background: var(--teal);
+      color: var(--navy);
+    }
+    .external-doc-hero {
+      margin: 22px 36px 8px;
+      background: var(--mint-page);
+      border: 1.5px solid var(--navy);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow-xs);
+    }
+    .external-doc-url-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 6px 10px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--navy);
+      overflow: hidden;
+    }
+    .external-doc-embed-wrap {
+      margin: 14px 36px 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--surface-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+    .external-doc-embed-bar {
+      background: var(--navy);
+      color: var(--white);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      gap: 8px;
+    }
+    .external-doc-iframe {
+      width: 100%;
+      height: 540px;
+      border: none;
+      background: var(--white);
+      display: block;
+    }
+
     .doc-version-badge {
       display: inline-flex;
       align-items: center;
@@ -1727,6 +1796,7 @@
               <input type="file" id="conf-image-upload-input" accept="image/*" style="position:fixed;left:-9999px;opacity:0" onchange="handleConfluenceImageUpload(event)" />
               <input type="file" id="md-file-upload-input" accept=".md,.markdown,.txt,.html" multiple style="position:fixed;left:-9999px;opacity:0" onchange="handleMarkdownFileUpload(event)" />
               <button type="button" class="btn btn--sm btn--secondary" onclick="triggerDocFileUpload()">Importar arquivo</button>
+              <button type="button" class="btn btn--sm btn--teal" onclick="openNewLinkDocModal()">+ Link / Planilha</button>
               <button type="button" class="btn btn--sm btn--primary" onclick="openNewDocModal()">+ Nova página</button>
             </div>
           </div>
@@ -2211,6 +2281,83 @@
   </div>
 
   <!-- ==========================================================================
+       MODAL: NOVO LINK EXTERNO / PLANILHA GOOGLE SHEETS
+       ========================================================================== -->
+  <div class="modal-backdrop modal-backdrop--top" id="new-link-doc-modal">
+    <div class="modal-panel" style="max-width:500px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="code-badge">SHEETS / LINK</span>
+          <h3 class="t-h2">Vincular planilha ou link externo</h3>
+        </div>
+        <button class="icon-btn" onclick="closeModal('new-link-doc-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <p class="t-cap" style="margin:0">
+        Armazene planilhas do <strong>Google Sheets</strong>, pastas do Drive ou links estratégicos diretamente no projeto com acesso rápido, pré-visualização embutida e comentários da equipe.
+      </p>
+      <div class="field">
+        <label class="field__label">Projeto vinculado (obrigatório)</label>
+        <select id="new-link-doc-project-select" class="field__input"></select>
+      </div>
+      <div class="field">
+        <label class="field__label">Título do documento / planilha</label>
+        <input type="text" id="new-link-doc-title-input" class="field__input" placeholder="Ex: Planilha — Cronograma e Custos Alterdata 2027" />
+      </div>
+      <div class="field">
+        <label class="field__label">Link (URL do Google Sheets, Drive, Docs, etc.)</label>
+        <input type="url" id="new-link-doc-url-input" class="field__input" placeholder="https://docs.google.com/spreadsheets/d/..." />
+      </div>
+      <div class="field">
+        <label class="field__label">Contexto / Instruções de acesso (opcional)</label>
+        <textarea id="new-link-doc-desc-input" class="field__input" rows="2" placeholder="Ex: Aba 'Orçamento' consolidada. Solicitar acesso de edição para Rafaela se necessário."></textarea>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--navy);cursor:pointer;user-select:none">
+        <input type="checkbox" id="new-link-doc-embed-check" checked />
+        <span>Exibir pré-visualização interativa embutida na página (requer link compartilhado)</span>
+      </label>
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('new-link-doc-modal')">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="confirmCreateNewLinkDoc()">Salvar link no projeto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: ATUALIZAR LINK / NOVA VERSÃO DE PLANILHA EXTERNA
+       ========================================================================== -->
+  <div class="modal-backdrop modal-backdrop--top" id="update-link-version-modal">
+    <div class="modal-panel" style="max-width:500px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="code-badge" id="update-link-version-badge">v2</span>
+          <h3 class="t-h2">Atualizar link / nova versão</h3>
+        </div>
+        <button class="icon-btn" onclick="closeModal('update-link-version-modal')"><svg class="va-icon" width="16" height="16"><use href="#va-close"/></svg></button>
+      </div>
+      <p class="t-cap" style="margin:0">
+        Atualize a URL ou as configurações de <strong id="update-link-version-doc-title"></strong>. O link anterior será arquivado automaticamente no histórico de versões.
+      </p>
+      <input type="hidden" id="update-link-version-doc-id" />
+      <div class="field">
+        <label class="field__label">URL do Google Sheets / Link externo</label>
+        <input type="url" id="update-link-version-url-input" class="field__input" placeholder="https://docs.google.com/spreadsheets/d/..." />
+      </div>
+      <div class="field">
+        <label class="field__label">Nota da alteração (opcional)</label>
+        <input type="text" id="update-link-version-note-input" class="field__input" placeholder="Ex: Nova planilha de fechamento Q1 2027..." onkeydown="if(event.key==='Enter') confirmUpdateLinkDocVersion()" />
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--navy);cursor:pointer;user-select:none">
+        <input type="checkbox" id="update-link-version-embed-check" checked />
+        <span>Exibir pré-visualização interativa embutida na página</span>
+      </label>
+      <div class="modal-footer">
+        <button type="button" class="btn btn--sm btn--secondary" onclick="closeModal('update-link-version-modal')">Cancelar</button>
+        <button type="button" class="btn btn--sm btn--primary" onclick="confirmUpdateLinkDocVersion()">Salvar nova versão</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        MODAL: SUBIR NOVA VERSÃO DE DOCUMENTO EXISTENTE
        ========================================================================== -->
   <div class="modal-backdrop modal-backdrop--top" id="upload-version-modal">
@@ -2539,6 +2686,9 @@ create table if not exists public.vulp_docs (
   id text primary key,
   project_id text not null,
   title text not null,
+  doc_type text not null default 'page',
+  external_url text not null default '',
+  embed_enabled boolean not null default true,
   content text not null default '',
   comments text not null default '[]',
   versions text not null default '[]',
@@ -2546,6 +2696,9 @@ create table if not exists public.vulp_docs (
   updated_at text not null default to_char(now(), 'YYYY-MM-DD'),
   created_at timestamptz not null default now()
 );
+alter table public.vulp_docs add column if not exists doc_type text not null default 'page';
+alter table public.vulp_docs add column if not exists external_url text not null default '';
+alter table public.vulp_docs add column if not exists embed_enabled boolean not null default true;
 alter table public.vulp_docs add column if not exists comments text not null default '[]';
 alter table public.vulp_docs add column if not exists versions text not null default '[]';
 alter table public.vulp_docs drop constraint if exists vulp_docs_project_id_fkey;
@@ -2831,12 +2984,43 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       return Math.max(maxArchived + 1, versions.length + 1);
     }
 
+    function getExternalLinkProviderInfo(url) {
+      const u = String(url || '').toLowerCase();
+      if (u.includes('docs.google.com/spreadsheets')) return { badge: 'SHEETS', label: 'Google Sheets', actionLabel: 'Abrir no Google Sheets ↗' };
+      if (u.includes('docs.google.com/document')) return { badge: 'DOCS', label: 'Google Docs', actionLabel: 'Abrir no Google Docs ↗' };
+      if (u.includes('docs.google.com/presentation')) return { badge: 'SLIDES', label: 'Google Slides', actionLabel: 'Abrir no Google Slides ↗' };
+      if (u.includes('drive.google.com')) return { badge: 'DRIVE', label: 'Google Drive', actionLabel: 'Abrir no Google Drive ↗' };
+      if (u.includes('figma.com')) return { badge: 'FIGMA', label: 'Figma', actionLabel: 'Abrir no Figma ↗' };
+      return { badge: 'LINK', label: 'Link Externo', actionLabel: 'Abrir link externo ↗' };
+    }
+
+    function buildEmbeddableUrl(url) {
+      const raw = String(url || '').trim();
+      if (!raw) return '';
+      // Google Sheets: /edit... -> /preview (permite visualizar abas de forma limpa no iframe)
+      if (/docs\.google\.com\/spreadsheets\/d\/[^/]+/i.test(raw)) {
+        return raw.replace(/\/(edit|view|pubhtml|htmlview)([^#?]*)?(\?[^#]*)?(#.*)?$/i, '/preview$3$4');
+      }
+      // Google Docs / Slides: /edit... -> /preview
+      if (/docs\.google\.com\/(document|presentation)\/d\/[^/]+/i.test(raw)) {
+        return raw.replace(/\/(edit|view)([^#?]*)?(\?[^#]*)?(#.*)?$/i, '/preview$3$4');
+      }
+      // Google Drive file: /view -> /preview
+      if (/drive\.google\.com\/file\/d\/[^/]+/i.test(raw)) {
+        return raw.replace(/\/(view|edit)([^#?]*)?(\?[^#]*)?(#.*)?$/i, '/preview$3$4');
+      }
+      return raw;
+    }
+
     function toDbDoc(doc) {
       const versionsArr = parseDocVersions(doc.versions);
       return {
         id: doc.id,
         project_id: doc.projectId || null,
         title: doc.title,
+        doc_type: doc.docType === 'link' ? 'link' : 'page',
+        external_url: doc.externalUrl || '',
+        embed_enabled: doc.embedEnabled !== false,
         content: doc.content || '',
         comments: JSON.stringify(doc.comments || []),
         versions: JSON.stringify(versionsArr),
@@ -2984,6 +3168,9 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       });
       const fallbackProjId = st.projects[0]?.id || '';
       st.docs.forEach(d => {
+        if (d.docType !== 'link') d.docType = 'page';
+        if (typeof d.externalUrl !== 'string') d.externalUrl = '';
+        if (typeof d.embedEnabled !== 'boolean') d.embedEnabled = true;
         if (!Array.isArray(d.comments)) {
           d.comments = parseDocComments(d.comments);
         }
@@ -3580,11 +3767,25 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         const localDoc = state.docs.find(x => x.id === r.id);
         const dbComments = r.comments !== undefined ? parseDocComments(r.comments) : (localDoc?.comments || []);
         const dbVersions = r.versions !== undefined ? parseDocVersions(r.versions) : (localDoc?.versions || []);
+        const resolvedUrl = r.external_url !== undefined ? (r.external_url || '') : (localDoc?.externalUrl || '');
+        const resolvedType = r.doc_type !== undefined
+          ? (r.doc_type === 'link' ? 'link' : 'page')
+          : (localDoc?.docType === 'link' || Boolean(resolvedUrl) ? 'link' : 'page');
+        const resolvedEmbed = r.embed_enabled !== undefined && r.embed_enabled !== null
+          ? Boolean(r.embed_enabled)
+          : (localDoc?.embedEnabled !== undefined ? localDoc.embedEnabled : true);
         const hydrated = {
-          id: r.id, projectId: r.project_id || '', title: r.title, content: r.content || '',
+          id: r.id,
+          projectId: r.project_id || '',
+          title: r.title,
+          docType: resolvedType,
+          externalUrl: resolvedUrl,
+          embedEnabled: resolvedEmbed,
+          content: r.content || '',
           comments: dbComments,
           versions: dbVersions,
-          authorId: r.author_id || '', updatedAt: r.updated_at || ''
+          authorId: r.author_id || '',
+          updatedAt: r.updated_at || ''
         };
         hydrated.currentVersion = getDocCurrentVersionNumber(hydrated);
         return hydrated;
@@ -5770,32 +5971,54 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       const docVersions = doc ? parseDocVersions(doc.versions) : [];
       const docVerNum = doc ? getDocCurrentVersionNumber(doc) : 1;
       const totalVersionsCount = doc ? (docVersions.length + 1) : 1;
+      const isLinkDoc = doc && doc.docType === 'link';
+      const linkInfo = isLinkDoc ? getExternalLinkProviderInfo(doc.externalUrl) : null;
+      const embedUrl = isLinkDoc ? buildEmbeddableUrl(doc.externalUrl) : '';
 
       document.getElementById('global-wiki-container').innerHTML = `
         <div class="conf-workspace">
           <aside class="conf-sidebar">
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:2px 6px 4px">
-              Páginas (${docsList.length})
+              Documentos & Links (${docsList.length})
             </div>
             ${docsList.length ? docsList.map(d => {
               const proj = getProject(d.projectId);
               const cleanTitle = d.title.replace(/\.(md|markdown|txt|html)$/i, '');
               const dVer = getDocCurrentVersionNumber(d);
+              const dIsLink = d.docType === 'link';
+              const dProvider = dIsLink ? getExternalLinkProviderInfo(d.externalUrl) : null;
               return `
                 <button class="conf-page-item ${doc && doc.id === d.id ? 'is-active' : ''}" onclick="activeGlobalDocId='${d.id}'; renderGlobalWiki()">
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:5px;width:100%">
                     <span style="font-size:12px;line-height:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtmlText(cleanTitle)}</span>
-                    <span class="doc-version-badge">v${dVer}</span>
+                    <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+                      ${dIsLink ? `<span class="doc-link-badge">${dProvider.badge}</span>` : ''}
+                      <span class="doc-version-badge">v${dVer}</span>
+                    </div>
                   </div>
                   <span class="t-micro">${proj ? proj.code + ' • ' + proj.name : 'Sem projeto'} • ${d.updatedAt}</span>
                 </button>
               `;
-            }).join('') : `<div class="t-micro" style="padding:10px 6px">Nenhuma página encontrada.</div>`}
+            }).join('') : `<div class="t-micro" style="padding:10px 6px">Nenhum documento ou planilha encontrado.</div>`}
           </aside>
 
           <div class="conf-page-card">
             ${doc ? `
-              ${editable ? `
+              ${isLinkDoc ? `
+                <div class="conf-toolbar" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <span class="tag tag--teal" style="font-family:var(--font-mono);font-size:10px">${linkInfo.badge}</span>
+                    <span class="t-micro" style="font-weight:700;color:var(--navy)">${linkInfo.label} vinculado ao projeto</span>
+                  </div>
+                  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                    <a href="${escapeHtmlText(doc.externalUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn--xs btn--primary">${linkInfo.actionLabel}</a>
+                    <button type="button" class="btn btn--xs btn--secondary" onclick="copyExternalDocUrl('${doc.id}')">Copiar link</button>
+                    ${editable ? `<button type="button" class="btn btn--xs btn--teal" onclick="openUpdateLinkVersionModal('${doc.id}')">Atualizar link / v${docVerNum + 1}</button>` : ''}
+                    <button type="button" class="btn btn--xs btn--secondary" onclick="openDocVersionsModal('${doc.id}')">Versões (${totalVersionsCount})</button>
+                    ${admin ? `<button type="button" class="icon-btn icon-btn--danger" onclick="deleteMarkdownDoc('${doc.id}')" title="Excluir documento"><svg class="va-icon" width="13" height="13"><use href="#va-close"/></svg></button>` : ''}
+                  </div>
+                </div>
+              ` : (editable ? `
                 <div class="conf-toolbar" onmousedown="if(event.target.tagName==='BUTTON') event.preventDefault()">
                   <button type="button" class="conf-tool-btn" onclick="execConfBlock('H1')" title="Título 1">H1</button>
                   <button type="button" class="conf-tool-btn" onclick="execConfBlock('H2')" title="Título 2">H2</button>
@@ -5833,7 +6056,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                     <button type="button" class="btn btn--xs btn--secondary" onclick="downloadDocHtml('${doc.id}')">Exportar página</button>
                   </div>
                 </div>
-              `}
+              `)}
 
               <div class="conf-page-header">
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -5843,6 +6066,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                       ${visProjects.map(p => `<option value="${p.id}" ${doc.projectId === p.id ? 'selected' : ''}>${p.code} • ${p.name}</option>`).join('')}
                     </select>
                   ` : `<span class="tag tag--mint">${getProject(doc.projectId) ? getProject(doc.projectId).code + ' • ' + getProject(doc.projectId).name : 'Sem projeto'}</span>`}
+                  ${isLinkDoc ? `<span class="tag tag--teal" style="font-family:var(--font-mono);font-size:10px">${linkInfo.badge}</span>` : ''}
                   <span class="tag tag--lime-pill" style="font-family:var(--font-mono);font-size:11px">v${docVerNum}</span>
                   <span class="t-micro">Autor: <strong>${authorName}</strong> • Atualizado em ${doc.updatedAt}</span>
                 </div>
@@ -5857,14 +6081,62 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
                 </div>
               </div>
 
-              <div id="conf-editor-body"
-                   class="conf-editor-surface"
-                   contenteditable="${editable}"
-                   data-placeholder="Comece a escrever sua página, insira tabelas, destaques ou cole/arraste imagens aqui..."
-                   oninput="onConfluenceBodyInput('${doc.id}')"
-                   onpaste="handleConfluencePaste(event, '${doc.id}')"
-                   ondragover="if(canEdit()) event.preventDefault()"
-                   ondrop="handleConfluenceDropImage(event, '${doc.id}')">${bodyHtml}</div>
+              ${isLinkDoc ? `
+                <div class="external-doc-hero">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span class="code-badge" style="padding:4px 9px;font-size:11px">${linkInfo.badge}</span>
+                      <div>
+                        <div class="t-h3">${linkInfo.label} • Acesso Compartilhado</div>
+                        <div class="t-micro">Clique no botão ao lado para editar ou consultar diretamente no navegador.</div>
+                      </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                      <button type="button" class="btn btn--sm btn--secondary" onclick="copyExternalDocUrl('${doc.id}')">Copiar link</button>
+                      <a href="${escapeHtmlText(doc.externalUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn--sm btn--primary">${linkInfo.actionLabel}</a>
+                    </div>
+                  </div>
+
+                  <div class="external-doc-url-bar">
+                    <span style="font-weight:700;color:var(--muted);flex-shrink:0">URL:</span>
+                    <a href="${escapeHtmlText(doc.externalUrl)}" target="_blank" rel="noopener noreferrer" style="color:var(--navy);text-decoration:underline;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${escapeHtmlText(doc.externalUrl)}</a>
+                  </div>
+
+                  ${editable ? `
+                    <div class="field" style="margin-top:2px">
+                      <label class="field__label">Contexto / Instruções de preenchimento</label>
+                      <textarea class="field__input" rows="2" placeholder="Descreva o objetivo desta planilha, quais abas preencher ou regras de permissão..." onchange="updateExternalDocNotes('${doc.id}', this.value)">${escapeHtmlText(doc.content || '')}</textarea>
+                    </div>
+                  ` : (doc.content ? `<div style="font-size:13px;line-height:19px;color:var(--navy);background:var(--white);padding:10px 12px;border-radius:8px;border:1px solid var(--line)">${escapeHtmlText(doc.content)}</div>` : '')}
+
+                  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-top:4px">
+                    <label style="display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--navy);cursor:pointer;user-select:none">
+                      <input type="checkbox" ${doc.embedEnabled !== false ? 'checked' : ''} onchange="toggleExternalDocEmbed('${doc.id}', this.checked)" />
+                      <span>Mostrar pré-visualização embutida abaixo</span>
+                    </label>
+                    <span class="t-micro">Dica: no Google Sheets, use <strong>Compartilhar → Qualquer pessoa com o link</strong> para visualizar aqui dentro.</span>
+                  </div>
+                </div>
+
+                ${doc.embedEnabled !== false && embedUrl ? `
+                  <div class="external-doc-embed-wrap">
+                    <div class="external-doc-embed-bar">
+                      <span><strong>Pré-visualização (${linkInfo.label})</strong> • Se pedir permissão, clique em <em>"${linkInfo.actionLabel}"</em> acima</span>
+                      <a href="${escapeHtmlText(doc.externalUrl)}" target="_blank" rel="noopener noreferrer" style="color:var(--teal);font-weight:700;text-decoration:underline;font-size:11px">Tela cheia ↗</a>
+                    </div>
+                    <iframe class="external-doc-iframe" src="${escapeHtmlText(embedUrl)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                  </div>
+                ` : ''}
+              ` : `
+                <div id="conf-editor-body"
+                     class="conf-editor-surface"
+                     contenteditable="${editable}"
+                     data-placeholder="Comece a escrever sua página, insira tabelas, destaques ou cole/arraste imagens aqui..."
+                     oninput="onConfluenceBodyInput('${doc.id}')"
+                     onpaste="handleConfluencePaste(event, '${doc.id}')"
+                     ondragover="if(canEdit()) event.preventDefault()"
+                     ondrop="handleConfluenceDropImage(event, '${doc.id}')">${bodyHtml}</div>
+              `}
 
               <div class="conf-comments-section">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -6404,6 +6676,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           isCurrent: true,
           version: curVer,
           title: doc.title,
+          docType: doc.docType || 'page',
+          externalUrl: doc.externalUrl || '',
           content: doc.content,
           note: 'Versão vigente atual',
           authorId: doc.authorId,
@@ -6414,6 +6688,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
           isCurrent: false,
           version: v.version,
           title: v.title || doc.title,
+          docType: v.docType || doc.docType || 'page',
+          externalUrl: v.externalUrl || '',
           content: v.content || '',
           note: v.note || 'Versão arquivada',
           authorId: v.authorId,
@@ -6457,8 +6733,24 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         actionsEl.innerHTML = '';
       }
 
-      document.getElementById('doc-versions-preview-content').innerHTML =
-        convertLegacyMarkdownToHtml(selected.content, selected.title);
+      if (selected.docType === 'link' || selected.externalUrl) {
+        const pInfo = getExternalLinkProviderInfo(selected.externalUrl);
+        document.getElementById('doc-versions-preview-content').innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span class="tag tag--teal" style="font-family:var(--font-mono)">${pInfo.badge} • ${pInfo.label}</span>
+              <a href="${escapeHtmlText(selected.externalUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn--xs btn--primary">${pInfo.actionLabel}</a>
+            </div>
+            <div style="background:var(--surface-subtle);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-family:var(--font-mono);font-size:11px;word-break:break-all">
+              ${escapeHtmlText(selected.externalUrl)}
+            </div>
+            ${selected.content ? `<p style="margin:0;font-size:13px">${escapeHtmlText(selected.content)}</p>` : ''}
+          </div>
+        `;
+      } else {
+        document.getElementById('doc-versions-preview-content').innerHTML =
+          convertLegacyMarkdownToHtml(selected.content, selected.title);
+      }
     }
 
     async function restoreDocVersion(docId, versionId) {
@@ -6487,6 +6779,8 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
         id: 'ver_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
         version: curVer,
         title: doc.title,
+        docType: doc.docType || 'page',
+        externalUrl: doc.externalUrl || '',
         content: currentSnapshotContent,
         note: `Backup automático da v${curVer} antes de restaurar v${targetVer.version}`,
         authorId: doc.authorId || currentSession?.userId || 'u_rafaela',
@@ -6495,6 +6789,7 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
 
       const nextVer = curVer + 1;
       doc.currentVersion = nextVer;
+      if (targetVer.externalUrl) doc.externalUrl = targetVer.externalUrl;
       doc.content = targetVer.content || '';
       doc.authorId = currentSession?.userId || doc.authorId || 'u_rafaela';
       doc.updatedAt = new Date().toISOString().split('T')[0];
@@ -6503,6 +6798,174 @@ do $$ begin alter publication supabase_realtime add table public.vulp_statuses; 
       closeModal('doc-versions-modal');
       renderGlobalWiki();
       showToast(`Versão v${targetVer.version} restaurada como v${nextVer} (backup v${curVer} salvo).`);
+    }
+
+
+    /* ==========================================================================
+       LINKS EXTERNOS & GOOGLE SHEETS NA ABA DOCUMENTOS
+       ========================================================================== */
+    function openNewLinkDocModal(preselectedProjId = null) {
+      if (!guardEditorAction()) return;
+      const visProjects = getEditableProjectsForCurrentUser();
+      if (!visProjects.length) {
+        showToast('Você não possui projetos com permissão de contribuição.');
+        return;
+      }
+      const sel = document.getElementById('new-link-doc-project-select');
+      sel.innerHTML = visProjects.map(p => `<option value="${p.id}">${p.code} • ${p.name}</option>`).join('');
+      const filterProj = document.getElementById('wiki-project-filter')?.value;
+      sel.value = preselectedProjId || ((filterProj && filterProj !== 'ALL') ? filterProj : visProjects[0].id);
+      document.getElementById('new-link-doc-title-input').value = '';
+      document.getElementById('new-link-doc-url-input').value = '';
+      document.getElementById('new-link-doc-desc-input').value = '';
+      document.getElementById('new-link-doc-embed-check').checked = true;
+      document.getElementById('new-link-doc-modal').classList.add('is-open');
+    }
+
+    async function confirmCreateNewLinkDoc() {
+      if (!guardEditorAction()) return;
+      const targetProj = document.getElementById('new-link-doc-project-select').value;
+      const rawTitle = document.getElementById('new-link-doc-title-input').value.trim();
+      let rawUrl = document.getElementById('new-link-doc-url-input').value.trim();
+      const desc = document.getElementById('new-link-doc-desc-input').value.trim();
+      const embedEnabled = document.getElementById('new-link-doc-embed-check').checked;
+
+      if (!targetProj) {
+        showToast('Selecione o projeto vinculado.');
+        return;
+      }
+      if (!canEditInProject(targetProj)) {
+        showToast('Sem permissão de contribuição neste projeto.');
+        return;
+      }
+      if (!rawTitle) {
+        showToast('Informe o título da planilha ou link.');
+        return;
+      }
+      if (!rawUrl) {
+        showToast('Cole a URL do Google Sheets ou link externo.');
+        return;
+      }
+      if (!/^https?:\/\//i.test(rawUrl)) {
+        rawUrl = 'https://' + rawUrl;
+      }
+
+      const newDoc = {
+        id: 'd_' + Date.now(),
+        projectId: targetProj,
+        title: rawTitle,
+        docType: 'link',
+        externalUrl: rawUrl,
+        embedEnabled,
+        content: desc,
+        comments: [],
+        versions: [],
+        currentVersion: 1,
+        updatedAt: new Date().toISOString().split('T')[0],
+        authorId: currentSession?.userId || 'u_rafaela'
+      };
+
+      state.docs.unshift(newDoc);
+      activeGlobalDocId = newDoc.id;
+      await safeDbUpsert('vulp_docs', toDbDoc(newDoc));
+      closeModal('new-link-doc-modal');
+      if (currentView !== 'docs') {
+        switchView('docs');
+      }
+      const filterEl = document.getElementById('wiki-project-filter');
+      if (filterEl && filterEl.value !== 'ALL' && filterEl.value !== targetProj) {
+        filterEl.value = targetProj;
+      }
+      renderGlobalWiki();
+      const pInfo = getExternalLinkProviderInfo(rawUrl);
+      showToast(`${pInfo.label} vinculado ao projeto com sucesso.`);
+    }
+
+    function copyExternalDocUrl(docId) {
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc || !doc.externalUrl) return;
+      navigator.clipboard.writeText(doc.externalUrl);
+      showToast('Link copiado para a área de transferência.');
+    }
+
+    async function updateExternalDocNotes(docId, newNotes) {
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc || !canEditInProject(doc.projectId)) return;
+      doc.content = newNotes.trim();
+      doc.updatedAt = new Date().toISOString().split('T')[0];
+      await safeDbUpsert('vulp_docs', toDbDoc(doc));
+      showToast('Observações da planilha salvas.');
+    }
+
+    async function toggleExternalDocEmbed(docId, enabled) {
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc) return;
+      doc.embedEnabled = Boolean(enabled);
+      if (canEditInProject(doc.projectId)) {
+        await safeDbUpsert('vulp_docs', toDbDoc(doc));
+      } else {
+        saveLocalCache();
+      }
+      renderGlobalWiki();
+    }
+
+    function openUpdateLinkVersionModal(docId) {
+      if (!guardEditorAction()) return;
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc || !canEditInProject(doc.projectId)) return;
+      const nextVer = getDocCurrentVersionNumber(doc) + 1;
+      document.getElementById('update-link-version-doc-id').value = doc.id;
+      document.getElementById('update-link-version-badge').textContent = 'v' + nextVer;
+      document.getElementById('update-link-version-doc-title').textContent = doc.title;
+      document.getElementById('update-link-version-url-input').value = doc.externalUrl || '';
+      document.getElementById('update-link-version-note-input').value = '';
+      document.getElementById('update-link-version-embed-check').checked = doc.embedEnabled !== false;
+      document.getElementById('update-link-version-modal').classList.add('is-open');
+    }
+
+    async function confirmUpdateLinkDocVersion() {
+      if (!guardEditorAction()) return;
+      const docId = document.getElementById('update-link-version-doc-id').value;
+      const doc = state.docs.find(d => d.id === docId);
+      if (!doc || !canEditInProject(doc.projectId)) return;
+
+      let newUrl = document.getElementById('update-link-version-url-input').value.trim();
+      const note = document.getElementById('update-link-version-note-input').value.trim();
+      const embedEnabled = document.getElementById('update-link-version-embed-check').checked;
+      if (!newUrl) {
+        showToast('Informe a URL da nova versão.');
+        return;
+      }
+      if (!/^https?:\/\//i.test(newUrl)) {
+        newUrl = 'https://' + newUrl;
+      }
+
+      if (!Array.isArray(doc.versions)) doc.versions = parseDocVersions(doc.versions);
+      const prevVerNum = getDocCurrentVersionNumber(doc);
+
+      doc.versions.unshift({
+        id: 'ver_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        version: prevVerNum,
+        title: doc.title,
+        docType: 'link',
+        externalUrl: doc.externalUrl || '',
+        content: doc.content || '',
+        note: note || `Link anterior (v${prevVerNum}) arquivado`,
+        authorId: doc.authorId || currentSession?.userId || 'u_rafaela',
+        savedAt: doc.updatedAt || formatVersionTimestamp()
+      });
+
+      const nextVerNum = prevVerNum + 1;
+      doc.currentVersion = nextVerNum;
+      doc.externalUrl = newUrl;
+      doc.embedEnabled = embedEnabled;
+      doc.authorId = currentSession?.userId || doc.authorId || 'u_rafaela';
+      doc.updatedAt = new Date().toISOString().split('T')[0];
+
+      await safeDbUpsert('vulp_docs', toDbDoc(doc));
+      closeModal('update-link-version-modal');
+      renderGlobalWiki();
+      showToast(`Link atualizado para v${nextVerNum}! Histórico preservado.`);
     }
 
     function downloadDocHtml(docId) {
