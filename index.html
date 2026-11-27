@@ -290,11 +290,18 @@
       line-height: 15px;
       font-weight: 700;
       padding: 2px 8px;
-      border-radius: var(--radius-sm);
       max-width: 100%;
+      min-width: 0;
+      border-radius: var(--radius-sm);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .jira-label > span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
     }
     .jira-label--project {
       background: var(--surface-subtle);
@@ -524,6 +531,7 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      min-width: 0;
       background: var(--white);
     }
     .topbar {
@@ -635,6 +643,7 @@
       flex-direction: column;
       gap: 10px;
       min-height: 520px;
+      min-width: 0;
     }
     .kanban-col.drag-over {
       background: var(--mint-page);
@@ -844,6 +853,8 @@
       flex-direction: column;
       gap: 9px;
       cursor: pointer;
+      min-width: 0;
+      overflow: hidden;
       box-shadow: var(--shadow-xs);
       transition: border-color .15s, box-shadow .15s, transform .1s;
     }
@@ -861,12 +872,16 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 6px;
+      min-width: 0;
     }
     .task-card__labels {
       display: flex;
       flex-wrap: wrap;
       gap: 5px;
       align-items: center;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
     }
     .task-card__title {
       font-size: 13px;
@@ -874,6 +889,8 @@
       font-weight: 700;
       color: var(--navy);
       margin: 0;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .task-card__foot {
       display: flex;
